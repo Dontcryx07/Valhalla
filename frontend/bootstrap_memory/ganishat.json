@@ -1,0 +1,53 @@
+{
+  "Name": "Ghanisht Kaushal",
+  "Age": "19",
+  "Gender": "Male",
+  "Branch": "B.Tech Artificial Intelligence and Data Engineering (AIDE), IIT Ropar",
+  "Home City": "Sonipat, Haryana",
+  "daily_plan_req": "Attend lectures and labs, practice data structures and algorithms, work on AI projects, fulfill club responsibilities, and continuously develop technical skills.",
+  "innate": [
+    "Curious",
+    "Analytical",
+    "Persistent",
+    "Responsible",
+    "Disciplined",
+    "Goal-oriented",
+    "Adaptable"
+  ],
+  "learned": [
+    "C++ Programming",
+    "Data Structures and Algorithms",
+    "Basic Python",
+    "Machine Learning Fundamentals",
+    "Natural Language Processing (Basic)",
+    "Computer Vision (Basic)",
+    "Artificial Intelligence Fundamentals",
+    "Competitive Programming",
+    "Leadership and Team Coordination",
+    "Mentoring and Communication Skills"
+  ],
+  "lifestyle": "A full-time undergraduate student with a structured routine focused on academics, technical skill development, project work, and extracurricular responsibilities.",
+  "hobbies": [
+    "Competitive Programming",
+    "Building AI Applications",
+    "Exploring Emerging Technologies",
+    "Reading about Artificial Intelligence",
+    "Brainstorming Product Ideas"
+  ],
+  "goals": {
+    "short_term": [
+      "Strengthen problem-solving and DSA skills",
+      "Build impactful AI projects",
+      "Secure a quality software internship",
+      "Maintain a strong academic record",
+      "Improve physical fitness"
+    ],
+    "long_term": [
+      "Become a highly skilled AI and Software Engineer",
+      "Contribute to impactful AI technologies",
+      "Build innovative products that solve real-world problems",
+      "Pursue continuous learning and professional growth",
+      "Provide a comfortable and fulfilling life for my family"
+    ]
+  }
+}
