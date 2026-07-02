@@ -1,4 +1,6 @@
 langgraph
 Pillow
 matplotlib
-
+google-genai
+pydantic
+protobuf
