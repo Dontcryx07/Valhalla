@@ -1,0 +1,172 @@
+{
+  "_meta": {
+    "source_note": "Facts marked [VERIFIED] come from IIT Ropar's own site, Wikipedia, or student-review aggregators (searched July 2026). Facts marked [ASSUMED] are standard IIT-campus conventions used as placeholders because the exact figure (e.g. precise mess/library closing time) is not published anywhere public — replace with real values once you can check a hostel notice board / library circular.",
+    "campus_facts": [
+      "525 acres, permanent campus operational since June 2018, on the bank of the Sutlej river, Rupnagar, Punjab",
+      "Entrance gate: four 41-ft Indus-Valley-style stone pillars, built with ASI",
+      "5-star GRIHA rated (green campus)",
+      "Three main academic blocks connected via skywalks",
+      "Major fests: Zeitgeist (cultural, Oct/Nov, 3 days), Aadvitya (tech fest, Feb), Aarohan (sports fest, March)"
+    ]
+  },
+  "locations": [
+    {
+      "id": "central_library",
+      "name": "Nalanda Central Library",
+      "type": "academic",
+      "sub_areas": ["reading_hall", "reference_section", "group_study_rooms", "silent_zone", "e_resource_lab"],
+      "open_hours": {
+        "reference_section": "00:00-24:00",
+        "circulation_desk": "09:00-23:00",
+        "exam_period_all_areas": "00:00-24:00"
+      },
+      "capacity": "high",
+      "typical_activities": ["studying", "reading", "group project work", "research", "printing"],
+      "connected_locations": ["academic_block", "central_lawn", "auditorium"],
+      "notes": "Reference section runs 24/7 and the library is fully open round-the-clock during exams; runs on the Koha ILMS; 22,000+ physical books plus e-journals (Scopus, Web of Science). Seat booking via a dedicated portal (studyatlib)."
+    },
+    {
+      "id": "academic_block",
+      "name": "Super Academic Block",
+      "type": "academic",
+      "sub_areas": ["Block A", "Block A", "Block C", "lecture_halls", "seminar_rooms", "department_labs", "faculty_offices"],
+      "open_hours": {"weekdays": "08:00-18:00", "weekends": "closed_except_labs"},
+      "capacity": "high",
+      "typical_activities": ["attending class", "lab work", "studying", "meeting professor", "tutorial"],
+      "connected_locations": ["central_library", "central_lawn", "auditorium", "admin_block", "lecture_hall"],
+      "notes": "[VERIFIED] Three independent blocks connected by skywalks, smart/digitally-equipped classrooms, department-specific labs. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published."
+    },
+    {
+      "id": "lecture_hall",
+      "name": "Lecture Hall Complex",
+      "type": "academic",
+      "sub_areas": ["class_rooms", "common_area"],
+      "open_hours": {"weekdays": "08:00-18:00", "weekends": "closed_except_labs"},
+      "capacity": "high",
+      "typical_activities": ["attending class", "studying", "tutorial"],
+      "connected_locations": ["central_library", "central_lawn", "auditorium", "admin_block", "academic_block"],
+      "notes": "[VERIFIED] Three independent blocks connected by skywalks, smart/digitally-equipped classrooms, department-specific labs. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published."
+    },
+    {
+      "id": "hostel_boys",
+      "name": "Boys' Hostel Complex",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_boys", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+    {
+      "id": "hostel_girls",
+      "name": "Girls' Hostel Complex",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_girls", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] Same facility profile as boys' hostels — RO water, common room, hostel gym, laundry, 24/7 CCTV security."
+    },
+    {
+      "id": "mess",
+      "name": "Mess",
+      "type": "dining",
+      "sub_areas": [],
+      "open_hours": {
+        "breakfast": "07:30-09:30",
+        "lunch": "12:15-14:30",
+        "dinner": "19:30-21:30"
+      },
+      "capacity": "high",
+      "typical_activities": ["eating", "socializing"],
+      "connected_locations": ["hostel_boys", "hostel_girls", "central_lawn", "sac_utility_block"],
+      "notes": "[VERIFIED] Three meals/day, non-veg served ~2x/week, menu rotates, run by a student mess committee."
+    },
+    {
+      "id": "sac_utility_block",
+      "name": "Student Activity Centre (SAC) / Utility Block",
+      "type": "club_room",
+      "sub_areas": ["general_store", "stationery_shop", "salon", "sbi_branch_atm", "club_room_alankar", "club_room_bost", "club_room_arturo", "club_room_vibgyor"],
+      "open_hours": {
+        "general_store": "10:00-20:00",
+        "stationery_shop": "08:00-20:00",
+        "salon": "08:00-21:00",
+        "sbi_branch": "10:00-16:00",
+        "atm": "00:00-24:00",
+        "club_rooms": "16:00-22:00"
+      },
+      "capacity": "medium",
+      "typical_activities": ["shopping", "banking", "club meeting", "socializing", "grooming"],
+      "connected_locations": ["hostel_boys", "hostel_girls", "sports_complex", "central_lawn"],
+      "notes": "[VERIFIED] Exact shop hours and named club rooms (Alankar, BOST, Arturo, Vibgyor) confirmed via IIT Ropar's own student-life page. [ASSUMED] SBI branch hours use standard PSU-bank hours; ATM is always-on by default."
+    },
+    {
+      "id": "sports_complex",
+      "name": "Sports Complex & Gymkhana",
+      "type": "outdoor",
+      "sub_areas": ["cricket_field", "tennis_courts", "football_field", "hockey_field", "basketball_court", "volleyball_courts", "gymnasium", "athletics_track"],
+      "open_hours": {"all_days": "06:00-20:00"},
+      "capacity": "medium",
+      "typical_activities": ["playing sports", "exercising", "team practice", "watching a match"],
+      "connected_locations": ["sac_utility_block", "central_lawn"],
+      "notes": "[VERIFIED] 1 cricket field, 3 clay tennis courts, 3 cricket practice pitches, 2 volleyball courts, hockey field, football field, basketball court, gymnasium, plus open athletics ground. Gymkhana runs Inter-IIT sports program. [ASSUMED] Daily open window (06:00-20:00) is a typical daylight-sports default."
+    },
+    {
+      "id": "health_centre",
+      "name": "IIT Ropar Health Centre",
+      "type": "administrative",
+      "sub_areas": ["opd", "pharmacy", "emergency_room"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "low",
+      "typical_activities": ["medical checkup", "emergency care", "picking up medicine"],
+      "connected_locations": ["hostel_boys", "hostel_girls", "admin_block"],
+      "notes": "[VERIFIED] Open 24/7 with dedicated medical/paramedical staff and round-the-clock ambulance. Note: 'administrative' is the closest fit in your current enum — worth adding a dedicated 'healthcare' type (see comments)."
+    },
+    {
+      "id": "auditorium",
+      "name": "Main Auditorium",
+      "type": "recreational",
+      "sub_areas": [],
+      "open_hours": {"event_based": true, "default": "closed_unless_event"},
+      "capacity": "high",
+      "typical_activities": ["attending seminar", "attending cultural event", "watching performance", "fest event"],
+      "connected_locations": ["academic_block", "central_lawn"],
+      "notes": "[VERIFIED] Modern, tech-equipped venue for seminars, lectures, and cultural events (used heavily during Zeitgeist/Aadvitya). Hours are inherently event-driven rather than fixed — flag this to your planner as a scheduled-event location, not an always-open one."
+    },
+    {
+      "id": "central_lawn",
+      "name": "Central Lawn / Open Green",
+      "type": "outdoor",
+      "sub_areas": [],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "medium",
+      "typical_activities": ["relaxing", "informal hangout", "fest ground", "evening walk", "photography"],
+      "connected_locations": ["central_library", "academic_block", "hostel_boys", "hostel_girls", "sac_utility_block", "sports_complex", "auditorium"],
+      "notes": "[ASSUMED as a generic hub] Real campus does have large green/lawn zones (Sivalik-hill views cited in multiple sources) but this node is a simplification acting as your graph's central 'plaza' — genuinely useful for a tick-loop since it lets agents cross zones without every building being pairwise-connected."
+    },
+    {
+      "id": "admin_block",
+      "name": "Administrative Block",
+      "type": "administrative",
+      "sub_areas": ["registrar_office", "accounts_office", "dean_academic_affairs", "dean_student_welfare"],
+      "open_hours": {"weekdays": "09:30-17:30"},
+      "capacity": "low",
+      "typical_activities": ["paperwork", "registration", "meeting dean", "fee payment query"],
+      "connected_locations": ["academic_block", "health_centre", "main_gate"],
+      "notes": "[VERIFIED] Existence and function (registrar, DoSW, accounts) confirmed via IIT Ropar's own pages. [ASSUMED] Standard govt-institute office hours (09:30-17:30) since exact hours aren't published."
+    },
+    {
+      "id": "main_gate",
+      "name": "Main Entrance Gate",
+      "type": "outdoor",
+      "sub_areas": ["security_post", "bus_stop"],
+      "open_hours": {"all_days": "00:60-23:00"},
+      "capacity": "low",
+      "typical_activities": ["arriving on campus", "leaving campus", "waiting for bus", "meeting visitors"],
+      "connected_locations": ["admin_block", "sac_utility_block"],
+      "notes": "[VERIFIED] Distinctive Indus-Valley-style pyramid pillar entrance; institute runs a paid shuttle bus to Chandigarh/Mohali. Useful as your graph's 'exit node' if you ever want agents to leave campus (weekend trip, going home, etc.)."
+    }
+  ]
+}
