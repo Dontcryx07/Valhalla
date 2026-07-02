@@ -1,0 +1,1 @@
+""" File containing configuration variables """
