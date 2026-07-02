@@ -1,2 +1,4 @@
 langgraph
+Pillow
+matplotlib
 

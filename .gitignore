@@ -1,0 +1,7 @@
+.agents
+.vscode
+scripts
+venv
+.env
+opencode.json
+skills-lock.json
