@@ -7,6 +7,10 @@ so all modules can reference consistent paths.
 from pathlib import Path
 import os
 
+
+# DEBUG -
+VERBOSE = True
+
 # backend/src/config.py -> backend/src -> backend -> Valhalla (project root)
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -22,9 +26,15 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 
 PLACES_FILE = ENVIRONMENT_DIR / "places.json"
 
+
+# Logging
+LOG_DIR = OUTPUT_DIR / "logs"
+LOG_LEVEL = "DEBUG" if VERBOSE else "INFO"
+
+
 # LLM Configuration
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_API_KEY = "AIzaSyAiRKwlsJNL4rglp1yWJVnmxLp0t_Igsls"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 
 # day_planner.py CONFIG
@@ -42,3 +52,4 @@ PERSONA_FIELD_GLOSSARY = {
 
 if __name__ == '__main__':
     print(f"Running this project from : {BASE_DIR}")
+    print(GEMINI_API_KEY)

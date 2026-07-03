@@ -1,10 +1,4 @@
 """
-<<<<<<< HEAD
-Placeholder for the day-planner agent.
-Will receive high-level goals and break them into a sequence of
-sub-goals / waypoints for the navigation system to execute.
-"""
-=======
 A script that plans the day of an agentic personality when handed over required data
 Per plan takes 4 LLM calls (atlest) Coarse, Hourly, Fine, Validation, for Planning a
 day in one agent's life.
@@ -49,7 +43,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 import json
-import logging
+from src.core.log import get_logger
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
 from google import genai
@@ -57,8 +51,8 @@ from google.genai import types
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+# Setting up logger
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -701,5 +695,3 @@ if __name__ == "__main__":
         for m in result["memory_entries"]:
             print(f"  - {m}")
 
-
->>>>>>> 2c8eb1aca80139d958822218fffc1ba00c5a10f5
