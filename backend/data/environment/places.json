@@ -129,7 +129,7 @@
       "name": "Main Auditorium",
       "type": "recreational",
       "sub_areas": [],
-      "open_hours": {"event_based": true, "default": "closed_unless_event"},
+      "open_hours": {"default": "closed_unless_event", "note": "Hours are event-driven — open only during scheduled seminars/cultural events"},
       "capacity": "high",
       "typical_activities": ["attending seminar", "attending cultural event", "watching performance", "fest event"],
       "connected_locations": ["academic_block", "central_lawn"],

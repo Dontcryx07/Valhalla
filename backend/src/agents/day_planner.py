@@ -6,6 +6,8 @@ sub-goals / waypoints for the navigation system to execute.
 """
 =======
 A script that plans the day of an agentic personality when handed over required data
+Per plan takes 4 LLM calls (atlest) Coarse, Hourly, Fine, Validation, for Planning a
+day in one agent's life.
 
 Tier-1 LangGraph subgraph: agent day-planning.
 
@@ -48,7 +50,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Literal
 
 from google import genai
 from google.genai import types
@@ -62,50 +64,68 @@ logging.basicConfig(level=logging.INFO)
 # ---------------------------------------------------------------------------
 # Config -> in config.py
 # ---------------------------------------------------------------------------
-from src.config import GEMINI_MODEL, GEMINI_API_KEY, MAX_PLAN_RETRIES, ENVIRONMENT_DIR
+from src.config import GEMINI_MODEL, GEMINI_API_KEY, ENVIRONMENT_DIR
+from src.config import MAX_PLAN_RETRIES, PERSONA_FIELD_GLOSSARY
+
 
 # genai.Client() picks up GEMINI_API_KEY (or GOOGLE_API_KEY) from the
-_client: Optional[genai.Client] = None
+_client: genai.Client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def get_client() -> genai.Client | None:
-    """Lazy singleton so importing this module doesn't require an API key
-    to be set (useful for tests that mock the client)."""
+    """Returns google-genai client """
     global _client
     if _client is None:
         _client = genai.Client(api_key=GEMINI_API_KEY)
     return _client
 
 
-def load_places(places_file: Optional[Path] = None) -> List[Dict[str, str]]:
+def load_places(places_file: Optional[Path] = None) -> List[Place]:
     """
-    Loads the college places JSON and normalizes it to a flat list of
-    {"name": ..., "description": ...} dicts, regardless of which of these
+    Loads the college places JSON and returns a list of validated Place
+    objects. Expects a top-level {"locations": [...]} structure where each
+    entry matches the Place schema.
 
-    Gets the places from ENVIRONMENT_DIR/places.json by default, or from a custom path if provided.
+    Gets the places from ENVIRONMENT_DIR/places.json by default, or from a
+    custom path if provided.
     """
     path = places_file or ENVIRONMENT_DIR / "places.json"
 
     if not Path(path).exists():
-        logger.warning("[day_planner] places file not found at %s -- proceeding with no known locations", path)
+        logger.warning(
+            "[day_planner] places file not found at %s -- proceeding with no known locations",
+            path,
+        )
         return []
 
-    # Getting the raw JSON data
     raw = json.loads(Path(path).read_text())
+    entries = raw.get("locations", [])
 
-    return [{"name" : loc["name"], "description" : " ".join(f"{key}={value}" for key, value in loc)} for loc in raw["locations"]]
+    places: List[Place] = []
+    for i, entry in enumerate(entries):
+        places.append(Place.model_validate(entry))
 
+    logger.info("[day_planner] loaded %d places from %s", len(places), path)
+    return places
 
-def _places_block(places: List[Dict[str, str]]) -> str:
+def _places_block(places: List[Place]) -> str:
     if not places:
         return "(no places data available -- pick a reasonable generic label)"
-    lines = []
+    blocks = []
     for p in places:
-        if p.get("description"):
-            lines.append(f"- {p['name']}: {p['description']}")
-        else:
-            lines.append(f"- {p['name']}")
-    return "\n".join(lines)
+        lines = [f"[{p.id}] {p.name} ({p.type})"]
+        if p.sub_areas:
+            lines.append(f"  sub-areas: {', '.join(p.sub_areas)}")
+        if p.open_hours:
+            hours = "; ".join(f"{k}: {v}" for k, v in p.open_hours.items())
+            lines.append(f"  hours: {hours}")
+        if p.typical_activities:
+            lines.append(f"  good for: {', '.join(p.typical_activities)}")
+        if p.notes:
+            lines.append(f"  notes: {p.notes}")
+        blocks.append("\n".join(lines))
+    return "\n".join(blocks)
+
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +136,15 @@ class CoarseBlock(BaseModel):
     activity: str = Field(description="Short label, e.g. 'work on farm', 'breakfast'")
     start: str = Field(description="24h HH:MM")
     end: str = Field(description="24h HH:MM")
+    granularity: Literal["atomic", "flexible"] = Field(
+        description=(
+            "'atomic' = this block should NEVER be split into finer sub-steps, it "
+            "stays as a single continuous action (e.g. sleep, attending a lecture, "
+            "commuting, an exam, watching a movie). "
+            "'flexible' = this block genuinely contains distinct sub-activities worth "
+            "breaking down (e.g. 'morning routine', 'gym session', 'work on project')."
+        )
+    )
 
 
 class CoarsePlanOutput(BaseModel):
@@ -134,15 +163,25 @@ class HourlyPlanOutput(BaseModel):
 
 
 class FineAction(BaseModel):
-    action: str = Field(description="Concrete, executable action, 5-15 min granularity")
+    action: str = Field(description="Concrete, executable action, 5-30 min granularity")
     start: str
     end: str
     parent_activity: str = Field(description="The hourly block this refines")
-    location: str = Field(description="Must exactly match one of the provided known place names")
+    location_id: str = Field(description="Must exactly match an 'id' from the known places list")
+    sub_area: Optional[str] = Field(default=None, description="One of that place's sub_areas, if applicable")
 
 
 class FinePlanOutput(BaseModel):
     actions: List[FineAction]
+
+# For Coars Atomic actions
+class AtomicLocationAssignment(BaseModel):
+    activity: str
+    location_id: str
+    sub_area: Optional[str] = None
+
+class AtomicLocationOutput(BaseModel):
+    assignments: List[AtomicLocationAssignment]
 
 
 class ValidationResult(BaseModel):
@@ -150,6 +189,18 @@ class ValidationResult(BaseModel):
     reason: Optional[str] = Field(
         default=None, description="If invalid: which items conflict/overlap/gap and why"
     )
+
+
+class Place(BaseModel):
+    id: str
+    name: str
+    type: str
+    sub_areas: List[str] = []
+    open_hours: Dict[str, str] = {}
+    capacity: Optional[str] = None
+    typical_activities: List[str] = []
+    connected_locations: List[str] = []
+    notes: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +213,7 @@ class DayPlannerState(TypedDict, total=False):
     relevant_memories: List[str]
     yesterday_summary: Optional[str]
     current_time: str  # e.g. "2026-07-03 06:00"
-    places: List[Dict[str, str]]  # known campus locations, from places.json
+    places: List[Place]  # known campus locations, from places.json
 
     # ---- working state ----
     coarse_plan: List[Dict[str, Any]]
@@ -183,13 +234,17 @@ class DayPlannerState(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 def _persona_block(persona: dict) -> str:
-    """Renders whatever fields exist in the persona json -- don't assume a
+    """Renders whatever fields exist in the persona JSON -- don't assume a
     fixed schema beyond name, since personas will vary as you add more."""
-    name = persona.get("name", "The agent")
-    lines = [f"Name: {name}"]
-    for key in  ("Name", "Age", "Gender", "Branch", "daily_plan_req", "innate", "learned", "lifestyle", "hobbies", "goals",):
-        if key in persona and persona[key]:
-            lines.append(f"{key.replace('_', ' ').title()}: {persona[key]}")
+    lines = [f"Name: {persona.get('name', 'Unknown')}"]
+    for field, meaning in PERSONA_FIELD_GLOSSARY.items():
+        value = persona.get(field)
+        if value:
+            lines.append(f"- {field} ({meaning}): {value}")
+
+    identity_fields = ["Age", "Gender", "Branch", "Home City"]
+    lines.extend(f"{f}: {persona[f]}" for f in identity_fields if persona.get(f))
+
     return "\n".join(lines)
 
 
@@ -229,7 +284,18 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
         "You are simulating one day in the life of a character in a generative-agents "
         "simulation. Produce a COARSE day plan: 5 to 8 broad blocks of activity covering "
         "the full 24 hours (00:00 to 24:00), with no gaps and no overlaps. "
-        "Stay true to the persona's traits and background."
+        "Stay true to the persona's traits and background.\n\n"
+        "For EACH block, tag it as 'atomic' or 'flexible':\n"
+        "- atomic: a single continuous activity with no meaningful internal sub-steps "
+        "worth planning separately. Examples: sleeping, attending a class/lecture, "
+        "commuting/travel, sitting an exam, watching a movie, a long uninterrupted "
+        "study/deep-work session.\n"
+        "- flexible: an activity that naturally contains distinct sub-activities a person "
+        "would actually think of as separate steps. Examples: 'morning routine' (wake up, "
+        "shower, get dressed), 'gym session' (warm-up, lifting, cooldown), 'dinner with "
+        "friends' (walk over, eat, chat).\n"
+        "When in doubt, prefer 'atomic' -- do not manufacture sub-steps for something a "
+        "person would just describe as one thing."
     )
     user_prompt = (
         f"PERSONA:\n{_persona_block(persona)}\n\n"
@@ -256,50 +322,111 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
 
 def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
     persona = state["persona"]
-    system_prompt = (
-        "You refine a coarse day plan into hourly-resolution blocks. Each coarse block "
-        "should be broken into one or more hourly blocks that together span exactly its "
-        "start/end range. Do not introduce gaps or overlaps."
+
+    atomic_blocks = [b for b in state['coarse_plan'] if b["granularity"] == "atomic"]
+    flexible_blocks = [b for b in state['coarse_plan'] if b["granularity"] == "flexible"]
+
+    passthrough_hourly = [
+        {
+            "activity": b["activity"],
+            "start": b["start"],
+            "end": b["end"],
+            "parent_activity": b["activity"],
+            "granularity": "atomic",
+        }
+        for b in atomic_blocks
+    ]
+
+    hourly_blocks = list(passthrough_hourly)
+
+    if flexible_blocks:
+        system_prompt = (
+            "You refine a coarse day plan into hourly-resolution blocks. Each coarse "
+            "block should be broken into one or more hourly blocks that together span "
+            "exactly its start/end range. Do not introduce gaps or overlaps. "
+            "Only the blocks provided here need refining -- they have already been "
+            "identified as containing genuine sub-activities."
+        )
+        user_prompt = (
+            f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"FULL COARSE PLAN (context only):\n{json.dumps(state['coarse_plan'], indent=2)}\n\n" # Hand the whole day
+            f"BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n" # The ONLY data to modify 
+            "Produce the hourly-resolution plan for the blocks listed under "
+            "'BLOCKS TO REFINE' only."
+        )
+        result = _call_gemini(system_prompt, user_prompt, HourlyPlanOutput)
+        refined = [b.model_dump() for b in result.blocks]
+        for b in refined:
+            b["granularity"] = "flexible"
+        hourly_blocks.extend(refined)
+
+    hourly_blocks.sort(key=lambda b: b["start"])
+    logger.info(
+        "[day_planner] hourly plan: %d atomic passthrough + %d refined",
+        len(passthrough_hourly), len(hourly_blocks) - len(passthrough_hourly),
     )
-    user_prompt = (
-        f"PERSONA:\n{_persona_block(persona)}\n\n"
-        f"COARSE PLAN:\n{json.dumps(state['coarse_plan'], indent=2)}\n\n"
-        "Produce the hourly-resolution plan now."
-    )
 
-    result = _call_gemini(system_prompt, user_prompt, HourlyPlanOutput)
-    logger.info("[day_planner] hourly plan generated: %d blocks", len(result.blocks))
-
-    return {
-        **state,
-        "hourly_plan": [b.model_dump() for b in result.blocks],
-    }
-
+    return {**state, "hourly_plan": hourly_blocks}
 
 def decompose_fine(state: DayPlannerState) -> DayPlannerState:
     persona = state["persona"]
-    system_prompt = (
-        "You refine an hourly day plan into fine-grained, directly executable actions "
-        "at roughly 5-15 minute granularity. Each hourly block should be broken into one "
-        "or more fine actions spanning exactly its start/end range, no gaps or overlaps. "
-        "Every action MUST be assigned a location, chosen EXACTLY (character-for-character) "
-        "from the provided list of known places -- never invent a location that isn't listed."
-    )
-    user_prompt = (
-        f"PERSONA:\n{_persona_block(persona)}\n\n"
-        f"HOURLY PLAN:\n{json.dumps(state['hourly_plan'], indent=2)}\n\n"
-        f"KNOWN CAMPUS LOCATIONS (pick 'location' only from these):\n{_places_block(state.get('places', []))}\n\n"
-        "Produce the fine-grained action plan now, with a location for every action."
-    )
+    places = state.get("places", [])
 
-    result = _call_gemini(system_prompt, user_prompt, FinePlanOutput)
-    logger.info("[day_planner] fine plan generated: %d actions", len(result.actions))
+    atomic_blocks = [b for b in state["hourly_plan"] if b["granularity"] == "atomic"]
+    flexible_blocks = [b for b in state["hourly_plan"] if b["granularity"] == "flexible"]
 
-    return {
-        **state,
-        "fine_plan": [a.model_dump() for a in result.actions],
-    }
+    fine_actions: List[Dict[str, Any]] = []
 
+    # Now have to handle atomic vs flexible blocks differently
+
+    # Atomic blocks: keep as single continuous actions, just resolve location.
+    if atomic_blocks:
+        system_prompt = (
+            "For each activity below, assign exactly one location_id (and optionally "
+            "a sub_area) from the known places list -- pick whichever place fits the "
+            "activity best. Do not suggest splitting the activity."
+        )
+        user_prompt = (
+            f"ACTIVITIES:\n{json.dumps(atomic_blocks, indent=2)}\n\n"
+            f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
+            "Assign a location to each activity now."
+        )
+        result = _call_gemini(system_prompt, user_prompt, AtomicLocationOutput)
+        loc_by_activity = {a.activity: a for a in result.assignments}
+
+        for b in atomic_blocks:
+            assignment = loc_by_activity.get(b["activity"])
+            fine_actions.append({
+                "action": b["activity"],
+                "start": b["start"],
+                "end": b["end"],
+                "parent_activity": b["parent_activity"],
+                "location_id": assignment.location_id if assignment else None,
+                "sub_area": assignment.sub_area if assignment else None,
+            })
+
+    # Flexible blocks: full fine-grained breakdown, as before.
+    if flexible_blocks:
+        system_prompt = (
+            "You refine hourly blocks into fine-grained, directly executable actions "
+            "at roughly 5-15 minute granularity. Each hourly block should be broken "
+            "into one or more fine actions spanning exactly its start/end range, no "
+            "gaps or overlaps. Every action MUST be assigned a location_id, chosen "
+            "EXACTLY from the provided list -- never invent one."
+        )
+        user_prompt = (
+            f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"HOURLY BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n"
+            f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
+            "Produce the fine-grained action plan for these blocks now."
+        )
+        result = _call_gemini(system_prompt, user_prompt, FinePlanOutput)
+        fine_actions.extend(a.model_dump() for a in result.actions)
+
+    fine_actions.sort(key=lambda a: a["start"])
+    logger.info("[day_planner] fine plan: %d total actions", len(fine_actions))
+
+    return {**state, "fine_plan": fine_actions}
 
 def _local_overlap_check(actions: List[Dict[str, Any]]) -> Optional[str]:
     """Cheap deterministic pre-check before spending an LLM call on validation --
@@ -333,24 +460,25 @@ def _local_overlap_check(actions: List[Dict[str, Any]]) -> Optional[str]:
     return None
 
 
-def _local_location_check(actions: List[Dict[str, Any]], places: List[Dict[str, str]]) -> Optional[str]:
+def _local_location_check(actions: List[Dict[str, Any]], places: List[Place]) -> Optional[str]:
     """Deterministic check that every action's location is one of the known
     places -- catches hallucinated locations without spending an LLM call."""
     if not places:
         # No places data loaded -- nothing to validate against, skip silently.
         return None
 
-    valid_names = {p["name"] for p in places}
+    valid_ids = {p.id for p in places}
+    by_id = {p.id: p for p in places}
+    loc_err = ""
     for a in actions:
-        loc = a.get("location")
-        if not loc:
-            return f"action '{a.get('action')}' has no location assigned"
+        loc_id = a.get("location_id")
+        if loc_id not in valid_ids:
+            loc_err += f"action '{a.get('action')}' has invalid location_id '{loc_id}'\n"
+        sub = a.get("sub_area")
+        if sub and sub not in by_id[loc_id].sub_areas:
+            loc_err += f"action '{a.get('action')}' references unknown sub_area '{sub}' for {loc_id}\n"
 
-        # Skipping this for now, have to add more places
-        # if loc not in valid_names:
-        #     return f"action '{a.get('action')}' has invalid location '{loc}' (not in known places)"
-
-    return None
+    return loc_err.strip() if loc_err else None
 
 
 def validate_plan(state: DayPlannerState) -> DayPlannerState:
@@ -497,6 +625,9 @@ def run(agent: Any, world_state: dict) -> dict:
 
     final_state = get_compiled_graph().invoke(initial_state)
 
+    print(final_state)
+
+
     return {
         "day_plan": final_state.get("day_plan", []),
         "memory_entries": [
@@ -530,20 +661,8 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    sample_persona = {
-  "Name": "Tanishq",
-  "Age": "20",
-  "Gender": "Male",
-  "Branch": "B.Tech Artificial Intelligence and Data Engineering",
-  "Home City": "Faridabad, India",
-  "daily_plan_req": "Wake up late, attend CS lectures while secretly browsing forums, spend afternoons in library reading dark romance novels and coding side projects, evenings jerking off to fantasies, and late nights gooning to porn.",
-  "innate": "Naturally introverted, socially awkward, with strong racial prejudices and an intense, obsessive attraction to women that borders on dangerous fixation.",
-  "learned": "Mastered advanced programming, deepened knowledge of dark romance tropes, improved skills in manipulating conversations to simp for girls, and honed abilities in hiding inappropriate behaviors.",
-  "lifestyle": "Irregular sleep with late nights gooning, minimal exercise but tall stature, mostly solitary with occasional awkward social interactions where he simps heavily, avoids diverse groups due to racist views.",
-  "hobbies": "Reading dark romance novels, gooning to explicit content, fantasizing about non-consensual scenarios, coding nerdy projects, and lurking on controversial online forums.",
-  "goals": "Short-term: Ace exams while avoiding detection for creepy behaviors; Long-term: Become a successful software engineer and live out dark romance fantasies in real life."
-}
-
+    from backend.src.config import PERSONALITIES_DIR
+    sample_persona = json.loads((PERSONALITIES_DIR / "gurnoor.json").read_text())
 
     class _FakeAgent:
         persona = sample_persona
@@ -552,17 +671,11 @@ if __name__ == "__main__":
 
 
     # Swap for load_places() once your real data/environment/places.json exists.
-    sample_places = [
-        {"name": "Hostel Room", "description": "Gurnoor's dorm room"},
-        {"name": "Mess Hall", "description": "canteen for meals"},
-        {"name": "CS Building", "description": "classes and labs"},
-        {"name": "Library", "description": "quiet study space"},
-        {"name": "Sports Ground", "description": "outdoor exercise area"},
-    ]
+    # WorrdState is expected to have the Places
 
     result = run(
         _FakeAgent(),
-        {"current_time": "2026-07-03 06:00", "places": sample_places},
+        {"current_time": "2026-07-03 06:00", "places": None},
     )
 
     print(result)
@@ -580,7 +693,7 @@ if __name__ == "__main__":
             action = action[: col_widths[2] - 5] + "..."
         print(
             f"{item['start']:<{col_widths[0]}}{item['end']:<{col_widths[1]}}"
-            f"{action:<{col_widths[2]}}{item.get('location', ''):<{col_widths[3]}}"
+            f"{action:<{col_widths[2]}}{item.get('location_id', ''):<{col_widths[3]}}"
         )
 
     if result.get("memory_entries"):

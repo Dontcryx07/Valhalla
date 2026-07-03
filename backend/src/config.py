@@ -29,6 +29,15 @@ GEMINI_API_KEY = "AIzaSyAiRKwlsJNL4rglp1yWJVnmxLp0t_Igsls"
 
 # day_planner.py CONFIG
 MAX_PLAN_RETRIES = 3
+# What is expected in persona.json file
+PERSONA_FIELD_GLOSSARY = {
+    "daily_plan_req": "A rough sketch of their typical day — classes, work, recurring commitments.",
+    "innate": "Personality traits they were simply born with (natural disposition).",
+    "learned": "Skills/knowledge acquired since starting college (not innate).",
+    "lifestyle": "Habits and routines: sleep schedule, exercise, social patterns.",
+    "hobbies": "Free-time activities they actively enjoy.",
+    "goals": "Short- and long-term goals, academic and personal.",
+}
 
 
 if __name__ == '__main__':
