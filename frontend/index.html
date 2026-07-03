@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<!--
-Valhalla map frontend — single-page web app with zoom/pan canvas,
-pathfinding UI, and ball animation. Fetches paths from the backend
-(/api/path), renders them over map.png, and maintains a WebSocket
-connection (/ws) ready for real-time multi-agent updates.
--->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Valhalla — Agent Map</title>
+<title>Valhalla — Multi-Agent Map</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: system-ui, -apple-system, sans-serif; }
@@ -23,41 +17,93 @@ connection (/ws) ready for real-time multi-agent updates.
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     color: #ddd;
     font-size: 13px;
-    min-width: 240px;
+    min-width: 280px;
+    max-width: 300px;
     user-select: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
   }
-  #panel .row { display: flex; gap: 6px; align-items: center; }
-  #panel label { color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
-  #panel input {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 5px;
-    color: #eee;
-    padding: 4px 6px;
-    width: 56px;
-    font-size: 12px;
+
+  #agentList {
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  #agentList::-webkit-scrollbar { width: 4px; }
+  #agentList::-webkit-scrollbar-track { background: transparent; }
+  #agentList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+  }
+  .agent-row:hover { background: rgba(255,255,255,0.06); }
+
+  .agent-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .agent-num {
+    color: #888;
+    font-size: 9px;
+    width: 12px;
+    text-align: right;
+    flex-shrink: 0;
     font-family: monospace;
   }
-  #panel input:focus { outline: none; border-color: #4a9eff; }
-  #panel button {
+  .agent-row input {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 3px;
+    color: #ddd;
+    padding: 2px 2px;
+    width: 32px;
+    font-size: 9px;
+    font-family: monospace;
+    text-align: center;
+  }
+  .agent-row input:focus { outline: none; border-color: #4a9eff; }
+  .comma { color: #555; font-size: 8px; }
+  .arrow { color: #555; font-size: 9px; }
+  .agent-go {
     background: #2a7de1;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     color: #fff;
-    padding: 5px 14px;
-    font-size: 12px;
+    padding: 2px 6px;
+    font-size: 9px;
     cursor: pointer;
     font-weight: 600;
     transition: background .15s;
+    flex-shrink: 0;
+    line-height: 1.3;
   }
-  #panel button:hover { background: #3d8ef5; }
-  #panel button:disabled { opacity: .4; cursor: not-allowed; }
+  .agent-go:hover { background: #3d8ef5; }
+  .agent-go:disabled { opacity: .4; cursor: not-allowed; }
+
+  .agent-dot-status {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-left: 1px;
+  }
+  .agent-dot-status.idle { background: #555; }
+  .agent-dot-status.busy { background: #f5a623; animation: pulse .8s infinite; }
+  .agent-dot-status.done { background: #2ecc71; }
+  .agent-dot-status.err { background: #e74c3c; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
   #info {
     position: absolute;
@@ -68,23 +114,16 @@ connection (/ws) ready for real-time multi-agent updates.
     border-radius: 8px;
     padding: 8px 14px;
     color: #aaa;
-    font-size: 12px;
+    font-size: 11px;
     font-family: monospace;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
-
-  .status-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-  .status-dot.idle { background: #555; }
-  .status-dot.busy { background: #f5a623; animation: pulse .8s infinite; }
-  .status-dot.done { background: #2ecc71; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-  .coord-label { color: #777; font-size: 10px; }
+  #infoRow { display: flex; gap: 12px; flex-wrap: wrap; }
+  #infoRow span { display: flex; align-items: center; gap: 4px; }
+  .mini-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
 </style>
 </head>
 <body>
@@ -92,31 +131,19 @@ connection (/ws) ready for real-time multi-agent updates.
 <canvas id="map"></canvas>
 
 <div id="panel">
-  <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:2px">Valhalla</div>
-  <div class="row">
-    <label>From</label>
-    <input id="x1" value="32" type="number"> <span style="color:#555">,</span>
-    <input id="y1" value="297" type="number">
-    <span class="coord-label">S</span>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+    <span style="font-weight:600;font-size:13px;color:#fff">Valhalla</span>
+    <div style="display:flex;gap:4px">
+      <button id="runAllBtn" style="padding:2px 10px;font-size:11px">▶ Run All</button>
+      <button id="stopAllBtn" style="padding:2px 10px;font-size:11px">■ Stop</button>
+    </div>
   </div>
-  <div class="row">
-    <label>To</label>
-    <input id="x2" value="959" type="number"> <span style="color:#555">,</span>
-    <input id="y2" value="1205" type="number">
-    <span class="coord-label">E</span>
-  </div>
-  <div class="row" style="justify-content:space-between">
-    <button id="goBtn">Go</button>
-    <span id="statusText" style="font-size:11px;color:#888;display:flex;align-items:center">
-      <span class="status-dot idle" id="statusDot"></span>
-      <span id="statusLabel">idle</span>
-    </span>
-  </div>
+  <div id="agentList"></div>
 </div>
 
 <div id="info">
   <div id="infoCoords">—</div>
-  <div id="infoProgress"></div>
+  <div id="infoRow"></div>
 </div>
 
 <script>
@@ -125,7 +152,6 @@ connection (/ws) ready for real-time multi-agent updates.
 // ── Canvas setup ──────────────────────────────────────────
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
-
 let W, H;
 function resize() {
   W = canvas.width = window.innerWidth;
@@ -152,7 +178,6 @@ function fitMap() {
   draw();
 }
 
-// ── Coordinate transforms ─────────────────────────────────
 function screenToMap(sx, sy) {
   return [(sx - offsetX) / scale, (sy - offsetY) / scale];
 }
@@ -160,7 +185,6 @@ function mapToScreen(mx, my) {
   return [mx * scale + offsetX, my * scale + offsetY];
 }
 
-// ── Mouse / touch events ──────────────────────────────────
 canvas.addEventListener('mousedown', e => {
   isDragging = true;
   dragStartX = e.clientX;
@@ -181,11 +205,9 @@ canvas.addEventListener('wheel', e => {
   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
   const newScale = scale * zoomFactor;
   if (newScale < 0.1 || newScale > 50) return;
-
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
-
   const [mapX, mapY] = screenToMap(mx, my);
   scale = newScale;
   offsetX = mx - mapX * scale;
@@ -193,14 +215,76 @@ canvas.addEventListener('wheel', e => {
   draw();
 }, { passive: false });
 
-// ── Path state ────────────────────────────────────────────
-let pathPoints = [];
-let animating = false;
-let animPos = 0;
-let ballX = 0, ballY = 0;
-let animId = null;
-let animStartTime = 0;
-let ws = null;
+// ── Agent configuration ───────────────────────────────────
+const AGENT_COLORS = [
+  '#ffcc33', '#ff6b6b', '#51cf66', '#339af0', '#cc5de8',
+  '#f76707', '#20c997', '#f06595', '#748ffc', '#ffd43b',
+];
+
+const AGENT_DEFAULTS = [
+  { x1: 32, y1: 297, x2: 959, y2: 1205 },
+  { x1: 1207, y1: 720, x2: 794, y2: 33 },
+  { x1: 1054, y1: 483, x2: 967, y2: 644 },
+  { x1: 524, y1: 293, x2: 602, y2: 410 },
+  { x1: 457, y1: 265, x2: 666, y2: 504 },
+  { x1: 529, y1: 437, x2: 666, y2: 877 },
+  { x1: 969, y1: 337, x2: 1234, y2: 404 },
+  { x1: 382, y1: 503, x2: 574, y2: 982 },
+  { x1: 1189, y1: 407, x2: 58, y2: 423 },
+  { x1: 598, y1: 669, x2: 647, y2: 174 },
+];
+
+const agents = AGENT_COLORS.map((color, i) => ({
+  color,
+  idx: i,
+  ...AGENT_DEFAULTS[i],
+  path: [],
+  ballX: 0, ballY: 0,
+  animating: false,
+  animPos: 0,
+  animStartTime: 0,
+  done: false,
+}));
+
+// ── Build agent UI rows ───────────────────────────────────
+const agentList = document.getElementById('agentList');
+agents.forEach((a) => {
+  const row = document.createElement('div');
+  row.className = 'agent-row';
+  row.dataset.idx = a.idx;
+  row.innerHTML = `
+    <span class="agent-dot" style="background:${a.color}"></span>
+    <span class="agent-num">${a.idx+1}</span>
+    <input class="ax1" value="${a.x1}" type="number" min="0" max="2000">
+    <span class="comma">,</span>
+    <input class="ay1" value="${a.y1}" type="number" min="0" max="2000">
+    <span class="arrow">→</span>
+    <input class="ax2" value="${a.x2}" type="number" min="0" max="2000">
+    <span class="comma">,</span>
+    <input class="ay2" value="${a.y2}" type="number" min="0" max="2000">
+    <button class="agent-go">Go</button>
+    <span class="agent-dot-status idle"></span>
+  `;
+  agentList.appendChild(row);
+});
+
+function readAgentInputs() {
+  const rows = document.querySelectorAll('.agent-row');
+  rows.forEach((row, i) => {
+    const x1 = parseInt(row.querySelector('.ax1').value) || 0;
+    const y1 = parseInt(row.querySelector('.ay1').value) || 0;
+    const x2 = parseInt(row.querySelector('.ax2').value) || 0;
+    const y2 = parseInt(row.querySelector('.ay2').value) || 0;
+    agents[i].x1 = x1; agents[i].y1 = y1;
+    agents[i].x2 = x2; agents[i].y2 = y2;
+  });
+}
+
+function setAgentStatus(idx, state) {
+  const rows = document.querySelectorAll('.agent-row');
+  const dot = rows[idx]?.querySelector('.agent-dot-status');
+  if (dot) dot.className = 'agent-dot-status ' + state;
+}
 
 // ── Buildings ─────────────────────────────────────────────
 let buildings = [];
@@ -209,8 +293,6 @@ let buildingsLoaded = false;
 // ── Drawing ────────────────────────────────────────────────
 function draw() {
   ctx.clearRect(0, 0, W, H);
-
-  // Dark background
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, W, H);
 
@@ -218,263 +300,344 @@ function draw() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Map
   ctx.drawImage(mapImg, 0, 0);
 
-  // Buildings
   if (buildingsLoaded) {
-    ctx.font = 'bold 10px monospace';
-    const labelDrawn = new Set();
     for (const b of buildings) {
       ctx.fillStyle = 'rgba(255,0,0,0.30)';
       ctx.fillRect(b.x, b.y, b.w, b.h);
-      if (!labelDrawn.has(b.label)) {
-        labelDrawn.add(b.label);
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.strokeStyle = 'rgba(150,0,0,0.5)';
-        ctx.lineWidth = 1;
-        ctx.strokeText(b.label, b.x + 2, b.y - 3);
-        ctx.fillText(b.label, b.x + 2, b.y - 3);
+    }
+
+    const bbox = {};
+    for (const b of buildings) {
+      const key = b.id;
+      if (!bbox[key]) bbox[key] = { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity, label: b.label };
+      const bb = bbox[key];
+      if (b.x < bb.x1) bb.x1 = b.x;
+      if (b.y < bb.y1) bb.y1 = b.y;
+      if (b.x + b.w > bb.x2) bb.x2 = b.x + b.w;
+      if (b.y + b.h > bb.y2) bb.y2 = b.y + b.h;
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 9px monospace';
+    for (const bb of Object.values(bbox)) {
+      const cx = (bb.x1 + bb.x2) / 2;
+      const cy = (bb.y1 + bb.y2) / 2;
+      const m = ctx.measureText(bb.label);
+      const pad = 3;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(cx - m.width / 2 - pad, cy - 7 - pad, m.width + pad * 2, 14 + pad * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText(bb.label, cx, cy);
+    }
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // Agent paths
+  for (const a of agents) {
+    if (a.path.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(a.path[0][0], a.path[0][1]);
+      for (let i = 1; i < a.path.length; i++) {
+        ctx.lineTo(a.path[i][0], a.path[i][1]);
       }
+      ctx.strokeStyle = a.color + '70';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
     }
   }
 
-  // Path line
-  if (pathPoints.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(pathPoints[0][0], pathPoints[0][1]);
-    for (let i = 1; i < pathPoints.length; i++) {
-      ctx.lineTo(pathPoints[i][0], pathPoints[i][1]);
-    }
-    ctx.strokeStyle = 'rgba(255,50,50,0.55)';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-  }
+  // Start / end markers
+  ctx.font = 'bold 9px monospace';
+  for (const a of agents) {
+    if (a.path.length < 2) continue;
+    const [sx, sy] = a.path[0];
+    const [ex, ey] = a.path[a.path.length - 1];
 
-  // Start marker
-  if (pathPoints.length > 0) {
-    const [sx, sy] = pathPoints[0];
     ctx.beginPath();
-    ctx.arc(sx, sy, 6, 0, Math.PI * 2);
+    ctx.arc(sx, sy, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#00cc66';
     ctx.fill();
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = '#00cc66';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText('S', sx + 9, sy + 4);
-  }
+    ctx.fillText(`S${a.idx+1}`, sx + 7, sy + 3);
 
-  // End marker
-  if (pathPoints.length > 0) {
-    const [ex, ey] = pathPoints[pathPoints.length - 1];
     ctx.beginPath();
-    ctx.arc(ex, ey, 6, 0, Math.PI * 2);
+    ctx.arc(ex, ey, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#3399ff';
     ctx.fill();
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = '#3399ff';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText('E', ex + 9, ey + 4);
+    ctx.fillText(`E${a.idx+1}`, ex + 7, ey + 3);
   }
 
-  // Ball (agent)
-  if (pathPoints.length > 1 && animating) {
-    const glow = ctx.createRadialGradient(ballX, ballY, 0, ballX, ballY, 12);
-    glow.addColorStop(0, 'rgba(255,180,50,0.35)');
-    glow.addColorStop(1, 'rgba(255,180,50,0)');
+  // Agent balls
+  for (const a of agents) {
+    if (a.path.length < 2) continue;
+    if (a.ballX === 0 && a.ballY === 0) continue;
+
+    const glow = ctx.createRadialGradient(a.ballX, a.ballY, 0, a.ballX, a.ballY, 11);
+    glow.addColorStop(0, a.color + '50');
+    glow.addColorStop(1, a.color + '00');
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 12, 0, Math.PI * 2);
+    ctx.arc(a.ballX, a.ballY, 11, 0, Math.PI * 2);
     ctx.fillStyle = glow;
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffcc33';
+    ctx.arc(a.ballX, a.ballY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = a.color;
     ctx.fill();
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText(`${a.idx+1}`, a.ballX + 6, a.ballY + 3);
   }
 
   ctx.restore();
 }
 
-// ── Ball animation ────────────────────────────────────────
+// ── Animation ──────────────────────────────────────────────
 const PIXELS_PER_SEC = 100;
+let animFrameId = null;
+let animatingAny = false;
 
-function startAnimation() {
-  if (pathPoints.length < 2) return;
-  animating = true;
-  animPos = 0;
-  ballX = pathPoints[0][0];
-  ballY = pathPoints[0][1];
-  if (animId) cancelAnimationFrame(animId);
-  animStartTime = performance.now();
-
-  animate();
-}
-
-function animate() {
-  if (!animating) { draw(); return; }
-
-  const elapsed = (performance.now() - animStartTime) / 1000;
-  const targetDist = elapsed * PIXELS_PER_SEC;
-  const totalLen = pathLength();
-  if (totalLen === 0) { animating = false; setStatus('idle'); draw(); return; }
-
-  if (targetDist >= totalLen) {
-    ballX = pathPoints[pathPoints.length - 1][0];
-    ballY = pathPoints[pathPoints.length - 1][1];
-    animating = false;
-    setStatus('done');
-    updateInfo();
-    draw();
-    return;
-  }
-
-  // Walk along the path to find the position at targetDist
-  let accumulated = 0;
-  let prevX = pathPoints[0][0], prevY = pathPoints[0][1];
-  for (let i = 1; i < pathPoints.length; i++) {
-    const [px, py] = pathPoints[i];
-    const segLen = Math.hypot(px - prevX, py - prevY);
-    if (accumulated + segLen >= targetDist) {
-      const frac = (targetDist - accumulated) / segLen;
-      ballX = prevX + (px - prevX) * frac;
-      ballY = prevY + (py - prevY) * frac;
-
-      // Update info
-      const pct = ((targetDist / totalLen) * 100).toFixed(1);
-      document.getElementById('infoProgress').textContent =
-        `${animPos}/${pathPoints.length} steps · ${pct}%`;
-
-      draw();
-      animId = requestAnimationFrame(animate);
-      return;
-    }
-    accumulated += segLen;
-    prevX = px; prevY = py;
-    animPos = i;
-  }
-
-  // Fallback
-  ballX = pathPoints[pathPoints.length - 1][0];
-  ballY = pathPoints[pathPoints.length - 1][1];
-  animating = false;
-  setStatus('done');
-  updateInfo();
-  draw();
-}
-
-function pathLength() {
+function pathLength(path) {
   let len = 0;
-  for (let i = 1; i < pathPoints.length; i++) {
-    len += Math.hypot(
-      pathPoints[i][0] - pathPoints[i-1][0],
-      pathPoints[i][1] - pathPoints[i-1][1]
-    );
+  for (let i = 1; i < path.length; i++) {
+    len += Math.hypot(path[i][0] - path[i-1][0], path[i][1] - path[i-1][1]);
   }
   return len;
 }
 
-// ── UI helpers ─────────────────────────────────────────────
-function setStatus(state) {
-  const dot = document.getElementById('statusDot');
-  const label = document.getElementById('statusLabel');
-  dot.className = 'status-dot ' + state;
-  label.textContent = state;
+function startGlobalAnim() {
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  animatingAny = true;
+  animFrameId = requestAnimationFrame(globalAnimate);
 }
 
-function updateInfo() {
-  document.getElementById('infoCoords').textContent =
-    `S (${pathPoints[0]?.[0]??'—'}, ${pathPoints[0]?.[1]??'—'}) → ` +
-    `E (${pathPoints[pathPoints.length-1]?.[0]??'—'}, ${pathPoints[pathPoints.length-1]?.[1]??'—'})`;
-}
-
-// ── Fetch path from API ───────────────────────────────────
-async function findPath(x1, y1, x2, y2) {
-  setStatus('busy');
-  document.getElementById('goBtn').disabled = true;
-
-  try {
-    const res = await fetch(`/api/path?x1=${x1}&y1=${y1}&x2=${x2}&y2=${y2}`);
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.error || 'Request failed');
-      setStatus('idle');
-      return;
+function stopAll() {
+  animatingAny = false;
+  if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  for (const a of agents) {
+    a.animating = false;
+    if (a.path.length > 0) {
+      a.ballX = a.path[0][0];
+      a.ballY = a.path[0][1];
     }
-    const data = await res.json();
-    pathPoints = data.path;
-    updateInfo();
-    document.getElementById('infoProgress').textContent =
-      `${data.length} path pixels`;
-    startAnimation();
-  } catch (e) {
-    alert('Error: ' + e.message);
-    setStatus('idle');
-  } finally {
-    document.getElementById('goBtn').disabled = false;
+    a.done = false;
+    setAgentStatus(a.idx, 'idle');
+  }
+  updateInfoRow();
+  draw();
+}
+
+function globalAnimate(timestamp) {
+  let anyStillMoving = false;
+
+  for (const a of agents) {
+    if (!a.animating || a.path.length < 2) continue;
+
+    const elapsed = (timestamp - a.animStartTime) / 1000;
+    const targetDist = elapsed * PIXELS_PER_SEC;
+    const totalLen = pathLength(a.path);
+
+    if (totalLen === 0) {
+      a.animating = false;
+      a.done = true;
+      setAgentStatus(a.idx, 'done');
+      continue;
+    }
+
+    if (targetDist >= totalLen) {
+      a.ballX = a.path[a.path.length - 1][0];
+      a.ballY = a.path[a.path.length - 1][1];
+      a.animating = false;
+      a.done = true;
+      setAgentStatus(a.idx, 'done');
+      continue;
+    }
+
+    anyStillMoving = true;
+
+    let accumulated = 0;
+    let prevX = a.path[0][0], prevY = a.path[0][1];
+    for (let i = 1; i < a.path.length; i++) {
+      const [px, py] = a.path[i];
+      const segLen = Math.hypot(px - prevX, py - prevY);
+      if (accumulated + segLen >= targetDist) {
+        const frac = (targetDist - accumulated) / segLen;
+        a.ballX = prevX + (px - prevX) * frac;
+        a.ballY = prevY + (py - prevY) * frac;
+        a.animPos = i;
+        break;
+      }
+      accumulated += segLen;
+      prevX = px; prevY = py;
+    }
+  }
+
+  updateInfoRow();
+  draw();
+
+  if (anyStillMoving) {
+    animFrameId = requestAnimationFrame(globalAnimate);
+  } else {
+    animatingAny = false;
+    animFrameId = null;
   }
 }
 
-// ── WebSocket connection (future multi-agent use) ────────
+// ── Info ──────────────────────────────────────────────────
+function updateInfoRow() {
+  const el = document.getElementById('infoRow');
+  const running = agents.filter(a => a.animating).length;
+  const finished = agents.filter(a => a.done).length;
+  el.innerHTML = `
+    <span><span class="mini-dot" style="background:#f5a623"></span> ${running}</span>
+    <span><span class="mini-dot" style="background:#2ecc71"></span> ${finished}</span>
+    <span style="color:#555">|</span>
+    <span>${agents.length} agents</span>
+  `;
+}
+
+// ── Path fetching ─────────────────────────────────────────
+async function goAgent(idx) {
+  readAgentInputs();
+  const a = agents[idx];
+  setAgentStatus(idx, 'busy');
+
+  try {
+    const res = await fetch(`/api/path?x1=${a.x1}&y1=${a.y1}&x2=${a.x2}&y2=${a.y2}`);
+    if (!res.ok) { setAgentStatus(idx, 'err'); return; }
+    const data = await res.json();
+    a.path = data.path || [];
+    if (a.path.length > 0) {
+      a.ballX = a.path[0][0];
+      a.ballY = a.path[0][1];
+      a.animating = true;
+      a.animStartTime = performance.now();
+      a.done = false;
+      setAgentStatus(idx, 'busy');
+      if (!animatingAny) startGlobalAnim();
+    } else {
+      setAgentStatus(idx, 'err');
+    }
+  } catch {
+    setAgentStatus(idx, 'err');
+  }
+  updateInfoRow();
+  draw();
+}
+
+async function runAll() {
+  readAgentInputs();
+  document.getElementById('runAllBtn').disabled = true;
+
+  let results;
+
+  // Batch endpoint
+  try {
+    const res = await fetch('/api/paths', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agents: agents.map(a => ({ x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2 }))
+      }),
+    });
+    if (!res.ok) throw new Error('batch failed');
+    const data = await res.json();
+    results = data.paths;
+  } catch {
+    // Fallback: individual parallel calls
+    results = await Promise.all(agents.map(async (a) => {
+      try {
+        const r = await fetch(`/api/path?x1=${a.x1}&y1=${a.y1}&x2=${a.x2}&y2=${a.y2}`);
+        return r.ok ? await r.json() : { path: [] };
+      } catch { return { path: [] }; }
+    }));
+  }
+
+  agents.forEach((a, i) => {
+    a.path = results[i]?.path || [];
+    if (a.path.length > 0) {
+      a.ballX = a.path[0][0];
+      a.ballY = a.path[0][1];
+      a.animating = a.path.length > 1;
+      a.animStartTime = performance.now();
+      a.animPos = 0;
+      a.done = false;
+      setAgentStatus(i, a.path.length > 1 ? 'busy' : 'err');
+    } else {
+      setAgentStatus(i, 'err');
+    }
+  });
+
+  document.getElementById('runAllBtn').disabled = false;
+  updateInfoRow();
+  draw();
+  startGlobalAnim();
+}
+
+// ── Event wiring ──────────────────────────────────────────
+document.getElementById('runAllBtn').addEventListener('click', runAll);
+document.getElementById('stopAllBtn').addEventListener('click', stopAll);
+
+agentList.addEventListener('click', e => {
+  const btn = e.target.closest('.agent-go');
+  if (btn) {
+    const row = btn.closest('.agent-row');
+    if (row) goAgent(parseInt(row.dataset.idx));
+  }
+});
+
+agentList.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const row = e.target.closest('.agent-row');
+    if (row) {
+      const btn = row.querySelector('.agent-go');
+      if (btn) goAgent(parseInt(row.dataset.idx));
+    }
+  }
+});
+
+// ── WebSocket (future) ────────────────────────────────────
+let ws = null;
 function connectWS() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${location.host}/ws`);
-  ws.onopen = () => console.log('[WS] connected');
-  ws.onclose = () => {
-    console.log('[WS] closed, reconnecting in 3s');
-    setTimeout(connectWS, 3000);
-  };
+  ws.onopen = () => {};
+  ws.onclose = () => setTimeout(connectWS, 3000);
   ws.onerror = () => ws?.close();
   ws.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      // Future: handle multi-agent updates here
-    } catch {}
+    try { const msg = JSON.parse(e.data); } catch {}
   };
 }
 
-// ── Init ───────────────────────────────────────────────────
-document.getElementById('goBtn').addEventListener('click', () => {
-  const x1 = parseInt(document.getElementById('x1').value);
-  const y1 = parseInt(document.getElementById('y1').value);
-  const x2 = parseInt(document.getElementById('x2').value);
-  const y2 = parseInt(document.getElementById('y2').value);
-  findPath(x1, y1, x2, y2);
-});
-
-// Allow Enter key
-document.querySelectorAll('#panel input').forEach(inp => {
-  inp.addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('goBtn').click();
-  });
-});
-
+// ── Init ──────────────────────────────────────────────────
 resize();
 fitMap();
-setStatus('idle');
 connectWS();
 
-// Fetch buildings
 fetch('/api/buildings')
   .then(r => r.json())
-  .then(data => {
-    buildings = data;
-    buildingsLoaded = true;
-    draw();
-  })
+  .then(data => { buildings = data; buildingsLoaded = true; draw(); })
   .catch(() => {});
 
-// Load default path on startup
-document.getElementById('goBtn').click();
+// Load first agent on startup
+setTimeout(() => goAgent(0), 100);
 
 })();
 </script>
