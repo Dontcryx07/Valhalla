@@ -1,4 +1,8 @@
 langgraph
 Pillow
 matplotlib
-
+google-genai
+pydantic
+protobuf
+uvicorn
+fastapi

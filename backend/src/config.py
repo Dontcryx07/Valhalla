@@ -5,6 +5,7 @@ so all modules can reference consistent paths.
 """
 
 from pathlib import Path
+import os
 
 # backend/src/config.py -> backend/src -> backend -> Valhalla (project root)
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -20,6 +21,14 @@ OUTPUT_DIR = BACKEND_DIR / "output"
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 PLACES_FILE = ENVIRONMENT_DIR / "places.json"
+
+# LLM Configuration
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_API_KEY = "AIzaSyAiRKwlsJNL4rglp1yWJVnmxLp0t_Igsls"
+
+
+# day_planner.py CONFIG
+MAX_PLAN_RETRIES = 3
 
 
 if __name__ == '__main__':
