@@ -179,6 +179,12 @@ async def get_paths(input_data: PathsInput):
     return {"paths": results}
 
 
+@app.get("/api/entrypoints")
+def get_entrypoints():
+    with open(os.path.join(DATA_DIR, "environment", "entrypoint.json")) as f:
+        return json.load(f)
+
+
 app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="frontend")
 
 if __name__ == "__main__":
