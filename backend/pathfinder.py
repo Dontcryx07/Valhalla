@@ -1,3 +1,9 @@
+"""
+Core pathfinding module — imported by server.py and pixel_pathfinder.py.
+Loads path.png into a set of walkable (white) pixels and provides
+BFS shortest_path(), stats(), and is_walkable() helpers.
+"""
+
 import os
 from collections import deque
 from PIL import Image
@@ -13,7 +19,7 @@ def _load():
     global _path_img, _white_pixels, _W, _H
     if _white_pixels is not None:
         return
-    _path_img = Image.open(os.path.join(ROOT, "frontend", "path_map.png")).convert("RGB")
+    _path_img = Image.open(os.path.join(ROOT, "frontend", "path.png")).convert("RGB")
     _W, _H = _path_img.size
     pix = _path_img.load()
     _white_pixels = set()

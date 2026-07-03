@@ -1,3 +1,9 @@
+"""
+Generates the tile layout for the Valhalla map.
+Splits the 1276×1233 pixel map into 4×3 pixel tiles (319×411 grid)
+and writes each tile's ID, col, row, and pixel offset to map_tiles.jsonl.
+"""
+
 import json
 
 WIDTH, HEIGHT = 1276, 1233

@@ -1,3 +1,9 @@
+"""
+CLI tool for pixel-level pathfinding on the Valhalla map.
+Loads map.png, computes the shortest path between two pixel coordinates
+via BFS, and displays the result with start/end markers in a matplotlib window.
+"""
+
 import sys
 import os
 from PIL import Image, ImageDraw, ImageFont

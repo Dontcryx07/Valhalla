@@ -1,4 +1,8 @@
-""" File containing configuration variables """
+"""
+Project-wide path configuration.
+Resolves the project root, backend, frontend, data, and output directories
+so all modules can reference consistent paths.
+"""
 
 from pathlib import Path
 

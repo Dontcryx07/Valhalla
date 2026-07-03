@@ -1,3 +1,10 @@
+"""
+Tile-based navigation graph for the Valhalla map.
+Loads agent_path_tiles.json, runs BFS on a 319×411 tile grid (4×3 px each),
+and visualizes paths on map.png via matplotlib. The predecessor to the
+pixel-level pathfinder.
+"""
+
 import json
 import sys
 from collections import deque

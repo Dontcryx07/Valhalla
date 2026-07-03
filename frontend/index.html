@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+Valhalla map frontend — single-page web app with zoom/pan canvas,
+pathfinding UI, and ball animation. Fetches paths from the backend
+(/api/path), renders them over map.png, and maintains a WebSocket
+connection (/ws) ready for real-time multi-agent updates.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -190,11 +196,15 @@ canvas.addEventListener('wheel', e => {
 // ── Path state ────────────────────────────────────────────
 let pathPoints = [];
 let animating = false;
-let animPos = 0;       // index in pathPoints
+let animPos = 0;
 let ballX = 0, ballY = 0;
 let animId = null;
 let animStartTime = 0;
 let ws = null;
+
+// ── Buildings ─────────────────────────────────────────────
+let buildings = [];
+let buildingsLoaded = false;
 
 // ── Drawing ────────────────────────────────────────────────
 function draw() {
@@ -210,6 +220,24 @@ function draw() {
 
   // Map
   ctx.drawImage(mapImg, 0, 0);
+
+  // Buildings
+  if (buildingsLoaded) {
+    ctx.font = 'bold 10px monospace';
+    const labelDrawn = new Set();
+    for (const b of buildings) {
+      ctx.fillStyle = 'rgba(255,0,0,0.30)';
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      if (!labelDrawn.has(b.label)) {
+        labelDrawn.add(b.label);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.strokeStyle = 'rgba(150,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeText(b.label, b.x + 2, b.y - 3);
+        ctx.fillText(b.label, b.x + 2, b.y - 3);
+      }
+    }
+  }
 
   // Path line
   if (pathPoints.length > 1) {
@@ -434,6 +462,16 @@ resize();
 fitMap();
 setStatus('idle');
 connectWS();
+
+// Fetch buildings
+fetch('/api/buildings')
+  .then(r => r.json())
+  .then(data => {
+    buildings = data;
+    buildingsLoaded = true;
+    draw();
+  })
+  .catch(() => {});
 
 // Load default path on startup
 document.getElementById('goBtn').click();

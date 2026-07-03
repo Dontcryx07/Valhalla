@@ -1,3 +1,10 @@
+"""
+FastAPI web server for the Valhalla agent map.
+Serves the frontend (index.html, map images), exposes REST + WebSocket
+endpoints for pathfinding (/api/path, /api/path/stream, /ws), and
+streams path points for real-time agent animation.
+"""
+
 import os
 import sys
 import json
@@ -14,6 +21,31 @@ from pathfinder import shortest_path, stats, ROOT
 app = FastAPI(title="Valhalla Agent Map")
 
 FRONTEND = os.path.join(ROOT, "frontend")
+DATA_DIR = os.path.join(ROOT, "backend", "data")
+
+
+@app.get("/api/buildings")
+def get_buildings():
+    with open(os.path.join(DATA_DIR, "environment", "buildings_polygon_decomposed.json")) as f:
+        buildings = json.load(f)
+    label_seen = {}
+    simplified = []
+    for b in buildings:
+        tl = b["top_left"]
+        br = b["bottom_right"]
+        name = b["building_name"]
+        base = name.rsplit("_part", 1)[0]
+        if base not in label_seen:
+            label_seen[base] = len(label_seen) + 1
+        simplified.append({
+            "name": name,
+            "label": str(label_seen[base]),
+            "x": tl[0],
+            "y": tl[1],
+            "w": br[0] - tl[0],
+            "h": br[1] - tl[1],
+        })
+    return simplified
 
 
 @app.get("/api/stats")
