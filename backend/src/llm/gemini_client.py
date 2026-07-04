@@ -35,7 +35,7 @@ Usage:
         BaseModel
             An instance of `schema` populated with the parsed response from Gemini.
 
-        from src.llm.client import gemini
+        from src.llm.client import call_ gemini
 
         plan = call_gemini(
             system_prompt=SYSTEM_PROMPT,

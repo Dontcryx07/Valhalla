@@ -31,6 +31,11 @@ PLACES_FILE = ENVIRONMENT_DIR / "places.json"
 LOG_DIR = OUTPUT_DIR / "logs"
 LOG_LEVEL = "DEBUG" if VERBOSE else "INFO"
 
+### Core logic
+
+# Default nearby distance (chebyshev distance)
+DEFAULT_PERCEPTION_RADIUS = 5 # Tune after we know the actual map scale
+
 
 # LLM Configuration
 TEMPERATURE = 0.7           # Creativity the model is allowed
