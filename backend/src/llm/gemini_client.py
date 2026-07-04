@@ -71,7 +71,7 @@ from pydantic import BaseModel
 # Logger - src/core/log.py
 from src.core.log import get_logger
 
-logger = get_logger("gemini_client")
+logger = get_logger(__name__)
 
 
 # Configuration

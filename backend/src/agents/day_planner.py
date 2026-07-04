@@ -53,7 +53,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
 # Setting up logger
-logger = get_logger("day_planner")
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
