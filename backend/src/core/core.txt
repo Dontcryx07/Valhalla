@@ -1,0 +1,2 @@
+core/
+holds orchestration plumbing (the tick graph itself, shared state schemas, config) that doesn't do any "thinking" on its own

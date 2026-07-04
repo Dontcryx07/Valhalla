@@ -1,0 +1,2 @@
+agents/
+holds actual cognitive modules (things that take persona/memory/world-state and produce a real output via LLM calls or logic — day_planner, reflection)

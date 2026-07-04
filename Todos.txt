@@ -1,0 +1,2 @@
+Have to create resources in the world
+Like a table that an agent can occupy
