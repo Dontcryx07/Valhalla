@@ -1,0 +1,11 @@
+2026-07-04 15:05:33 | INFO     | src.core.log | [log] logging initialized -> D:\Programming\Projects\Valhalla\backend\output\logs\20260704_150533.log
+2026-07-04 15:05:35 | INFO     | day_planner | [day_planner] loaded 13 places from D:\Programming\Projects\Valhalla\backend\data\environment\places.json
+2026-07-04 15:05:46 | INFO     | gemini_client | 2026-07-04 15:05:46 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-04 15:05:46 | INFO     | day_planner | [day_planner] coarse plan generated: 8 blocks
+2026-07-04 15:05:49 | INFO     | gemini_client | 2026-07-04 15:05:49 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-04 15:05:49 | INFO     | day_planner | [day_planner] hourly plan: 4 atomic passthrough + 10 refined
+2026-07-04 15:05:50 | INFO     | gemini_client | 2026-07-04 15:05:50 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-04 15:05:53 | INFO     | gemini_client | 2026-07-04 15:05:53 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-04 15:05:53 | INFO     | day_planner | [day_planner] fine plan: 16 total actions
+2026-07-04 15:05:58 | INFO     | gemini_client | 2026-07-04 15:05:58 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-04 15:05:58 | INFO     | day_planner | [day_planner] plan validated successfully

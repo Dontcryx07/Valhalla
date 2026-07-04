@@ -44,6 +44,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 import json
 from src.core.log import get_logger
+from src.llm.gemini_client import call_gemini
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
 from google import genai
@@ -52,7 +53,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
 # Setting up logger
-logger = get_logger(__name__)
+logger = get_logger("day_planner")
 
 
 # ---------------------------------------------------------------------------
@@ -248,26 +249,6 @@ def _memories_block(memories: List[str]) -> str:
     return "\n".join(f"- {m}" for m in memories)
 
 
-def _call_gemini(system_prompt: str, user_prompt: str, schema: type[BaseModel]) -> BaseModel | None:
-    """Single point of contact with Gemini. Structured JSON output via
-    response_schema means no fragile manual JSON parsing/regex."""
-    response = get_client().models.generate_content(
-        model=GEMINI_MODEL,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            response_mime_type="application/json",
-            response_schema=schema,
-            temperature=0.7,
-        ),
-    )
-    # google-genai gives you .parsed already instantiated as `schema`,
-    # but we fall back to manual parsing defensively.
-    if getattr(response, "parsed", None) is not None:
-        return response.parsed
-    return schema.model_validate(json.loads(response.text))
-
-
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -305,7 +286,7 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
             f"{state['conflict_reason']}"
         )
 
-    result = _call_gemini(system_prompt, user_prompt, CoarsePlanOutput)
+    result = call_gemini(system_prompt, user_prompt, CoarsePlanOutput, "complex")
     logger.info("[day_planner] coarse plan generated: %d blocks", len(result.blocks))
 
     return {
@@ -348,7 +329,7 @@ def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
             "Produce the hourly-resolution plan for the blocks listed under "
             "'BLOCKS TO REFINE' only."
         )
-        result = _call_gemini(system_prompt, user_prompt, HourlyPlanOutput)
+        result = call_gemini(system_prompt, user_prompt, HourlyPlanOutput)
         refined = [b.model_dump() for b in result.blocks]
         for b in refined:
             b["granularity"] = "flexible"
@@ -385,7 +366,7 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             "Assign a location to each activity now."
         )
-        result = _call_gemini(system_prompt, user_prompt, AtomicLocationOutput)
+        result = call_gemini(system_prompt, user_prompt, AtomicLocationOutput)
         loc_by_activity = {a.activity: a for a in result.assignments}
 
         for b in atomic_blocks:
@@ -414,7 +395,7 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             "Produce the fine-grained action plan for these blocks now."
         )
-        result = _call_gemini(system_prompt, user_prompt, FinePlanOutput)
+        result = call_gemini(system_prompt, user_prompt, FinePlanOutput)
         fine_actions.extend(a.model_dump() for a in result.actions)
 
     fine_actions.sort(key=lambda a: a["start"])
@@ -500,7 +481,7 @@ def validate_plan(state: DayPlannerState) -> DayPlannerState:
         f"FINE PLAN:\n{json.dumps(state['fine_plan'], indent=2)}\n\n"
         "Is this plan valid?"
     )
-    result = _call_gemini(system_prompt, user_prompt, ValidationResult)
+    result = call_gemini(system_prompt, user_prompt, ValidationResult, "complex")
 
     if not result.valid:
         logger.info("[day_planner] semantic validation failed: %s", result.reason)
@@ -674,7 +655,7 @@ if __name__ == "__main__":
 
     print(result)
 
-    col_widths = (10, 10, 45, 20)
+    col_widths = (10, 10, 60, 20)
     header = (
         f"{'START':<{col_widths[0]}}{'END':<{col_widths[1]}}"
         f"{'ACTION':<{col_widths[2]}}{'LOCATION':<{col_widths[3]}}"

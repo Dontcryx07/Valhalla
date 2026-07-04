@@ -33,8 +33,32 @@ LOG_LEVEL = "DEBUG" if VERBOSE else "INFO"
 
 
 # LLM Configuration
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+TEMPERATURE = 0.7           # Creativity the model is allowed
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.5-flash" # Default single model for use
+
+# Fallback chain per task tier. Order = preference order.
+# Put your strongest model first; weaker/cheaper ones behind it as a safety net.
+MODEL_TIERS: dict[str, list[str]] = {
+    # For day-planning, dialogue, anything needing real reasoning quality.
+    "complex": [
+        "gemini-3.5-flash",
+        "gemini-3.0-flash",
+        "gemini-2.5-flash",
+    ],
+    # For cheap/high-volume calls: plan decomposition, small classification, etc.
+    "simple": [
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemma-4-31B-it",
+    ],
+}
+
+# Support multiple API keys (comma-separated in env var).
+# Rotates through them if a whole model chain gets rate-limited on the current key.
+API_KEYS: list[str] = [
+    k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()
+] or [os.environ.get("GEMINI_API_KEY", "")]
 
 
 # day_planner.py CONFIG
