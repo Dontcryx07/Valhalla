@@ -2,126 +2,84 @@
   "persona_name": "tanishq",
   "day_plan": [
     {
-      "action": "Late night internet browsing and private time",
+      "action": "Late night internet browsing and gooning to adult content",
       "start": "00:00",
-      "end": "03:00",
+      "end": "04:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
       "action": "Sleep",
-      "start": "03:00",
-      "end": "10:30",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Wake up and perform personal hygiene",
-      "start": "10:30",
+      "start": "04:00",
       "end": "11:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Grab a quick brunch at the mess",
+      "action": "Wake up and perform personal hygiene",
       "start": "11:00",
-      "end": "11:30",
-      "location_id": "mess",
-      "sub_area": null
+      "end": "11:20",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
     },
     {
-      "action": "Attend CS lectures",
-      "start": "11:30",
-      "end": "14:00",
+      "action": "Organize room and hide personal items to maintain privacy",
+      "start": "11:20",
+      "end": "12:00",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Attend CS lectures and observe female classmates",
+      "start": "12:00",
+      "end": "15:00",
       "location_id": "LHC",
       "sub_area": "class_rooms"
     },
     {
-      "action": "Read dark romance novel in the library reading hall",
-      "start": "14:00",
-      "end": "15:00",
-      "location_id": "library",
-      "sub_area": "reading_hall"
-    },
-    {
-      "action": "Debug AI model code for side project",
+      "action": "Develop and debug code for software portfolio",
       "start": "15:00",
-      "end": "15:30",
-      "location_id": "library",
-      "sub_area": "e_resource_lab"
-    },
-    {
-      "action": "Refactor data engineering pipeline",
-      "start": "15:30",
       "end": "16:00",
       "location_id": "library",
       "sub_area": "e_resource_lab"
     },
     {
-      "action": "Research new AI libraries and documentation",
+      "action": "Read and analyze dark romance literature",
       "start": "16:00",
-      "end": "16:30",
-      "location_id": "library",
-      "sub_area": "e_resource_lab"
-    },
-    {
-      "action": "Finalize code commit for the day",
-      "start": "16:30",
       "end": "17:00",
       "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Refine code and research niche dark romance tropes on forums",
+      "start": "17:00",
+      "end": "18:00",
+      "location_id": "library",
       "sub_area": "e_resource_lab"
     },
     {
-      "action": "Lurk on social media and stalk profiles",
-      "start": "17:00",
-      "end": "17:30",
-      "location_id": "library",
-      "sub_area": "reading_hall"
-    },
-    {
-      "action": "Watch soft porn content while lurking",
-      "start": "17:30",
-      "end": "18:00",
-      "location_id": "library",
-      "sub_area": "reading_hall"
-    },
-    {
-      "action": "Eat dinner alone at the mess",
+      "action": "Eat dinner while scrolling social media",
       "start": "18:00",
       "end": "19:00",
       "location_id": "mess",
       "sub_area": null
     },
     {
-      "action": "Take a solitary walk around the central lawn",
+      "action": "Engage in intense personal fantasizing",
       "start": "19:00",
-      "end": "19:30",
-      "location_id": "central_lawn",
-      "sub_area": null
-    },
-    {
-      "action": "Observe surroundings and identify targets",
-      "start": "19:30",
       "end": "20:00",
-      "location_id": "central_lawn",
-      "sub_area": null
-    },
-    {
-      "action": "Walk towards hostel area while fantasizing",
-      "start": "20:00",
-      "end": "20:30",
       "location_id": "Brahmaputra_Boys 1",
-      "sub_area": null
+      "sub_area": "rooms"
     },
     {
-      "action": "Return to room to continue private fantasies",
-      "start": "20:30",
+      "action": "Lurk on social media and watch explicit content",
+      "start": "20:00",
       "end": "21:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Solitary recreation and private time in room",
+      "action": "Late night gooning to porn and explicit content",
       "start": "21:00",
       "end": "24:00",
       "location_id": "Brahmaputra_Boys 1",

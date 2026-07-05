@@ -1,0 +1,1 @@
+"The core module for handling short term memory and immediate task management for the agent. It provides functionality to store, retrieve, and manage information that the agent needs to remember for a brief period of time. "

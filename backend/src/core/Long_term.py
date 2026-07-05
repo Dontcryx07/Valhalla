@@ -1,0 +1,1 @@
+"The core module for handling long term memory and knowledge management for the agent. It provides functionality to store, retrieve, and manage information that the agent needs to remember over extended periods of time. "
