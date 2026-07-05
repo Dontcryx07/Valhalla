@@ -66,35 +66,34 @@ DEFAULT_PERCEPTION_RADIUS = 5 # Tune after we know the actual map scale
 
 # LLM Configuration
 TEMPERATURE = 0.7           # Creativity the model is allowed
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.5-flash" # Default single model for use
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY_1", "")
+GEMINI_MODEL = "gemini-3.5-flash" # Default single model for use
 
 # Fallback chain per task tier. Order = preference order.
-# Put your strongest model first; weaker/cheaper ones behind it as a safety net.
 MODEL_TIERS: dict[str, list[str]] = {
-    # For day-planning, dialogue, anything needing real reasoning quality.
+    # Day-planning, dialogue — uses ONLY gemini-3.5-flash.
+    # Rate-limit resilience comes from multiple API keys (see API_KEYS below),
+    # not from model fallback.
     "complex": [
         "gemini-3.5-flash",
-        "gemini-3.0-flash",
-        "gemini-2.5-flash",
     ],
-    # For cheap/high-volume calls: plan decomposition, small classification, etc.
+    # Cheap / high-volume calls: plan decomposition, small classification.
     "simple": [
         "gemini-3.1-flash-lite",
         "gemini-2.5-flash-lite",
-        "gemma-4-31B-it",
     ],
 }
 
 # Support multiple API keys (comma-separated in env var).
-# Rotates through them if a whole model chain gets rate-limited on the current key.
+# Rotates through them when rate limits are hit on the current key.
 API_KEYS: list[str] = [
     k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()
 ]
 if not API_KEYS:
+    # Gather GEMINI_API_KEY (no suffix) + GEMINI_API_KEY_1 through _10
     numbered_keys = [
         os.environ.get(f"GEMINI_API_KEY_{index}", "")
-        for index in range(2, 11)
+        for index in range(1, 11)
     ]
     API_KEYS = [key for key in [os.environ.get("GEMINI_API_KEY", ""), *numbered_keys] if key]
 

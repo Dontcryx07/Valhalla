@@ -1,0 +1,8 @@
+2026-07-05 18:16:49 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260705_181649.log
+2026-07-05 18:16:50 | INFO     | __main__ | [Single_agent] discovered 6 persona(s): ['anubhav', 'ganishat', 'gurnoor', 'parv', 'tanishq', 'test']
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] ganishat: failed — name 'persona' is not defined
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] anubhav: failed — name 'persona' is not defined
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] gurnoor: failed — name 'persona' is not defined
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] tanishq: failed — name 'persona' is not defined
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] test: failed — name 'persona' is not defined
+2026-07-05 18:16:50 | ERROR    | __main__ | [Single_agent] parv: failed — name 'persona' is not defined

@@ -1,0 +1,80 @@
+2026-07-05 18:37:34 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260705_183734.log
+2026-07-05 18:37:36 | INFO     | __main__ | [Single_agent] discovered 5 persona(s): ['anubhav', 'ganishat', 'gurnoor', 'parv', 'tanishq']
+2026-07-05 18:37:36 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 18:37:36 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 18:37:36 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 18:37:36 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 18:37:36 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 18:37:45 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:45 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:45 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 18:37:45 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:45 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:45 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 8 blocks
+2026-07-05 18:37:45 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:45 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:45 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 18:37:45 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:45 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:45 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 18:37:46 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:46 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:46 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 6 blocks
+2026-07-05 18:37:47 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:47 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:47 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 5 atomic passthrough + 7 refined
+2026-07-05 18:37:47 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:47 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:47 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 3 atomic passthrough + 8 refined
+2026-07-05 18:37:48 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:48 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:48 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 3 atomic passthrough + 8 refined
+2026-07-05 18:37:48 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:48 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:48 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 3 atomic passthrough + 9 refined
+2026-07-05 18:37:48 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:48 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:48 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 2 atomic passthrough + 11 refined
+2026-07-05 18:37:48 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:48 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:49 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:49 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:49 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:49 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:49 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:49 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:49 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:49 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:51 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:51 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:51 | INFO     | src.agents.day_planner | [day_planner] fine plan: 12 total actions
+2026-07-05 18:37:52 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:52 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:52 | INFO     | src.agents.day_planner | [day_planner] fine plan: 18 total actions
+2026-07-05 18:37:52 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:52 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 2.593994801s.
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:53 | INFO     | src.agents.day_planner | [day_planner] fine plan: 14 total actions
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:53 | INFO     | src.agents.day_planner | [day_planner] fine plan: 17 total actions
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 18:37:53 | INFO     | src.agents.day_planner | [day_planner] fine plan: 19 total actions
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 1.77142598s.
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 1.670549982s.
+2026-07-05 18:37:53 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:53 | model=gemini-3.5-flash | ok=False | attempt=1 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 1.551644706s.
+2026-07-05 18:37:54 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:54 | model=gemini-3.5-flash | ok=False | attempt=1 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 696.131785ms.
+2026-07-05 18:37:54 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:54 | model=gemini-3.5-flash | ok=False | attempt=1 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-3.5-flash
+Please retry in 637.591721ms.
+2026-07-05 18:37:57 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:57 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:57 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 18:37:57 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\anubhav.json
+2026-07-05 18:37:57 | INFO     | __main__ | [Single_agent] anubhav: done
+2026-07-05 18:37:58 | INFO     | src.llm.gemini_client | 2026-07-05 18:37:58 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 18:37:58 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 18:37:58 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\parv.json
+2026-07-05 18:37:58 | INFO     | __main__ | [Single_agent] parv: done
+2026-07-05 18:38:01 | INFO     | src.llm.gemini_client | 2026-07-05 18:38:01 | model=gemini-2.5-flash | ok=True | attempt=0
+2026-07-05 18:38:01 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 18:38:01 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\ganishat.json
+2026-07-05 18:38:01 | INFO     | __main__ | [Single_agent] ganishat: done
+2026-07-05 18:38:02 | INFO     | src.llm.gemini_client | 2026-07-05 18:38:02 | model=gemini-2.5-flash | ok=True | attempt=0
+2026-07-05 18:38:02 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 18:38:02 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\gurnoor.json
+2026-07-05 18:38:02 | INFO     | __main__ | [Single_agent] gurnoor: done
+2026-07-05 18:38:03 | INFO     | src.llm.gemini_client | 2026-07-05 18:38:03 | model=gemini-2.5-flash | ok=True | attempt=0
+2026-07-05 18:38:03 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 18:38:03 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\tanishq.json
+2026-07-05 18:38:03 | INFO     | __main__ | [Single_agent] tanishq: done

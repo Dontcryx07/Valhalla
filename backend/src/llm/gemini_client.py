@@ -82,20 +82,120 @@ MAX_RETRIES_PER_MODEL = 2       # backoff retries before moving to next model
 BASE_BACKOFF_SECONDS = 1.5
 REQUEST_TIMEOUT_MS = 60_000     # per-request deadline
 
+# Per-key rate limiting (Google free tier: 5 RPM).
+RPM_LIMIT = 5
+MIN_INTERVAL_S = 60.0 / RPM_LIMIT   # 12 seconds between calls on the same key
+
 
 # Errors
 class AllModelsFailedError(RuntimeError):
     """Raised when every model in the chain, across every API key, failed."""
 
 
-# Client pool (one genai.Client per API key, created lazily)
+# ---------------------------------------------------------------------------
+# Per-key rate limiter
+# ---------------------------------------------------------------------------
+# Google Gemini free tier: 5 requests per minute per key.
+# We track last-used timestamps and cooldown expirations per key.
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class _KeyState:
+    client: genai.Client
+    last_used: float = 0.0        # monotonic time of last successful call
+    cooldown_until: float = 0.0   # monotonic time — skip this key until then
+
+
 _clients: dict[str, genai.Client] = {}
+_key_states: dict[str, _KeyState] = {}
 
 
 def _get_client(api_key: str) -> genai.Client:
-    if api_key not in _clients: # Check weather client has current API_KEY or not
+    if api_key not in _clients:
         _clients[api_key] = genai.Client(api_key=api_key)
     return _clients[api_key]
+
+
+def _get_key_state(api_key: str) -> _KeyState:
+    if api_key not in _key_states:
+        _key_states[api_key] = _KeyState(client=_get_client(api_key))
+    return _key_states[api_key]
+
+
+def _pick_best_key() -> str | None:
+    """
+    Pick the API key that is:
+      1. Not in cooldown (``cooldown_until`` in the future).
+      2. Respects the per-key RPM limit (``last_used + MIN_INTERVAL_S``).
+      3. Among eligible keys, the one with the oldest ``last_used``.
+    If all keys are in cooldown or RPM-limited, return the one whose
+    cooldown expires soonest (caller should wait).
+    """
+    now = time.monotonic()
+    candidates: list[tuple[float, _KeyState, str]] = []
+
+    for key in API_KEYS:
+        st = _get_key_state(key)
+        if now < st.cooldown_until:
+            # In cooldown — not usable until cooldown expires
+            candidates.append((st.cooldown_until, st, key))
+        elif st.last_used == 0.0:
+            # Never used — ideal
+            candidates.append((0.0, st, key))
+        else:
+            # Compute when this key will be available (RPM-respecting)
+            eligible_at = st.last_used + MIN_INTERVAL_S
+            if now >= eligible_at:
+                candidates.append((eligible_at, st, key))   # available now
+            else:
+                candidates.append((eligible_at, st, key))   # will be available later
+
+    if not candidates:
+        return None
+
+    # Sort by the tuple's first element (lowest = most ready)
+    candidates.sort(key=lambda x: x[0])
+    eligible_at, st, key = candidates[0]
+
+    # If the best candidate isn't usable yet, caller must wait
+    now = time.monotonic()
+    if now < st.cooldown_until or now < st.last_used + MIN_INTERVAL_S:
+        return None
+
+    return key
+
+
+def _wait_until_key_available() -> str:
+    """
+    Block until at least one key is available, then return it.
+    Sleeps in small increments so we don't busy-loop.
+    """
+    while True:
+        key = _pick_best_key()
+        if key is not None:
+            return key
+        # All keys are in cooldown — sleep until the shortest cooldown expires
+        now = time.monotonic()
+        min_cooldown = min(
+            st.cooldown_until
+            for st in _key_states.values()
+        )
+        sleep_for = max(0.1, min_cooldown - now)
+        time.sleep(sleep_for)
+
+
+def _mark_used(key: str) -> None:
+    """Record that *key* was just used successfully."""
+    st = _get_key_state(key)
+    st.last_used = time.monotonic()
+
+
+def _mark_cooldown(key: str, duration: float = 60.0) -> None:
+    """Put *key* into cooldown (won't be picked again for *duration* seconds)."""
+    st = _get_key_state(key)
+    st.cooldown_until = time.monotonic() + duration
 
 
 # Retry classification
@@ -111,6 +211,15 @@ def _is_retryable(exc: BaseException) -> bool:
         return exc.code in RETRYABLE_CODES
     # Network/timeout errors from the underlying httpx client also deserve a retry.
     return isinstance(exc, (TimeoutError, ConnectionError))
+
+
+def _parse_retry_after(msg: str) -> float:
+    """Extract server-suggested retry delay from a 429 error message."""
+    import re as _re
+    m = _re.search(r"retry in\s+([\d.]+)\s*s", msg, _re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    return MIN_INTERVAL_S * 2
 
 
 def _log_attempt(model: str, ok: bool, detail: str) -> None:
@@ -159,11 +268,25 @@ def call_gemini(
     models = MODEL_TIERS[complexity]
     last_error: Exception | None = None
 
-    for api_key in API_KEYS:
+    # Track which (key, model) pairs we've already tried so we don't
+    # infinite-loop across the key pool.
+    tried: set[tuple[str, str]] = set()
+
+    while len(tried) < len(API_KEYS) * len(models):
+        api_key = _wait_until_key_available()
+
         for model in models:
+            if (api_key, model) in tried:
+                continue
+
             for attempt in range(0, MAX_RETRIES_PER_MODEL):
+                tried.add((api_key, model))
+
                 try:
-                    result = _single_attempt(api_key, model, system_prompt, user_prompt, schema, temperature)
+                    result = _single_attempt(
+                        api_key, model, system_prompt, user_prompt, schema, temperature
+                    )
+                    _mark_used(api_key)
                     _log_attempt(model, True, f"attempt={attempt}")
                     return result
 
@@ -173,30 +296,42 @@ def call_gemini(
                     _log_attempt(model, False, detail)
 
                     if e.code in FATAL_CODES:
-                        # Not worth retrying or switching models — it's a request/auth bug.
-                        raise
-
-                    if e.code not in RETRYABLE_CODES:
-                        # Unknown code: don't loop forever, just move to next model.
+                        # Key is permanently bad for this model — blacklist it
+                        # with a long cooldown so we stop wasting retries.
+                        _mark_cooldown(api_key, duration=3600.0)
                         break
 
+                    if e.code not in RETRYABLE_CODES:
+                        break
+
+                    # Rate limit → cooldown this key and try another
+                    if e.code == 429:
+                        cooldown = _parse_retry_after(e.message)
+                        _mark_cooldown(api_key, duration=cooldown)
+                        break  # break model loop, pick a new key
+
                     if attempt < MAX_RETRIES_PER_MODEL:
-                        sleep_s = BASE_BACKOFF_SECONDS * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                        sleep_s = (
+                            BASE_BACKOFF_SECONDS * (2 ** (attempt - 1))
+                            + random.uniform(0, 0.5)
+                        )
                         time.sleep(sleep_s)
                         continue
-                    # Retries exhausted for this model -> fall through to next model.
                     break
 
-                except Exception as e:  # noqa: BLE001 - network hiccups, JSON parse issues, etc.
+                except Exception as e:
                     last_error = e
                     _log_attempt(model, False, f"attempt={attempt} unexpected={e!r}")
                     if attempt < MAX_RETRIES_PER_MODEL:
                         time.sleep(BASE_BACKOFF_SECONDS)
                         continue
                     break
-            # move to next model in the chain
-        # move to next API key (only relevant if all models on this key failed)
-    # Tried all the possible combinations, nothing worked
+
+            # If we got a retryable error and broke out early, try a different key
+            # before retrying the same model again.
+            if isinstance(last_error, errors.APIError) and last_error.code in RETRYABLE_CODES:
+                break
+
     raise AllModelsFailedError(
         f"All models {models} failed across {len(API_KEYS)} key(s). Last error: {last_error!r}"
     )

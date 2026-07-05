@@ -1,8 +1,8 @@
 {
-  "persona_name": "tanishq",
+  "persona_name": "Tanishq",
   "day_plan": [
     {
-      "action": "Late night internet browsing and gooning to adult content",
+      "action": "Late-night online browsing and gooning",
       "start": "00:00",
       "end": "04:00",
       "location_id": "Brahmaputra_Boys 1",
@@ -16,71 +16,99 @@
       "sub_area": "rooms"
     },
     {
-      "action": "Wake up and perform personal hygiene",
+      "action": "Shower and shave to prepare for the day",
       "start": "11:00",
-      "end": "11:20",
+      "end": "11:30",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Organize room and hide personal items to maintain privacy",
-      "start": "11:20",
+      "action": "Quick breakfast and checking social media notifications",
+      "start": "11:30",
       "end": "12:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Attend CS lectures and observe female classmates",
+      "action": "Attend CS lectures and observe classmates",
       "start": "12:00",
-      "end": "15:00",
-      "location_id": "LHC",
-      "sub_area": "class_rooms"
+      "end": "14:30",
+      "location_id": "SAB",
+      "sub_area": "lecture_halls"
     },
     {
-      "action": "Develop and debug code for software portfolio",
-      "start": "15:00",
-      "end": "16:00",
+      "action": "Open side project repository and review code",
+      "start": "14:30",
+      "end": "15:00",
       "location_id": "library",
       "sub_area": "e_resource_lab"
     },
     {
-      "action": "Read and analyze dark romance literature",
-      "start": "16:00",
-      "end": "17:00",
+      "action": "Implement new features in side project",
+      "start": "15:00",
+      "end": "15:30",
       "location_id": "library",
-      "sub_area": "reading_hall"
+      "sub_area": "e_resource_lab"
     },
     {
-      "action": "Refine code and research niche dark romance tropes on forums",
-      "start": "17:00",
+      "action": "Read dark romance novel in a secluded corner",
+      "start": "15:30",
+      "end": "16:30",
+      "location_id": "library",
+      "sub_area": "silent_zone"
+    },
+    {
+      "action": "Debug code and optimize performance for side project",
+      "start": "16:30",
+      "end": "17:15",
+      "location_id": "library",
+      "sub_area": "e_resource_lab"
+    },
+    {
+      "action": "Commit and push code changes to repository",
+      "start": "17:15",
       "end": "18:00",
       "location_id": "library",
       "sub_area": "e_resource_lab"
     },
     {
-      "action": "Eat dinner while scrolling social media",
+      "action": "Walk back to hostel and eat a solitary dinner",
       "start": "18:00",
       "end": "19:00",
       "location_id": "mess",
       "sub_area": null
     },
     {
-      "action": "Engage in intense personal fantasizing",
+      "action": "Lurk on social media and watch soft porn",
       "start": "19:00",
       "end": "20:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Lurk on social media and watch explicit content",
+      "action": "Indulge in intense fantasizing about women",
       "start": "20:00",
       "end": "21:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Late night gooning to porn and explicit content",
+      "action": "Engage in gooning to explicit digital content",
       "start": "21:00",
+      "end": "22:00",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Maintain focus on explicit content for extended gooning session",
+      "start": "22:00",
+      "end": "23:00",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Fantasize about various non-consensual scenarios",
+      "start": "23:00",
       "end": "24:00",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"

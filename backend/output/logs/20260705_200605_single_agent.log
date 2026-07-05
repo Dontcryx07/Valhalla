@@ -1,0 +1,32 @@
+2026-07-05 20:06:05 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260705_200605_single_agent.log
+2026-07-05 20:06:07 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 20:06:10 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:10 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash
+Please retry in 44.603881251s.
+2026-07-05 20:06:11 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:11 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash
+Please retry in 43.777692131s.
+2026-07-05 20:06:12 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:12 | model=gemini-3.5-flash | ok=False | attempt=0 code=429 msg=You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash
+Please retry in 42.987569555s.
+2026-07-05 20:06:19 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:19 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 20:06:19 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 20:06:22 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:22 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:06:22 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 3 atomic passthrough + 9 refined
+2026-07-05 20:06:23 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:23 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:06:24 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:24 | model=gemini-3.1-flash-lite | ok=False | attempt=0 code=400 msg=API key not valid. Please pass a valid API key.
+2026-07-05 20:06:24 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:24 | model=gemini-2.5-flash-lite | ok=False | attempt=0 code=400 msg=API key not valid. Please pass a valid API key.
+2026-07-05 20:06:35 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:35 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:06:35 | INFO     | src.agents.day_planner | [day_planner] fine plan: 16 total actions
+2026-07-05 20:06:41 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:41 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 20:06:41 | INFO     | src.agents.day_planner | [day_planner] semantic validation failed: The character sleeps in 'Brahmaputra_Boys 1' from 02:30 to 08:30 but instantly wakes up and performs personal grooming in 'Brahmaputra_Boys 2' at 08:30 with no transition or explanation for the change in hostel buildings.
+2026-07-05 20:06:53 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:53 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 20:06:53 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 20:06:56 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:56 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:06:56 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 4 atomic passthrough + 8 refined
+2026-07-05 20:06:57 | INFO     | src.llm.gemini_client | 2026-07-05 20:06:57 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:07:01 | INFO     | src.llm.gemini_client | 2026-07-05 20:07:01 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 20:07:01 | INFO     | src.agents.day_planner | [day_planner] fine plan: 17 total actions
+2026-07-05 20:07:07 | INFO     | src.llm.gemini_client | 2026-07-05 20:07:07 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 20:07:07 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-05 20:07:07 | INFO     | src.agents.day_planner | [day_planner] saved final plan to D:\college\Iota-Cluster\valhalla\backend\data\temp\parv.json

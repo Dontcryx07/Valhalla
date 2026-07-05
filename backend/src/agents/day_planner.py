@@ -45,7 +45,7 @@ if str(BACKEND_ROOT) not in sys.path:
 import json
 import re
 from src.core.log import get_logger
-from src.llm.gemini_client import call_gemini
+from src.llm.gemini_client import call_gemini, AllModelsFailedError
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
 from google import genai
@@ -624,12 +624,34 @@ def run(agent: Any, world_state: dict) -> dict:
         "retry_count": 0,
     }
 
-    final_state = get_compiled_graph().invoke(initial_state)
+    # LangGraph context-preservation: if ALL model calls fail across every
+    # API key (AllModelsFailedError), we catch it here and retry the *entire
+    # graph* from scratch with the same input state.  The per-key rate limiter
+    # in gemini_client.py will use a different key on retry, so a transient
+    # quota exhaustion across all keys resolves itself on the next attempt.
+    import time as _time
+    _max_graph_retries = 3
+    _last_exc: Exception | None = None
+    for _attempt in range(_max_graph_retries):
+        try:
+            final_state = get_compiled_graph().invoke(initial_state)
+            _last_exc = None
+            break
+        except AllModelsFailedError as _exc:
+            _last_exc = _exc
+            logger.warning(
+                "[day_planner] all models failed (attempt %d/%d) — "
+                "retaining state and retrying after backoff.",
+                _attempt + 1, _max_graph_retries,
+            )
+            if _attempt < _max_graph_retries - 1:
+                _time.sleep(10.0 + _attempt * 5.0)
+            continue
+
+    if _last_exc is not None:
+        raise _last_exc  # Give up after exhausting graph retries
 
     _save_day_plan_to_temp(initial_state["persona"], final_state, world_state.get("persona_name"))
-
-    print(final_state)
-
 
     return {
         "day_plan": final_state.get("day_plan", []),
