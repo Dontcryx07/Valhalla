@@ -250,13 +250,13 @@ def _memories_block(memories: List[str]) -> str:
     return "\n".join(f"- {m}" for m in memories)
 
 
-def _save_day_plan_to_temp(persona: dict, final_state: dict, persona_name_hint: Optional[str] = None) -> Path:
-    temp_dir = DATA_DIR / "temp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
+def _save_day_plan_to_Short_term_db(persona: dict, final_state: dict, persona_name_hint: Optional[str] = None) -> Path:
+    Short_term_db_dir = DATA_DIR / "Short_term_db"
+    Short_term_db_dir.mkdir(parents=True, exist_ok=True)
 
     persona_name = str(persona_name_hint or persona.get("name") or "unknown").strip()
     safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name).strip("._-").lower() or "unknown"
-    output_path = temp_dir / f"{safe_name}.json"
+    output_path = Short_term_db_dir / f"{safe_name}.json"
 
     sanitized_day_plan = [
         {key: value for key, value in item.items() if key != "parent_activity"}
@@ -611,7 +611,7 @@ def run(agent: Any, world_state: dict) -> dict:
     world_state is expected to expose a 'current_time' key (str), and
     optionally a 'places' key (List[Dict[str, str]]) -- if omitted, places
     are loaded from places.json via load_places(). If provided, 'persona_name'
-    is used when saving the final plan to data/temp.
+    is used when saving the final plan to data/Short_term_db.
     """
     places = world_state.get("places") or load_places()
 
@@ -651,7 +651,7 @@ def run(agent: Any, world_state: dict) -> dict:
     if _last_exc is not None:
         raise _last_exc  # Give up after exhausting graph retries
 
-    _save_day_plan_to_temp(initial_state["persona"], final_state, world_state.get("persona_name"))
+    _save_day_plan_to_Short_term_db(initial_state["persona"], final_state, world_state.get("persona_name"))
 
     return {
         "day_plan": final_state.get("day_plan", []),
