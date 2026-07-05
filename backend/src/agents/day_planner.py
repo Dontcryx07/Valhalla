@@ -43,6 +43,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 import json
+import re
 from src.core.log import get_logger
 from src.llm.gemini_client import call_gemini
 from typing import Any, Dict, List, Optional, TypedDict, Literal
@@ -59,7 +60,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Config -> in config.py
 # ---------------------------------------------------------------------------
-from src.config import GEMINI_MODEL, GEMINI_API_KEY, ENVIRONMENT_DIR
+from src.config import GEMINI_MODEL, GEMINI_API_KEY, ENVIRONMENT_DIR, DATA_DIR
 from src.config import MAX_PLAN_RETRIES, PERSONA_FIELD_GLOSSARY
 
 
@@ -247,6 +248,30 @@ def _memories_block(memories: List[str]) -> str:
     if not memories:
         return "(none available yet)"
     return "\n".join(f"- {m}" for m in memories)
+
+
+def _save_day_plan_to_temp(persona: dict, final_state: dict, persona_name_hint: Optional[str] = None) -> Path:
+    temp_dir = DATA_DIR / "temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    persona_name = str(persona_name_hint or persona.get("name") or "unknown").strip()
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name).strip("._-").lower() or "unknown"
+    output_path = temp_dir / f"{safe_name}.json"
+
+    sanitized_day_plan = [
+        {key: value for key, value in item.items() if key != "parent_activity"}
+        for item in final_state.get("day_plan", [])
+    ]
+
+    payload = {
+        "persona_name": persona_name,
+        "day_plan": sanitized_day_plan,
+        "error": final_state.get("error"),
+    }
+
+    output_path.write_text(json.dumps(payload, indent=2))
+    logger.info("[day_planner] saved final plan to %s", output_path)
+    return output_path
 
 
 # ---------------------------------------------------------------------------
@@ -585,7 +610,8 @@ def run(agent: Any, world_state: dict) -> dict:
         agent.yesterday_summary  -> Optional[str] (empty for now)
     world_state is expected to expose a 'current_time' key (str), and
     optionally a 'places' key (List[Dict[str, str]]) -- if omitted, places
-    are loaded from places.json via load_places().
+    are loaded from places.json via load_places(). If provided, 'persona_name'
+    is used when saving the final plan to data/temp.
     """
     places = world_state.get("places") or load_places()
 
@@ -600,6 +626,8 @@ def run(agent: Any, world_state: dict) -> dict:
 
     final_state = get_compiled_graph().invoke(initial_state)
 
+    _save_day_plan_to_temp(initial_state["persona"], final_state, world_state.get("persona_name"))
+
     print(final_state)
 
 
@@ -612,8 +640,8 @@ def run(agent: Any, world_state: dict) -> dict:
 
 
 try:
-    from backend.src.core.module_base import AgentModule
-    from backend.src.core.registry import register_module
+    from src.core.module_base import AgentModule
+    from src.core.registry import register_module
 
 
     @register_module
@@ -636,8 +664,48 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    from backend.src.config import PERSONALITIES_DIR
-    sample_persona = json.loads((PERSONALITIES_DIR / "gurnoor.json").read_text())
+    import argparse
+
+    from src.config import PERSONALITIES_DIR
+
+    parser = argparse.ArgumentParser(description="Run the day planner smoke test")
+    parser.add_argument(
+        "persona",
+        nargs="?",
+        default="gurnoor",
+        help="Persona name or persona JSON path (for example: tanishq or tanishq/tanishq.json)",
+    )
+    args = parser.parse_args()
+
+    def resolve_persona_path(persona_arg: str) -> Path:
+        candidate_path = Path(persona_arg)
+        if candidate_path.exists():
+            return candidate_path
+
+        if candidate_path.suffix == ".json":
+            matches = list(PERSONALITIES_DIR.glob(f"**/{candidate_path.name}"))
+            if matches:
+                return matches[0]
+
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{persona_arg}/{persona_arg}.json"))
+        if matches:
+            return matches[0]
+
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{persona_arg}.json"))
+        if matches:
+            return matches[0]
+
+        candidates = sorted(PERSONALITIES_DIR.glob("**/*.json"))
+        if not candidates:
+            raise FileNotFoundError(f"No persona JSON files found under {PERSONALITIES_DIR}")
+        raise FileNotFoundError(
+            f"Could not find persona '{persona_arg}'. Available personas: "
+            f"{', '.join(sorted({p.parent.name for p in candidates}))}"
+        )
+
+    sample_persona_path = resolve_persona_path(args.persona)
+
+    sample_persona = json.loads(sample_persona_path.read_text())
 
     class _FakeAgent:
         persona = sample_persona
@@ -650,7 +718,7 @@ if __name__ == "__main__":
 
     result = run(
         _FakeAgent(),
-        {"current_time": "2026-07-03 06:00", "places": None},
+        {"current_time": "2026-07-03 06:00", "places": None, "persona_name": sample_persona_path.stem},
     )
 
     print(result)

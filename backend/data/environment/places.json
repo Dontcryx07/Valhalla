@@ -1,17 +1,17 @@
 {
   "_meta": {
-    "source_note": "Facts marked [VERIFIED] come from IIT Ropar's own site, Wikipedia, or student-review aggregators (searched July 2026). Facts marked [ASSUMED] are standard IIT-campus conventions used as placeholders because the exact figure (e.g. precise mess/library closing time) is not published anywhere public — replace with real values once you can check a hostel notice board / library circular.",
+    "source_note": "Facts marked [VERIFIED] come from IIT Ropar's own site, Wikipedia, or student-review aggregators (searched July 2026). Facts marked [ASSUMED] are standard IIT-campus conventions used as placeholders because the exact figure (e.g. precise closing time of some buildings is not available and depends on the event) is not published anywhere public — replace with real values once you can check a hostel notice board / library circular.",
     "campus_facts": [
       "525 acres, permanent campus operational since June 2018, on the bank of the Sutlej river, Rupnagar, Punjab",
-      "Entrance gate: four 41-ft Indus-Valley-style stone pillars, built with ASI",
+      "Entrance gate: four,41-ft Indus-Valley-style stone pillars, built with ASI",
       "5-star GRIHA rated (green campus)",
-      "Three main academic blocks connected via skywalks",
-      "Major fests: Zeitgeist (cultural, Oct/Nov, 3 days), Aadvitya (tech fest, Feb), Aarohan (sports fest, March)"
+      "Three main academic blocks connected via skywalks (SAB)",
+      "Major fests: Zeitgeist (cultural, Oct/Nov, 3 days), Aadvitya (tech fest, Feb), Aarohan (sports fest, March), Malhar (literary fest, September)"
     ]
   },
   "locations": [
     {
-      "id": "central_library",
+      "id": "library",
       "name": "Nalanda Central Library",
       "type": "academic",
       "sub_areas": ["reading_hall", "reference_section", "group_study_rooms", "silent_zone", "e_resource_lab"],
@@ -23,10 +23,11 @@
       "capacity": "high",
       "typical_activities": ["studying", "reading", "group project work", "research", "printing"],
       "connected_locations": ["academic_block", "central_lawn", "auditorium"],
-      "notes": "Reference section runs 24/7 and the library is fully open round-the-clock during exams; runs on the Koha ILMS; 22,000+ physical books plus e-journals (Scopus, Web of Science). Seat booking via a dedicated portal (studyatlib)."
+      "notes": "Reference section runs 24/7 and the library is fully open round-the-clock during exams; runs on the Koha ILMS; 22,000+ physical books plus e-journals (Scopus, Web of Science). Seat booking via a dedicated portal (studyatlib).",
+      "Entry_point Coordinates": "x = 712, y = 414"
     },
     {
-      "id": "academic_block",
+      "id": "SAB",
       "name": "Super Academic Block",
       "type": "academic",
       "sub_areas": ["Block A", "Block A", "Block C", "lecture_halls", "seminar_rooms", "department_labs", "faculty_offices"],
@@ -34,10 +35,11 @@
       "capacity": "high",
       "typical_activities": ["attending class", "lab work", "studying", "meeting professor", "tutorial"],
       "connected_locations": ["central_library", "central_lawn", "auditorium", "admin_block", "lecture_hall"],
-      "notes": "[VERIFIED] Three independent blocks connected by skywalks, smart/digitally-equipped classrooms, department-specific labs. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published."
+      "notes": "[VERIFIED] Three independent blocks connected by skywalks, smart/digitally-equipped classrooms, department-specific labs. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published.",
+      "Entry_point Coordinates": "x = 780, y = 489"
     },
     {
-      "id": "lecture_hall",
+      "id": "LHC",
       "name": "Lecture Hall Complex",
       "type": "academic",
       "sub_areas": ["class_rooms", "common_area"],
@@ -45,11 +47,57 @@
       "capacity": "high",
       "typical_activities": ["attending class", "studying", "tutorial"],
       "connected_locations": ["central_library", "central_lawn", "auditorium", "admin_block", "academic_block"],
-      "notes": "[VERIFIED] Three independent blocks connected by skywalks, smart/digitally-equipped classrooms, department-specific labs. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published."
+      "notes": "[VERIFIED] Used for hosting lectures, academic sessions, club sessions, hackathons, cultural events and guest lectures. [ASSUMED] 08:00-18:00 weekday window follows standard IIT timetable slots; exact IIT Ropar bell schedule not published.",
+      "Entry_point Coordinates": "x = 654, y = 450"
     },
     {
-      "id": "hostel_boys",
-      "name": "Boys' Hostel Complex",
+      "id": "Brahmaputra_Boys 1",
+      "name": "Boys' Hostel Complex - 1",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_boys", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. Alloted to Undergraduate, Second year male students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+    {
+      "id": "Brahmaputra_Boys 2",
+      "name": "Boys' Hostel Complex - 2",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_boys", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. Alloted to Undergraduate, first year male students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+
+    {
+      "id": "Chenab",
+      "name": "Boys' Hostel Complex - 3",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_boys", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. Alloted to Undergraduate, first and third year male students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+    {
+      "id": "Beas",
+      "name": "Boys' Hostel Complex - 4",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_boys", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. Alloted to Undergraduate, fourth year male students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+    {
+      "id": "Satluj",
+      "name": "Boys' Hostel Complex - 5",
       "type": "residential",
       "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
       "open_hours": {"all_days": "00:00-24:00"},
@@ -59,16 +107,28 @@
       "notes": "[VERIFIED] No entry/exit curfew; each block has common room w/ TV, gym, table tennis/badminton, laundry, 24/7 water & power, RO systems. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
     },
     {
-      "id": "hostel_girls",
-      "name": "Girls' Hostel Complex",
+      "id": "Ravi",
+      "name": "Girls' Hostel Complex - 1",
       "type": "residential",
       "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
       "open_hours": {"all_days": "00:00-24:00"},
       "capacity": "high",
       "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
       "connected_locations": ["mess_girls", "central_lawn", "sac_utility_block", "health_centre"],
-      "notes": "[VERIFIED] Same facility profile as boys' hostels — RO water, common room, hostel gym, laundry, 24/7 CCTV security."
+      "notes": "[VERIFIED] Same facility profile as boys' hostels — RO water, common room, hostel gym, laundry, 24/7 CCTV security. Alloted to Undergraduate, female students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
     },
+    {
+      "id": "Jhelum",
+      "name": "Girls' Hostel Complex - 2",
+      "type": "residential",
+      "sub_areas": ["rooms", "common_room", "hostel_gym", "indoor_games_room", "warden_office"],
+      "open_hours": {"all_days": "00:00-24:00"},
+      "capacity": "high",
+      "typical_activities": ["sleeping", "resting", "socializing", "gaming", "personal time"],
+      "connected_locations": ["mess_girls", "central_lawn", "sac_utility_block", "health_centre"],
+      "notes": "[VERIFIED] Same facility profile as boys' hostels — RO water, common room, hostel gym, laundry, 24/7 CCTV security. Alloted to Undergraduate, female students. See design-choice comment in chat re: collapsing multiple real hostel blocks into one node."
+    },
+    
     {
       "id": "mess",
       "name": "Mess",
@@ -88,7 +148,7 @@
       "id": "sac_utility_block",
       "name": "Student Activity Centre (SAC) / Utility Block",
       "type": "club_room",
-      "sub_areas": ["general_store", "stationery_shop", "salon", "sbi_branch_atm", "club_room_alankar", "club_room_bost", "club_room_arturo", "club_room_vibgyor"],
+      "sub_areas": ["general_store", "stationery_shop", "salon", "Postal Office","sbi_branch_atm", "club_room_alankar", "club_room_bost", "club_room_arturo", "club_room_vibgyor"],
       "open_hours": {
         "general_store": "10:00-20:00",
         "stationery_shop": "08:00-20:00",
@@ -99,7 +159,7 @@
       },
       "capacity": "medium",
       "typical_activities": ["shopping", "banking", "club meeting", "socializing", "grooming"],
-      "connected_locations": ["hostel_boys", "hostel_girls", "sports_complex", "central_lawn"],
+      "connected_locations": ["Jhelum", "Ravi", "sports_complex", "central_lawn"],
       "notes": "[VERIFIED] Exact shop hours and named club rooms (Alankar, BOST, Arturo, Vibgyor) confirmed via IIT Ropar's own student-life page. [ASSUMED] SBI branch hours use standard PSU-bank hours; ATM is always-on by default."
     },
     {
@@ -111,7 +171,7 @@
       "capacity": "medium",
       "typical_activities": ["playing sports", "exercising", "team practice", "watching a match"],
       "connected_locations": ["sac_utility_block", "central_lawn"],
-      "notes": "[VERIFIED] 1 cricket field, 3 clay tennis courts, 3 cricket practice pitches, 2 volleyball courts, hockey field, football field, basketball court, gymnasium, plus open athletics ground. Gymkhana runs Inter-IIT sports program. [ASSUMED] Daily open window (06:00-20:00) is a typical daylight-sports default."
+      "notes": "[VERIFIED] 1 cricket field, 2 clay tennis courts, 3 cricket practice pitches, 2 volleyball courts, hockey field, football field, 1 basketball court, gymnasium, plus open athletics ground. Gymkhana runs Inter-IIT sports program. [ASSUMED] Daily open window (06:00-20:00) is a typical daylight-sports default."
     },
     {
       "id": "health_centre",
@@ -121,7 +181,7 @@
       "open_hours": {"all_days": "00:00-24:00"},
       "capacity": "low",
       "typical_activities": ["medical checkup", "emergency care", "picking up medicine"],
-      "connected_locations": ["hostel_boys", "hostel_girls", "admin_block"],
+      "connected_locations": ["LHC", "Ravi", "admin_block"],
       "notes": "[VERIFIED] Open 24/7 with dedicated medical/paramedical staff and round-the-clock ambulance. Note: 'administrative' is the closest fit in your current enum — worth adding a dedicated 'healthcare' type (see comments)."
     },
     {

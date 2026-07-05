@@ -63,6 +63,7 @@
     flex-shrink: 0;
     font-family: monospace;
   }
+
   .agent-row input {
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.10);
@@ -221,23 +222,12 @@ const AGENT_COLORS = [
   '#f76707', '#20c997', '#f06595', '#748ffc', '#ffd43b',
 ];
 
-const AGENT_DEFAULTS = [
-  { x1: 32, y1: 297, x2: 959, y2: 1205 },
-  { x1: 1207, y1: 720, x2: 794, y2: 33 },
-  { x1: 1054, y1: 483, x2: 967, y2: 644 },
-  { x1: 524, y1: 293, x2: 602, y2: 410 },
-  { x1: 457, y1: 265, x2: 666, y2: 504 },
-  { x1: 529, y1: 437, x2: 666, y2: 877 },
-  { x1: 969, y1: 337, x2: 1234, y2: 404 },
-  { x1: 382, y1: 503, x2: 574, y2: 982 },
-  { x1: 1189, y1: 407, x2: 58, y2: 423 },
-  { x1: 598, y1: 669, x2: 647, y2: 174 },
-];
-
 const agents = AGENT_COLORS.map((color, i) => ({
   color,
   idx: i,
-  ...AGENT_DEFAULTS[i],
+  x1: 32, y1: 297,
+  x2: 0, y2: 0,
+  bldName: '',
   path: [],
   ballX: 0, ballY: 0,
   animating: false,
@@ -267,6 +257,28 @@ agents.forEach((a) => {
   `;
   agentList.appendChild(row);
 });
+
+async function fetchEntrypoints() {
+  try {
+    const res = await fetch('/api/entrypoints');
+    const data = await res.json();
+    const entries = Object.values(data);
+    entries.sort((a, b) => a.building_num - b.building_num);
+    agents.forEach((a, i) => {
+      if (i < entries.length) {
+        a.x2 = entries[i].x;
+        a.y2 = entries[i].y;
+        a.bldName = entries[i].name;
+        const row = agentList.querySelectorAll('.agent-row')[i];
+        if (row) {
+          row.querySelector('.ax2').value = a.x2;
+          row.querySelector('.ay2').value = a.y2;
+        }
+      }
+    });
+    draw();
+  } catch {}
+}
 
 function readAgentInputs() {
   const rows = document.querySelectorAll('.agent-row');
@@ -354,20 +366,21 @@ function draw() {
 
   // Start / end markers
   ctx.font = 'bold 9px monospace';
-  for (const a of agents) {
-    if (a.path.length < 2) continue;
-    const [sx, sy] = a.path[0];
-    const [ex, ey] = a.path[a.path.length - 1];
-
+  if (agents.some(a => a.path.length > 1)) {
     ctx.beginPath();
-    ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+    ctx.arc(32, 297, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#00cc66';
     ctx.fill();
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = '#00cc66';
-    ctx.fillText(`S${a.idx+1}`, sx + 7, sy + 3);
+    ctx.fillText('S', 39, 300);
+  }
+
+  for (const a of agents) {
+    if (a.path.length < 2) continue;
+    const [ex, ey] = a.path[a.path.length - 1];
 
     ctx.beginPath();
     ctx.arc(ex, ey, 5, 0, Math.PI * 2);
@@ -636,8 +649,10 @@ fetch('/api/buildings')
   .then(data => { buildings = data; buildingsLoaded = true; draw(); })
   .catch(() => {});
 
-// Load first agent on startup
-setTimeout(() => goAgent(0), 100);
+// Load entrypoints, then launch first agent
+fetchEntrypoints().then(() => {
+  setTimeout(() => goAgent(0), 200);
+});
 
 })();
 </script>

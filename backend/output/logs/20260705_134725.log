@@ -1,0 +1,11 @@
+2026-07-05 13:47:25 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260705_134725.log
+2026-07-05 13:47:26 | INFO     | __main__ | [day_planner] loaded 13 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-05 13:47:34 | INFO     | src.llm.gemini_client | 2026-07-05 13:47:34 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 13:47:34 | INFO     | __main__ | [day_planner] coarse plan generated: 7 blocks
+2026-07-05 13:47:36 | INFO     | src.llm.gemini_client | 2026-07-05 13:47:36 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 13:47:36 | INFO     | __main__ | [day_planner] hourly plan: 3 atomic passthrough + 11 refined
+2026-07-05 13:47:37 | INFO     | src.llm.gemini_client | 2026-07-05 13:47:37 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 13:47:42 | INFO     | src.llm.gemini_client | 2026-07-05 13:47:42 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-05 13:47:42 | INFO     | __main__ | [day_planner] fine plan: 21 total actions
+2026-07-05 13:47:45 | INFO     | src.llm.gemini_client | 2026-07-05 13:47:45 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-05 13:47:45 | INFO     | __main__ | [day_planner] plan validated successfully

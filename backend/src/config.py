@@ -7,12 +7,39 @@ so all modules can reference consistent paths.
 from pathlib import Path
 import os
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(path: str | Path) -> bool:
+        env_path = Path(path)
+        if not env_path.exists():
+            return False
+
+        loaded = False
+        for raw_line in env_path.read_text().splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+                loaded = True
+
+        return loaded
+
 
 # DEBUG -
 VERBOSE = True
 
 # backend/src/config.py -> backend/src -> backend -> Valhalla (project root)
 BASE_DIR = Path(__file__).resolve().parents[2]
+
+# Load the project-local .env so environment variables are available before
+# any config values are read.
+load_dotenv(BASE_DIR / ".env")
 
 BACKEND_DIR = BASE_DIR / "backend"
 DATA_DIR = BACKEND_DIR / "data"
@@ -63,7 +90,13 @@ MODEL_TIERS: dict[str, list[str]] = {
 # Rotates through them if a whole model chain gets rate-limited on the current key.
 API_KEYS: list[str] = [
     k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()
-] or [os.environ.get("GEMINI_API_KEY", "")]
+]
+if not API_KEYS:
+    numbered_keys = [
+        os.environ.get(f"GEMINI_API_KEY_{index}", "")
+        for index in range(2, 11)
+    ]
+    API_KEYS = [key for key in [os.environ.get("GEMINI_API_KEY", ""), *numbered_keys] if key]
 
 
 # day_planner.py CONFIG
