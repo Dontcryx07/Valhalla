@@ -57,12 +57,43 @@ class AgentState(TypedDict, total=False):
     persona: dict
     current_time: str
     day_plan: list[dict]
+    relevant_memories: list[str]
+    yesterday_summary: Optional[str]
     error: Optional[str]
 
 
 # ---------------------------------------------------------------------------
 # Single-agent graph
 # ---------------------------------------------------------------------------
+
+def retrieve_memories(state: AgentState) -> dict:
+    """Node: fetch yesterday's summary and relevant memories from Short_term."""
+    from src.core.Short_term import (
+        date_from_simulation_time,
+        get_yesterday_summary,
+        get_relevant_memories,
+    )
+
+    persona_name = state["persona_name"]
+    sim_date = date_from_simulation_time(state.get("current_time", "00:00"))
+    persona = state.get("persona", {})
+
+    yesterday_summary = get_yesterday_summary(persona_name, sim_date)
+
+    traits = persona.get("Traits", persona.get("traits", []))
+    query = " ".join(traits) if traits else "daily life"
+    memories = get_relevant_memories(persona_name, sim_date, query, k=5)
+
+    if yesterday_summary:
+        logger.info("[Single_agent] %s: loaded yesterday's summary", persona_name)
+    if memories:
+        logger.info("[Single_agent] %s: loaded %d relevant memories", persona_name, len(memories))
+
+    return {
+        "relevant_memories": memories,
+        "yesterday_summary": yesterday_summary,
+    }
+
 
 def generate_day_plan(state: AgentState) -> dict:
     """Node: generate a day plan for this agent by calling day_planner.run()."""
@@ -73,8 +104,8 @@ def generate_day_plan(state: AgentState) -> dict:
     try:
         agent = SimpleNamespace(
             persona=persona,
-            relevant_memories=[],
-            yesterday_summary=None,
+            relevant_memories=state.get("relevant_memories", []),
+            yesterday_summary=state.get("yesterday_summary"),
         )
 
         result = day_planner.run(agent, {
@@ -106,8 +137,10 @@ def create_agent_graph():
         return _agent_graph
 
     builder = StateGraph(AgentState)
+    builder.add_node("retrieve_memories", retrieve_memories)
     builder.add_node("generate_day_plan", generate_day_plan)
-    builder.add_edge(START, "generate_day_plan")
+    builder.add_edge(START, "retrieve_memories")
+    builder.add_edge("retrieve_memories", "generate_day_plan")
     builder.add_edge("generate_day_plan", END)
 
     _agent_graph = builder.compile()

@@ -250,30 +250,6 @@ def _memories_block(memories: List[str]) -> str:
     return "\n".join(f"- {m}" for m in memories)
 
 
-def _save_day_plan_to_Short_term_db(persona: dict, final_state: dict, persona_name_hint: Optional[str] = None) -> Path:
-    Short_term_db_dir = DATA_DIR / "Short_term_db"
-    Short_term_db_dir.mkdir(parents=True, exist_ok=True)
-
-    persona_name = str(persona_name_hint or persona.get("name") or "unknown").strip()
-    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name).strip("._-").lower() or "unknown"
-    output_path = Short_term_db_dir / f"{safe_name}.json"
-
-    sanitized_day_plan = [
-        {key: value for key, value in item.items() if key != "parent_activity"}
-        for item in final_state.get("day_plan", [])
-    ]
-
-    payload = {
-        "persona_name": persona_name,
-        "day_plan": sanitized_day_plan,
-        "error": final_state.get("error"),
-    }
-
-    output_path.write_text(json.dumps(payload, indent=2))
-    logger.info("[day_planner] saved final plan to %s", output_path)
-    return output_path
-
-
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -651,7 +627,11 @@ def run(agent: Any, world_state: dict) -> dict:
     if _last_exc is not None:
         raise _last_exc  # Give up after exhausting graph retries
 
-    _save_day_plan_to_Short_term_db(initial_state["persona"], final_state, world_state.get("persona_name"))
+    # Save day plan to short-term memory
+    from src.core.Short_term import save_day_plan, date_from_simulation_time
+    
+    sim_date = date_from_simulation_time(world_state.get("current_time", "00:00"))
+    save_day_plan(initial_state["persona"].get("name", "unknown"), sim_date, final_state.get("day_plan", []))
 
     return {
         "day_plan": final_state.get("day_plan", []),
