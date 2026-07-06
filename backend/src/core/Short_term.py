@@ -429,3 +429,37 @@ def clear_day(persona_name: str, date_str: str) -> bool:
         logger.info("Cleared short-term data for %s on %s", persona_name, date_str)
         return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# MemoryStreamProtocol adapter
+# ---------------------------------------------------------------------------
+
+class ShortTermMemoryStream:
+    """
+    Adapter that wraps Short_term.py's module-level functions as
+    MemoryStreamProtocol (defined in tick_graph.py) with sim-date awareness.
+
+    Usage:
+        stream = ShortTermMemoryStream("2026-07-03")
+        # Tick graph nodes call:
+        stream.add_memory(agent_id, content, importance)
+        stream.retrieve_memories(agent_id, query, k)
+    """
+
+    def __init__(self, initial_date: str = "") -> None:
+        self._date_str: str = initial_date or datetime.now(timezone.utc).date().isoformat()
+
+    @property
+    def date_str(self) -> str:
+        return self._date_str
+
+    def set_date(self, date_str: str) -> None:
+        """Update the simulation date (called before each tick)."""
+        self._date_str = date_str
+
+    def add_memory(self, agent_id: str, content: str, importance: Optional[int] = None) -> None:
+        add_memory(agent_id, content, importance, date_str=self._date_str)
+
+    def retrieve_memories(self, agent_id: str, query: str, k: int = 5) -> list[str]:
+        return retrieve_memories(agent_id, query, k, date_str=self._date_str)
