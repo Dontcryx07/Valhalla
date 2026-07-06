@@ -1,0 +1,147 @@
+{
+  "persona_name": "Parv Singla",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Late-night technology exploration and coding",
+      "start": "00:00",
+      "end": "02:00",
+      "parent_activity": "Late-night technology exploration and coding",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Sleep",
+      "start": "02:00",
+      "end": "08:00",
+      "parent_activity": "Sleep",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Wake up and perform personal hygiene",
+      "start": "08:00",
+      "end": "08:30",
+      "parent_activity": "Morning hygiene and personal grooming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Grooming and getting ready for the day",
+      "start": "08:30",
+      "end": "09:00",
+      "parent_activity": "Morning hygiene and personal grooming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Walk to the mess for breakfast",
+      "start": "09:00",
+      "end": "09:10",
+      "parent_activity": "Quick breakfast",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Eat a quick breakfast",
+      "start": "09:10",
+      "end": "09:30",
+      "parent_activity": "Quick breakfast",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Attend B.Tech AI and Data Engineering classes",
+      "start": "09:30",
+      "end": "14:30",
+      "parent_activity": "Attend B.Tech AI and Data Engineering classes",
+      "location_id": "SAB",
+      "sub_area": "lecture_halls"
+    },
+    {
+      "action": "Code and develop Data Engineering project components",
+      "start": "14:30",
+      "end": "15:30",
+      "parent_activity": "Data Engineering project development",
+      "location_id": "library",
+      "sub_area": "group_study_rooms"
+    },
+    {
+      "action": "Collaborate on technical club initiatives",
+      "start": "15:30",
+      "end": "16:30",
+      "parent_activity": "Technical club collaboration meeting",
+      "location_id": "sac_utility_block",
+      "sub_area": "club_room_alankar"
+    },
+    {
+      "action": "Document findings for AI research",
+      "start": "16:30",
+      "end": "17:00",
+      "parent_activity": "Documentation for AI research",
+      "location_id": "library",
+      "sub_area": "silent_zone"
+    },
+    {
+      "action": "Go for a run on the athletics track",
+      "start": "17:00",
+      "end": "18:00",
+      "parent_activity": "Running exercise",
+      "location_id": "sports_complex",
+      "sub_area": "athletics_track"
+    },
+    {
+      "action": "Socialize with friends at the central lawn",
+      "start": "18:00",
+      "end": "19:00",
+      "parent_activity": "Socializing with friends post-run",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Head to the mess for dinner",
+      "start": "19:00",
+      "end": "19:10",
+      "parent_activity": "Dinner with friends",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Eat dinner and chat with friends",
+      "start": "19:10",
+      "end": "20:00",
+      "parent_activity": "Dinner with friends",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Casual group hangout",
+      "start": "20:00",
+      "end": "21:00",
+      "parent_activity": "Casual conversation and group hang out",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Wrap up evening activities",
+      "start": "21:00",
+      "end": "21:30",
+      "parent_activity": "Final evening social wrap-up",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Relaxing, listening to music, and casual study",
+      "start": "21:30",
+      "end": "24:00",
+      "parent_activity": "Relaxing, listening to music, and casual study",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    }
+  ],
+  "events": [],
+  "conversations": [],
+  "world_snapshots": [],
+  "daily_summary": null,
+  "archived_to_long_term": false
+}

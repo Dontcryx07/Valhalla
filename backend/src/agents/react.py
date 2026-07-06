@@ -32,7 +32,7 @@ from pydantic import BaseModel
 
 from src.core.log import get_logger
 from src.core.world_state import CurrentAction
-from src.agents.perceive import Observation
+from src.core.perceive import Observation
 from src.llm.gemini_client import call_gemini
 
 logger = get_logger(__name__)

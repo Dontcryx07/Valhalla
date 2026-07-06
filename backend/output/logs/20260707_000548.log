@@ -1,0 +1,3 @@
+2026-07-07 00:05:48 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260707_000548.log
+2026-07-07 00:05:49 | WARNING  | src.core.Agent | build_tick_graph() called with no memory_stream -- using a no-op stand-in. retrieve_memories() will always return []. Pass the real MemoryStream in once it's ready.
+2026-07-07 00:05:49 | INFO     | src.core.Agent | Tick graph compiled.

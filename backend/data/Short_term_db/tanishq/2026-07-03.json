@@ -1,0 +1,123 @@
+{
+  "persona_name": "Tanishq",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Sleep and late morning rest",
+      "start": "00:00",
+      "end": "10:30",
+      "parent_activity": "Sleep and late morning rest",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Wake up and perform personal grooming at hostel",
+      "start": "10:30",
+      "end": "11:00",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Grab a light breakfast at the hostel room",
+      "start": "11:00",
+      "end": "11:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Attend CS lectures",
+      "start": "11:30",
+      "end": "14:00",
+      "parent_activity": "Attend CS lectures",
+      "location_id": "LHC",
+      "sub_area": "class_rooms"
+    },
+    {
+      "action": "Code side projects on personal laptop",
+      "start": "14:00",
+      "end": "15:00",
+      "parent_activity": "Study in library and code side projects",
+      "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Read dark romance novel in quiet corner",
+      "start": "15:00",
+      "end": "16:00",
+      "parent_activity": "Study in library and code side projects",
+      "location_id": "library",
+      "sub_area": "silent_zone"
+    },
+    {
+      "action": "Continue coding side projects",
+      "start": "16:00",
+      "end": "17:00",
+      "parent_activity": "Study in library and code side projects",
+      "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Read dark romance novel",
+      "start": "17:00",
+      "end": "18:00",
+      "parent_activity": "Study in library and code side projects",
+      "location_id": "library",
+      "sub_area": "silent_zone"
+    },
+    {
+      "action": "Eat dinner at the mess",
+      "start": "18:00",
+      "end": "19:00",
+      "parent_activity": "Dinner and solitary evening walk",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Take a solitary evening walk around campus",
+      "start": "19:00",
+      "end": "20:00",
+      "parent_activity": "Dinner and solitary evening walk",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Lurk on social media and browse websites",
+      "start": "20:00",
+      "end": "21:00",
+      "parent_activity": "Solitary late-night internet browsing and leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Engage in solitary adult fantasies",
+      "start": "21:00",
+      "end": "22:00",
+      "parent_activity": "Solitary late-night internet browsing and leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Late-night gooning session",
+      "start": "22:00",
+      "end": "23:00",
+      "parent_activity": "Solitary late-night internet browsing and leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Late-night gooning session",
+      "start": "23:00",
+      "end": "24:00",
+      "parent_activity": "Solitary late-night internet browsing and leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    }
+  ],
+  "events": [],
+  "conversations": [],
+  "world_snapshots": [],
+  "daily_summary": null,
+  "archived_to_long_term": false
+}

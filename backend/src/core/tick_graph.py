@@ -1,65 +1,31 @@
 """
-Tick graph -- the per-agent LangGraph subgraph invoked once per tick for
-every agent scheduler.py's `agents_ready_for_decision()` returns.
+Agent -- per-agent LangGraph subgraph + standalone CLI debug tool.
 
-Pipeline:
+Production pipeline (used by WorldEngine via build_tick_graph):
 
-    perceive -> retrieve_memories -> react --[replan]--> day_planner -> write_back_memory -> END
-                                        \\_____[continue]___> keep_current -> write_back_memory -> END
+    perceive -> retrieve_memories -> react --[replan]--> day_planner -> write_back_memory
+                                              \\_[continue]__> keep_current /
 
-- perceive:          core/snapshot.py + agents/perceive.py, no LLM call
-- retrieve_memories: delegates to a `MemoryStreamProtocol` implementation
-- react:             agents/react.py -- cheap path most of the time, one LLM
-                     call only when mid-action + something new perceived
-- day_planner:       wired directly to your real `agents/day_planner.py`
-                     (see "Day-planner integration" below)
-- write_back_memory: records the decision via the memory stream (no-op
-                     until the real module lands)
+Only agents where scheduler.py's `agents_ready_for_decision()` returns
+True are invoked each tick -- mid-action agents are skipped entirely.
 
-The compiled graph's output is a `TickResult`, which is what
-engine/world_engine.py's resolve phase should read and apply to the real
-`WorldState`. This module never mutates `WorldState` directly.
+Standalone CLI debug mode (python Agent.py <persona>):
 
-Day-planner integration
--------------------------
-`day_planner.py` is a FULL-DAY planner: `run(agent, world_state)`
-returns a `day_plan` covering 00:00 -> 24:00 of one calendar day as a list
-of fine actions, not a single "next action." That changes what "replan"
-means at the tick-graph level:
+    retrieve_memories from Short_term -> call day_planner.run() -> print plan table
 
-  - The graph does NOT call day_planner.run() every time an action ends.
-    Once a day's plan exists, finishing an action just means "look up the
-    next slot in the plan already on file" -- a dict lookup, zero LLM calls.
-  - day_planner.run() is only actually invoked when:
-      1. no plan exists yet for the current sim day (first tick of a new
-         day), or
-      2. react.py's LLM decided an in-progress action should be interrupted
-         (a genuinely new circumstance the existing plan didn't account
-         for) -- in which case the whole day is regenerated, with a note
-         about what triggered the interruption folded into the memories
-         fed to day_planner.run(), since it always plans from 00:00 rather
-         than "from now."
-    That second case is a real limitation worth knowing: because
-    day_planner.py always re-derives the *entire* day from scratch, a
-    replan triggered at, say, 15:00 isn't guaranteed to keep everything
-    before 15:00 identical to what already happened -- it's a fresh plan,
-    just one nudged by an extra note about the interruption. Revisit this
-    once day_planner.py supports "plan the remainder of the day" if that
-    mismatch turns out to matter in practice.
-  - Per-agent, per-sim-day plans are cached via `DayPlanStoreProtocol`
-    (in-memory default provided) so agents don't recompute a plan they
-    already have.
-  - `current_time` for day_planner.run() needs an actual calendar date (its
-    prompts reference "yesterday," day-of-week, etc.) even though the sim
-    only tracks an integer tick. `build_tick_graph(sim_start_date=...)`
-    anchors day_index=0 to a real date so that string can be built; pass
-    your simulation's actual start date, otherwise it defaults to today.
-
-Build the graph ONCE at startup (main.py or WorldEngine.__init__), not once
-per tick -- it's stateless between `.ainvoke()` calls.
+Useful for testing a single persona's day plan without standing up the
+full tick loop.
 """
 
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.append(str(BACKEND_ROOT))
+
 
 from datetime import date, timedelta
 from enum import Enum
@@ -71,18 +37,15 @@ from pydantic import BaseModel
 from src.core.log import get_logger
 from src.core.snapshot import WorldSnapshot
 from src.core.world_state import CurrentAction
-from src.agents.perceive import perceive, Observation
+from src.core.perceive import perceive, Observation
 from src.agents.react import decide_reaction, ReactionDecision
 
 logger = get_logger(__name__)
 
 
+# --------------------------------------------------------------------------- #
 # Sim-tick <-> wallclock helpers
-#
-# The world engine's tick is a running integer count of simulated minutes
-# (see WorldState.advance_tick). day_planner.py thinks in HH:MM within a
-# single calendar day. These two conversions are the only place that
-# mapping happens. (1 tick -> 1 minute)
+# --------------------------------------------------------------------------- #
 
 MINUTES_PER_DAY = 24 * 60
 
@@ -99,7 +62,10 @@ def hhmm_to_minute(hhmm: str) -> int:
     return int(hh) * 60 + int(mm)
 
 
+# --------------------------------------------------------------------------- #
 # Day-planner integration contract
+# --------------------------------------------------------------------------- #
+
 
 class DayPlannerRequest(BaseModel):
     agent_id: str
@@ -108,14 +74,10 @@ class DayPlannerRequest(BaseModel):
     yesterday_summary: Optional[str]
     day_index: int
     current_hhmm: str
-    # Set only when this is a forced midday replan triggered by react.py's
-    # LLM deciding an observation was worth interrupting for.
     interrupt_context: Optional[str] = None
 
 
 class DayPlanEntry(BaseModel):
-    """Mirrors the dict shape day_planner.py's `run()` puts in `day_plan`
-    (FineAction / atomic-location-assignment fields, whichever produced it)."""
     action: str
     start: str
     end: str
@@ -128,17 +90,6 @@ DayPlannerFn = Callable[[DayPlannerRequest], List[DayPlanEntry]]
 
 
 def build_default_day_planner_fn(sim_start_date: Optional[date] = None) -> DayPlannerFn:
-    """
-    The real bridge to `src.agents.day_planner.run()`. Imported lazily
-    inside the returned closure so importing tick_graph.py doesn't require
-    google-genai/config/API keys to be set up unless a day plan is
-    actually being generated.
-
-    `sim_start_date` anchors day_index=0 to a real calendar date, since
-    day_planner.py's prompts want an actual date/day-of-week even though
-    the sim only tracks an integer tick count. Defaults to today if you
-    don't have a fixed sim epoch -- pass your real one if you have it.
-    """
     epoch = sim_start_date or date.today()
 
     def _adapter(request: DayPlannerRequest) -> List[DayPlanEntry]:
@@ -171,7 +122,6 @@ def build_default_day_planner_fn(sim_start_date: Optional[date] = None) -> DayPl
 
 
 def _find_slot(plan: List[DayPlanEntry], hhmm: str) -> Optional[DayPlanEntry]:
-    """The plan entry covering `hhmm`, i.e. start <= hhmm < end."""
     minute = hhmm_to_minute(hhmm)
     for entry in plan:
         if hhmm_to_minute(entry.start) <= minute < hhmm_to_minute(entry.end):
@@ -179,21 +129,18 @@ def _find_slot(plan: List[DayPlanEntry], hhmm: str) -> Optional[DayPlanEntry]:
     return None
 
 
+# --------------------------------------------------------------------------- #
 # Per-agent, per-sim-day plan cache
+# --------------------------------------------------------------------------- #
+
 
 class DayPlanStoreProtocol:
     def get(self, agent_id: str, day_index: int) -> Optional[List[DayPlanEntry]]: ...
-
     def set(self, agent_id: str, day_index: int, plan: List[DayPlanEntry]) -> None: ...
-
     def invalidate(self, agent_id: str, day_index: int) -> None: ...
 
 
 class InMemoryDayPlanStore(DayPlanStoreProtocol):
-    """Fine for a single-process sim. Swap for a persistence-backed store
-    once Phase 4 (replay log / SQLite) is wired up, if you want plans to
-    survive a process restart."""
-
     def __init__(self) -> None:
         self._plans: Dict[Tuple[str, int], List[DayPlanEntry]] = {}
 
@@ -208,25 +155,16 @@ class InMemoryDayPlanStore(DayPlanStoreProtocol):
 
 
 # --------------------------------------------------------------------------- #
-# Memory stream integration contract -- matches the stub interface you and
-# your teammate agreed on.
+# Memory stream integration contract
 # --------------------------------------------------------------------------- #
 
+
 class MemoryStreamProtocol:
-    """Structural contract only -- your teammate's real class satisfies this
-    without needing to inherit from it; this exists purely for readability
-    at the call sites in this file."""
-
     def add_memory(self, agent_id: str, content: str, importance: Optional[int] = None) -> None: ...
-
     def retrieve_memories(self, agent_id: str, query: str, k: int = 5) -> List[str]: ...
 
 
 class _NullMemoryStream:
-    """Used automatically if no memory_stream is supplied, so this graph is
-    runnable standalone before the memory module lands. Logs loudly rather
-    than silently pretending to remember things."""
-
     def add_memory(self, agent_id: str, content: str, importance: Optional[int] = None) -> None:
         logger.debug("[NullMemoryStream] would store for '%s': %s", agent_id, content)
 
@@ -234,11 +172,14 @@ class _NullMemoryStream:
         return []
 
 
-# Tick outcome / result -- what this graph hands back to world_engine.py
+# --------------------------------------------------------------------------- #
+# Tick outcome / result
+# --------------------------------------------------------------------------- #
+
 
 class TickOutcome(str, Enum):
-    KEEP_CURRENT = "keep_current"   # no change; agent's existing action/status stands
-    NEW_ACTION = "new_action"       # resolver should call world.set_agent_action(...)
+    KEEP_CURRENT = "keep_current"
+    NEW_ACTION = "new_action"
 
 
 class TickResult(BaseModel):
@@ -250,10 +191,9 @@ class TickResult(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
-# Internal graph state -- scratch state, never leaves this module. TypedDict
-# per your state-design split (cross-tick-boundary state is Pydantic;
-# subgraph-local scratch state is TypedDict).
+# Internal graph state
 # --------------------------------------------------------------------------- #
+
 
 class TickState(TypedDict, total=False):
     agent_id: str
@@ -274,7 +214,6 @@ def build_initial_state(
     yesterday_summary: Optional[str],
     world_snapshot: WorldSnapshot,
 ) -> TickState:
-    """Convenience builder for the state fed into `tick_graph.ainvoke(...)`."""
     current_action = world_snapshot.get_agent(agent_id).current_action
     return TickState(
         agent_id=agent_id,
@@ -290,21 +229,13 @@ def build_initial_state(
 # Graph builder
 # --------------------------------------------------------------------------- #
 
+
 def build_tick_graph(
     memory_stream: Optional[MemoryStreamProtocol] = None,
     day_planner_fn: Optional[DayPlannerFn] = None,
     day_plan_store: Optional[DayPlanStoreProtocol] = None,
     sim_start_date: Optional[date] = None,
 ):
-    """
-    Compile the per-agent tick subgraph. Call once at startup; reuse the
-    compiled graph for every agent, every tick.
-
-    `day_planner_fn` defaults to the real bridge to `agents/day_planner.py`
-    (`build_default_day_planner_fn`). Override it (e.g. with a fake that
-    returns canned `DayPlanEntry` lists) for tests that shouldn't hit
-    Gemini -- see the `__main__` block below for an example.
-    """
     memory = memory_stream or _NullMemoryStream()
     if memory_stream is None:
         logger.warning(
@@ -315,10 +246,6 @@ def build_tick_graph(
 
     day_plans = day_plan_store or InMemoryDayPlanStore()
     plan_fn = day_planner_fn or build_default_day_planner_fn(sim_start_date)
-
-    # ------------------------------------------------------------------ #
-    # Nodes
-    # ------------------------------------------------------------------ #
 
     def perceive_node(state: TickState) -> Dict[str, Any]:
         observations = perceive(state["world_snapshot"], state["agent_id"])
@@ -355,10 +282,6 @@ def build_tick_graph(
         day_index, hhmm = tick_to_wallclock(tick)
 
         current_action = state.get("current_action")
-        # If we got routed here with a current_action that hasn't actually
-        # finished yet, react.py's LLM decided to interrupt it -- that's the
-        # one case that forces a full-day regeneration rather than a cache
-        # lookup for the next scheduled slot.
         interrupted = current_action is not None and not current_action.is_finished(tick)
 
         cached_plan = day_plans.get(agent_id, day_index)
@@ -385,10 +308,6 @@ def build_tick_graph(
 
         slot = _find_slot(cached_plan, hhmm)
         if slot is None:
-            # Plan doesn't cover this minute (malformed plan, or day boundary
-            # edge case). Don't crash the tick -- log it, drop the bad cache
-            # entry so the next tick forces a clean regeneration, and fall
-            # back to a short safe placeholder for this one tick only.
             logger.warning(
                 "No day-plan slot covers %s on day %d for agent '%s'; "
                 "using a placeholder action and invalidating the cached plan.",
@@ -396,7 +315,7 @@ def build_tick_graph(
             )
             day_plans.invalidate(agent_id, day_index)
             slot = DayPlanEntry(action="idle (no plan slot found)", start=hhmm, end=hhmm)
-            duration = 10  # minutes; matches the default tick granularity
+            duration = 10
         else:
             duration = hhmm_to_minute(slot.end) - hhmm_to_minute(hhmm)
             duration = max(duration, 1)
@@ -436,10 +355,6 @@ def build_tick_graph(
             )
         return {}
 
-    # ------------------------------------------------------------------ #
-    # Wiring
-    # ------------------------------------------------------------------ #
-
     graph = StateGraph(TickState)
     graph.add_node("perceive", perceive_node)
     graph.add_node("retrieve_memories", retrieve_memories_node)
@@ -472,52 +387,150 @@ async def run_tick(
     yesterday_summary: Optional[str],
     world_snapshot: WorldSnapshot,
 ) -> TickResult:
-    """
-    Convenience wrapper: builds the initial state, invokes the graph, and
-    returns a `TickResult` directly. This is what world_engine.py's decide
-    phase should call inside `asyncio.gather(...)` for each ready agent:
-
-        results = await asyncio.gather(*[
-            run_tick(tick_graph, aid, personas[aid], summaries[aid], snap)
-            for aid in ready_agent_ids
-        ])
-    """
     initial_state = build_initial_state(agent_id, persona, yesterday_summary, world_snapshot)
     final_state = await tick_graph.ainvoke(initial_state)
     return final_state["result"]
 
 
 # --------------------------------------------------------------------------- #
-# Standalone sanity check -- uses a fake day_planner_fn so it doesn't hit
-# Gemini. Requires `langgraph` installed; not executed in this environment.
+# Standalone day-plan CLI (debug tool)
 # --------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
+    import argparse
     import asyncio
+    import json
+    import time
+    from types import SimpleNamespace
 
-    from src.core.world_state import WorldState, Position
-    from src.core.snapshot import take_snapshot
+    from src.core.log import setup_logging
+    setup_logging(run_id="agent_cli", console=False)
+    from src.config import PERSONALITIES_DIR
 
-    def fake_day_planner(request: DayPlannerRequest) -> List[DayPlanEntry]:
-        # A trivial two-block "day" so _find_slot has something to match.
-        return [
-            DayPlanEntry(action="sleeping", start="00:00", end="06:00"),
-            DayPlanEntry(action="testing the tick graph", start="06:00", end="24:00"),
-        ]
+    parser = argparse.ArgumentParser(description="Agent debug tool — day-plan or self-test")
+    parser.add_argument(
+        "persona", nargs="?",
+        help="Persona name (e.g. parv) or path to a persona JSON file",
+    )
+    parser.add_argument(
+        "--self-test", action="store_true",
+        help="Run tick graph sanity check with a fake day planner (no Gemini)",
+    )
+    parser.add_argument(
+        "--current-time", default="2026-07-03 06:00",
+        help="Simulation time for the day planner (default: 2026-07-03 06:00)",
+    )
+    args = parser.parse_args()
 
-    async def _demo() -> None:
-        world = WorldState()
-        world.register_agent("test_agent", Position(x=0, y=0, location_id="start"))
-        world.advance_tick(minutes=6 * 60)  # jump to 06:00 so we land in the second block
-        snap = take_snapshot(world)
+    # --self-test mode: tick graph sanity check
+    if args.self_test:
+        from src.core.world_state import WorldState, Position
+        from src.core.snapshot import take_snapshot
 
-        graph = build_tick_graph(day_planner_fn=fake_day_planner)
-        result = await run_tick(
-            graph, "test_agent", persona={"name": "Test"}, yesterday_summary=None, world_snapshot=snap
-        )
-        assert result.outcome == TickOutcome.NEW_ACTION
-        assert result.action is not None
-        assert result.action.description == "testing the tick graph"
-        print("tick_graph.py sanity check passed:", result)
+        def fake_day_planner(request: DayPlannerRequest) -> List[DayPlanEntry]:
+            return [
+                DayPlanEntry(action="sleeping", start="00:00", end="06:00"),
+                DayPlanEntry(action="testing the tick graph", start="06:00", end="24:00"),
+            ]
 
-    asyncio.run(_demo())
+        async def _run_self_test() -> None:
+            world = WorldState()
+            world.register_agent("test_agent", Position(x=0, y=0, location_id="start"))
+            world.advance_tick(minutes=6 * 60)
+            snap = take_snapshot(world)
+            graph = build_tick_graph(day_planner_fn=fake_day_planner)
+            result = await run_tick(
+                graph, "test_agent", persona={"name": "Test"}, yesterday_summary=None, world_snapshot=snap
+            )
+            assert result.outcome == TickOutcome.NEW_ACTION
+            assert result.action is not None
+            assert result.action.description == "testing the tick graph"
+            print("Self-test passed:", result)
+
+        asyncio.run(_run_self_test())
+        sys.exit(0)
+
+    # Day-plan mode: generate a full day plan for one persona
+    if args.persona is None:
+        parser.print_help()
+        sys.exit(1)
+
+    # Resolve persona path (same logic as Single_agent.py)
+    candidate = Path(args.persona)
+    if candidate.exists():
+        persona_path = candidate
+    elif candidate.suffix == ".json":
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{candidate.name}"))
+        persona_path = matches[0] if matches else candidate
+    else:
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{args.persona}/{args.persona}.json"))
+        if not matches:
+            matches = sorted(PERSONALITIES_DIR.glob(f"**/{args.persona}.json"))
+        if not matches:
+            available = sorted({p.parent.name for p in PERSONALITIES_DIR.glob("**/*.json")})
+            raise FileNotFoundError(
+                f"Could not find persona '{args.persona}'. "
+                f"Available: {', '.join(available)}"
+            )
+        persona_path = matches[0]
+
+    persona_data = json.loads(persona_path.read_text())
+    persona_name = persona_data.get("Name", persona_path.stem)
+    current_time = args.current_time
+
+    t0 = time.perf_counter()
+    print(f'Day planner — running "{persona_name}" at {current_time}\n')
+
+    # Retrieve memories from Short_term
+    from src.agents.Short_term import date_from_simulation_time, get_yesterday_summary, get_relevant_memories
+
+    sim_date = date_from_simulation_time(current_time)
+    yesterday_summary = get_yesterday_summary(persona_name, sim_date)
+    traits = persona_data.get("Traits", persona_data.get("traits", []))
+    query = " ".join(traits) if traits else "daily life"
+    memories = get_relevant_memories(persona_name, sim_date, query, k=5)
+
+    if yesterday_summary:
+        print(f"  Loaded yesterday's summary")
+    if memories:
+        print(f"  Loaded {len(memories)} relevant memories")
+
+    # Generate day plan via day_planner.run()
+    from src.agents.day_planner import run as day_planner_run
+
+    agent = SimpleNamespace(
+        persona=persona_data,
+        relevant_memories=memories,
+        yesterday_summary=yesterday_summary,
+    )
+
+    try:
+        result = day_planner_run(agent, {
+            "current_time": current_time,
+            "places": None,
+            "persona_name": persona_name,
+        })
+        plan = result.get("day_plan", [])
+        error = result.get("error")
+
+        elapsed = time.perf_counter() - t0
+
+        print(f"\n{'='*60}")
+        if error:
+            print(f"  Failed: {error}  |  Elapsed: {elapsed:.1f}s")
+        else:
+            print(f"  Completed — {len(plan)} actions  |  Elapsed: {elapsed:.1f}s")
+        print(f"{'='*60}")
+
+        if not error and plan:
+            print(f'\n  Generated plan for "{persona_name}":')
+            print(f'  {"Action":25s} {"Start":7s} {"End":7s} {"Location":25s} {"Area":20s}')
+            print(f'  {"-"*25} {"-"*7} {"-"*7} {"-"*25} {"-"*20}')
+            for a in plan:
+                loc = (a.get("location_id") or "")[:25]
+                area = (a.get("sub_area") or "")[:20]
+                print(f'  {a.get("action", ""):25s} {a.get("start", ""):7s} {a.get("end", ""):7s} {loc:25s} {area:20s}')
+
+    except Exception as exc:
+        elapsed = time.perf_counter() - t0
+        print(f"\n  Failed after {elapsed:.1f}s: {exc}")

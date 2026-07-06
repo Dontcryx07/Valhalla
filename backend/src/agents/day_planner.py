@@ -628,10 +628,10 @@ def run(agent: Any, world_state: dict) -> dict:
         raise _last_exc  # Give up after exhausting graph retries
 
     # Save day plan to short-term memory
-    from src.core.Short_term import save_day_plan, date_from_simulation_time
+    from src.agents.Short_term import save_day_plan, date_from_simulation_time
     
     sim_date = date_from_simulation_time(world_state.get("current_time", "00:00"))
-    save_day_plan(initial_state["persona"].get("name", "unknown"), sim_date, final_state.get("day_plan", []))
+    save_day_plan(initial_state["persona"].get("Name") or initial_state["persona"].get("name", "unknown"), sim_date, final_state.get("day_plan", []))
 
     return {
         "day_plan": final_state.get("day_plan", []),

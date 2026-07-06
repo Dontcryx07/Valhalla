@@ -1,0 +1,8 @@
+2026-07-07 00:00:13 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260707_000013.log
+2026-07-07 00:00:14 | DEBUG    | asyncio | Using proactor: IocpProactor
+2026-07-07 00:00:14 | INFO     | src.core.world_state | Registered agent 'test_agent' at (0, 0) [tick=0]
+2026-07-07 00:00:14 | DEBUG    | src.core.world_state | World tick advanced to 360
+2026-07-07 00:00:14 | DEBUG    | src.core.snapshot | Snapshot taken at tick=360 (1 agents, 0 resources)
+2026-07-07 00:00:14 | WARNING  | __main__ | build_tick_graph() called with no memory_stream -- using a no-op stand-in. retrieve_memories() will always return []. Pass the real MemoryStream in once it's ready.
+2026-07-07 00:00:14 | INFO     | __main__ | Tick graph compiled.
+2026-07-07 00:00:14 | DEBUG    | __main__ | [NullMemoryStream] would store for 'test_agent': Decided to: testing the tick graph

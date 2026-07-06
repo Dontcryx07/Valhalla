@@ -1,0 +1,12 @@
+2026-07-07 00:34:51 | INFO     | src.core.log | [log] logging initialized -> D:\college\Iota-Cluster\valhalla\backend\output\logs\20260707_003451.log
+2026-07-07 00:34:52 | INFO     | src.agents.day_planner | [day_planner] loaded 18 places from D:\college\Iota-Cluster\valhalla\backend\data\environment\places.json
+2026-07-07 00:35:05 | INFO     | src.llm.gemini_client | 2026-07-07 00:35:05 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-07 00:35:05 | INFO     | src.agents.day_planner | [day_planner] coarse plan generated: 8 blocks
+2026-07-07 00:35:09 | INFO     | src.llm.gemini_client | 2026-07-07 00:35:09 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-07 00:35:09 | INFO     | src.agents.day_planner | [day_planner] hourly plan: 4 atomic passthrough + 10 refined
+2026-07-07 00:35:11 | INFO     | src.llm.gemini_client | 2026-07-07 00:35:11 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-07 00:35:15 | INFO     | src.llm.gemini_client | 2026-07-07 00:35:15 | model=gemini-3.1-flash-lite | ok=True | attempt=0
+2026-07-07 00:35:15 | INFO     | src.agents.day_planner | [day_planner] fine plan: 17 total actions
+2026-07-07 00:35:21 | INFO     | src.llm.gemini_client | 2026-07-07 00:35:21 | model=gemini-3.5-flash | ok=True | attempt=0
+2026-07-07 00:35:21 | INFO     | src.agents.day_planner | [day_planner] plan validated successfully
+2026-07-07 00:35:21 | DEBUG    | src.agents.Short_term | Saved short-term data for Parv Singla on 2026-07-03 to D:\college\Iota-Cluster\valhalla\backend\data\Short_term_db\parv_singla\2026-07-03.json
