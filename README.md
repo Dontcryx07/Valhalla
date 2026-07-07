@@ -53,6 +53,8 @@ See what's around → Remember relevant stuff → Decide (replan or stay) → Wr
 - **Replanning** calls Gemini 4 times to build a full day plan from scratch.
 - **Writing to memory** saves what the agent decided to a JSON file.
 
+**Conversations** work separately from the tick graph. The WorldEngine detects when two agents share the same `location_id`, both are in non-blocked actions (not sleeping), and neither is already mid-conversation. A single Gemini call generates the full dialogue — messages, summary, duration, and relationship impact. Both agents get their current action overwritten to "Chatting with X" for the duration, then naturally replan via the tick graph when it expires.
+
 ---
 
 ## How to Run
@@ -72,6 +74,14 @@ $env:PYTHONPATH="backend"; python backend/src/core/Agent.py --self-test
 ```
 
 Creates a fake agent, runs the full decision pipeline without calling Gemini, and checks the output looks right.
+
+### Generate a conversation between two personas (needs Gemini keys)
+
+```powershell
+$env:PYTHONPATH="backend"; python backend/src/agents/conversation.py parv tanishq --current-time "2026-07-03 12:00"
+```
+
+Loads both personas' JSON files and day plans, then calls Gemini once to generate a natural conversation between them. The LLM decides the topic, duration, and relationship impact based on personalities, schedules, and current activity.
 
 ### Generate one person's day plan (needs Gemini keys)
 
@@ -126,6 +136,7 @@ python backend/Pathfinder_test.py [x1 y1 x2 y2]
 | `src/agents/Actions.py` | Action execution: manages last/current/next action, movement between locations, pathfinder integration |
 | `src/agents/day_planner.py` | Plans a full day for one agent: 4 Gemini calls to go from rough blocks → hourly plan → fine actions → validation |
 | `src/agents/react.py` | Decides if an agent should replan or continue their current action |
+| `src/agents/conversation.py` | Generates dialogue between two agents via a single Gemini call — feeds personas, day plans, current actions, and relationship scores into one prompt |
 | `src/agents/Short_term.py` | Per-agent per-day JSON storage — plans, events, conversations |
 | `src/agents/Long_term.py` | Qdrant long-term memory — currently a stub, not implemented |
 | `src/agents/Single_agent.py` | Older standalone debug CLI for testing one persona |
@@ -147,8 +158,8 @@ Persona JSON files live in `backend/data/personalities/<name>/<name>.json`. Each
 ## What's Not Built Yet
 
 - `WorldEngine` — the main simulation orchestrator loop
-- Agent-to-agent conversations (triggered by proximity)
 - Frontend integration with action states
+- Long-term memory (Qdrant vector DB)
 
 ## LLM Calls Per Tick
 
@@ -158,6 +169,7 @@ Persona JSON files live in `backend/data/personalities/<name>/<name>.json`. Each
 | react | 0-1 | Only if mid-action + sees something new |
 | day_planner | 4 | Once per sim day (coarse, hourly, fine, validate) |
 | actions | 0 | Pure state machine — reads plan, moves agent, no LLM |
+| conversation | 1 per pair | When two agents share a location, neither is sleeping, and neither is already mid-conversation |
 
 ## Environment Variables (`.env`)
 

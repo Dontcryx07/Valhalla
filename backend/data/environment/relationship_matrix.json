@@ -1,0 +1,22 @@
+{
+  "parv_singla→tanishq": 0.5,
+  "parv_singla→gurnoor_singh": 0.5,
+  "parv_singla→anubhav_prasad": 0.5,
+  "parv_singla→ghanisht_kaushal": 0.5,
+  "tanishq→parv_singla": 0.5,
+  "tanishq→gurnoor_singh": 0.5,
+  "tanishq→anubhav_prasad": 0.5,
+  "tanishq→ghanisht_kaushal": 0.5,
+  "gurnoor_singh→parv_singla": 0.5,
+  "gurnoor_singh→tanishq": 0.5,
+  "gurnoor_singh→anubhav_prasad": 0.5,
+  "gurnoor_singh→ghanisht_kaushal": 0.5,
+  "anubhav_prasad→parv_singla": 0.5,
+  "anubhav_prasad→tanishq": 0.5,
+  "anubhav_prasad→gurnoor_singh": 0.5,
+  "anubhav_prasad→ghanisht_kaushal": 0.5,
+  "ghanisht_kaushal→parv_singla": 0.5,
+  "ghanisht_kaushal→tanishq": 0.5,
+  "ghanisht_kaushal→gurnoor_singh": 0.5,
+  "ghanisht_kaushal→anubhav_prasad": 0.5
+}

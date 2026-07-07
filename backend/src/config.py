@@ -63,6 +63,16 @@ LOG_LEVEL = "DEBUG" if VERBOSE else "INFO"
 # Default nearby distance (chebyshev distance)
 DEFAULT_PERCEPTION_RADIUS = 5 # Tune after we know the actual map scale
 
+# Time ratios — tweak these to find the simulation's sweet spot.
+#   SIM_MINUTES_PER_TICK  = how many simulation minutes advance per engine tick.
+#   REAL_SECONDS_PER_SIM_MINUTE = how many wall-clock seconds correspond to
+#                                  1 simulation minute for LLM latency budget.
+#   REAL_SECONDS_PER_TICK = SIM_MINUTES_PER_TICK * REAL_SECONDS_PER_SIM_MINUTE
+#                           (derived convenience constant — do NOT set manually).
+SIM_MINUTES_PER_TICK = 1
+REAL_SECONDS_PER_SIM_MINUTE = 0.5  # 1 sim-minute = 0.5 real seconds
+REAL_SECONDS_PER_TICK: float = SIM_MINUTES_PER_TICK * REAL_SECONDS_PER_SIM_MINUTE
+
 
 # LLM Configuration
 TEMPERATURE = 0.7           # Creativity the model is allowed

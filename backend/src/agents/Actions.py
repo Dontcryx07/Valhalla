@@ -6,7 +6,7 @@ tick by tick. Handles three action types:
 
   1. MOVE    -- agent walks from place A to place B (pathfinder.py)
   2. MISC    -- static activity: studying, coding, eating, etc.
-  3. CONVERSATION -- triggered when two agents are in proximity (future)
+  3. CONVERSATION -- triggered when two agents are in proximity.
 
 The module converts location_id strings (from day plans) into pixel
 coordinates (from entrypoint.json) and uses the BFS pathfinder to
@@ -381,57 +381,86 @@ class AgentActionManager:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import argparse
+
     from src.core.log import setup_logging
     setup_logging(run_id="actions_test", console=True)
 
-    from src.config import PERSONALITIES_DIR, ENVIRONMENT_DIR
+    from src.config import PERSONALITIES_DIR
 
-    # Load a persona's day plan
-    persona_path = PERSONALITIES_DIR / "parv" / "parv.json"
-    if not persona_path.exists():
-        print(f"Persona not found: {persona_path}")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Actions module self-test — simulate an agent's day")
+    parser.add_argument(
+        "persona", nargs="?", default="parv",
+        help="Persona name (e.g. parv, tanishq, gurnoor) or path to a persona JSON",
+    )
+    parser.add_argument(
+        "-t", "--ticks", type=int, default=600,
+        help="Number of ticks to simulate (default: 600 = 10 hours)",
+    )
+    parser.add_argument(
+        "--step", type=int, default=5,
+        help="Print status every N ticks (default: 5)",
+    )
+    args = parser.parse_args()
+
+    # Resolve persona path
+    candidate = Path(args.persona)
+    if candidate.exists():
+        persona_path = candidate
+    elif candidate.suffix == ".json":
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{candidate.name}"))
+        persona_path = matches[0] if matches else candidate
+    else:
+        matches = sorted(PERSONALITIES_DIR.glob(f"**/{args.persona}/{args.persona}.json"))
+        if not matches:
+            matches = sorted(PERSONALITIES_DIR.glob(f"**/{args.persona}.json"))
+        if not matches:
+            available = sorted({p.parent.name for p in PERSONALITIES_DIR.glob("**/*.json")})
+            print(f"Persona '{args.persona}' not found. Available: {', '.join(available)}")
+            sys.exit(1)
+        persona_path = matches[0]
 
     persona = json.loads(persona_path.read_text())
+    persona_name = persona.get("Name", persona_path.stem)
 
     # Load day plan from Short_term
     from src.agents.Short_term import load_day_plan, date_from_simulation_time
 
     sim_date = date_from_simulation_time("2026-07-03 00:00")
-    day_plan = load_day_plan(persona.get("Name", "unknown"), sim_date)
+    day_plan = load_day_plan(persona_name, sim_date)
 
     if not day_plan:
-        print(f"No day plan found for {persona.get('Name')} on {sim_date}")
-        print("Run: python backend/src/core/Agent.py parv")
+        print(f"No day plan found for {persona_name} on {sim_date}")
+        print("Generate one first: python backend/src/core/Agent.py " + args.persona)
         sys.exit(1)
 
-    print(f"Loaded day plan for {persona.get('Name')}: {len(day_plan)} actions")
+    print(f"Loaded day plan for {persona_name}: {len(day_plan)} actions")
 
     # Set up resolver and manager
     resolver = LocationResolver()
     initial_pos = resolver.resolve("Brahmaputra_Boys 1") or Position(x=185, y=547, location_id="Brahmaputra_Boys 1")
 
     manager = AgentActionManager(
-        agent_id="parv",
+        agent_id=persona_path.stem,
         day_plan=day_plan,
         initial_position=initial_pos,
         resolver=resolver,
     )
 
-    # Run 100 ticks (100 minutes = 1h40m starting from 00:00)
-    print(f"\nRunning 100 ticks from 00:00...")
-    print(f"{'Tick':>5} {'Time':>6} {'Action Type':<12} {'Description':<45} {'Location':<25} {'Position'}")
-    print("-" * 120)
+    # Run simulation
+    print(f"\nSimulating {args.ticks} ticks (step={args.step}) from 00:00...")
+    print(f"{'Tick':>5} {'Time':>6} {'Type':<6} {'Description':<45} {'Location':<25} {'Position'}")
+    print("-" * 110)
 
-    for tick in range(0, 100):
+    for tick in range(0, args.ticks):
         hhmm = manager._minutes_to_hhmm(tick)
         action = manager.tick(tick)
 
-        if action:
+        if tick % args.step == 0 and action:
             desc = action.description[:43]
             loc = action.location_id[:23] if action.location_id else ""
-            pos = f"({manager.position.x}, {manager.position.y})"
-            print(f"{tick:>5} {hhmm:>6} {action.action_type.value:<12} {desc:<45} {loc:<25} {pos}")
+            pos = f"({manager.position.x},{manager.position.y})"
+            print(f"{tick:>5} {hhmm:>6} {action.action_type.value:<6} {desc:<45} {loc:<25} {pos}")
 
     print(f"\nFinal state:")
     state = manager.get_state()

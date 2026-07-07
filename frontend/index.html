@@ -139,6 +139,11 @@
       <button id="stopAllBtn" style="padding:2px 10px;font-size:11px">■ Stop</button>
     </div>
   </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#bbb;margin:2px 0 4px">
+    <span>Speed</span>
+    <input id="speedInput" type="number" min="20" max="300" step="5" value="100" style="width:72px">
+    <span style="font-family:monospace">px/tick</span>
+  </div>
   <div id="agentList"></div>
 </div>
 
@@ -235,6 +240,26 @@ const agents = AGENT_COLORS.map((color, i) => ({
   animStartTime: 0,
   done: false,
 }));
+
+let pixelsPerTick = 100;
+const speedInput = document.getElementById('speedInput');
+
+function updateSpeedControlState() {
+  speedInput.disabled = agents.some(a => a.animating);
+}
+
+function setPixelsPerSec(value) {
+  pixelsPerTick = value;
+  speedInput.value = String(value);
+}
+
+speedInput.addEventListener('input', () => {
+  if (speedInput.disabled) return;
+  setPixelsPerSec(parseInt(speedInput.value, 10) || 100);
+});
+
+setPixelsPerSec(parseInt(speedInput.value, 10) || 100);
+updateSpeedControlState();
 
 // ── Build agent UI rows ───────────────────────────────────
 const agentList = document.getElementById('agentList');
@@ -423,7 +448,6 @@ function draw() {
 }
 
 // ── Animation ──────────────────────────────────────────────
-const PIXELS_PER_SEC = 100;
 let animFrameId = null;
 let animatingAny = false;
 
@@ -438,6 +462,7 @@ function pathLength(path) {
 function startGlobalAnim() {
   if (animFrameId) cancelAnimationFrame(animFrameId);
   animatingAny = true;
+  updateSpeedControlState();
   animFrameId = requestAnimationFrame(globalAnimate);
 }
 
@@ -453,6 +478,7 @@ function stopAll() {
     a.done = false;
     setAgentStatus(a.idx, 'idle');
   }
+  updateSpeedControlState();
   updateInfoRow();
   draw();
 }
@@ -464,7 +490,7 @@ function globalAnimate(timestamp) {
     if (!a.animating || a.path.length < 2) continue;
 
     const elapsed = (timestamp - a.animStartTime) / 1000;
-    const targetDist = elapsed * PIXELS_PER_SEC;
+    const targetDist = elapsed * pixelsPerTick;
     const totalLen = pathLength(a.path);
 
     if (totalLen === 0) {
@@ -510,6 +536,7 @@ function globalAnimate(timestamp) {
   } else {
     animatingAny = false;
     animFrameId = null;
+    updateSpeedControlState();
   }
 }
 
@@ -599,6 +626,7 @@ async function runAll() {
   });
 
   document.getElementById('runAllBtn').disabled = false;
+  updateSpeedControlState();
   updateInfoRow();
   draw();
   startGlobalAnim();
