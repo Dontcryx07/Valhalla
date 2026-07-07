@@ -1,6 +1,0 @@
-2026-07-03 16:56:05 | INFO     | src.core.log | [log] logging initialized -> D:\Programming\Projects\Valhalla\backend\output\logs\20260703_165605.log
-2026-07-03 16:56:06 | INFO     | __main__ | [day_planner] loaded 13 places from D:\Programming\Projects\Valhalla\backend\data\environment\places.json
-2026-07-03 16:56:14 | INFO     | __main__ | [day_planner] coarse plan generated: 7 blocks
-2026-07-03 16:56:21 | INFO     | __main__ | [day_planner] hourly plan: 1 atomic passthrough + 15 refined
-2026-07-03 16:56:47 | INFO     | __main__ | [day_planner] fine plan: 30 total actions
-2026-07-03 16:56:54 | INFO     | __main__ | [day_planner] plan validated successfully
