@@ -194,6 +194,32 @@ class AgentActionManager:
         self._plan_index = 0
         self._initialized = False
 
+        # Conversation support
+        self._conversation_mode: bool = False
+        self._pending_plan_action: Optional[ActionState] = None
+
+        # Last-action detection (end-of-day transition)
+        self._entered_last_action: bool = False
+
+    @property
+    def is_last_action(self) -> bool:
+        """True if the current action is the final entry in the day plan."""
+        if not self.day_plan or not self.current_action:
+            return False
+        last = self.day_plan[-1]
+        return (
+            self.current_action.description == last.get("action", "")
+            and self.current_action.start_time == last.get("start", "")
+        )
+
+    @property
+    def is_plan_exhausted(self) -> bool:
+        """
+        True when the day plan is fully consumed — no action covers the
+        current time and there are no more plan entries.
+        """
+        return self.current_action is None and self._plan_index >= len(self.day_plan)
+
     def _hhmm_to_minutes(self, hhmm: str) -> int:
         """Convert 'HH:MM' to minutes since midnight."""
         h, m = hhmm.split(":")
@@ -310,6 +336,52 @@ class AgentActionManager:
 
         self._initialized = True
 
+    def set_conversation_action(self, other_agent_id: str) -> ActionState:
+        """
+        Override the current action with a conversation (no pre-set duration).
+        Agent stays in conversation mode until resume_from_conversation() is
+        called by the background LLM task.
+        """
+        hhmm = self._minutes_to_hhmm(0)
+        if self.current_action:
+            self._pending_plan_action = self.current_action
+            hhmm = self.current_action.start_time
+
+        conv_action = ActionState(
+            action_type=ActionType.CONVERSATION,
+            description=f"Chatting with {other_agent_id}",
+            start_time=hhmm,
+            end_time="23:59",  # placeholder — overridden by resume_from_conversation
+            location_id=self.position.location_id or "",
+            position=self.position,
+        )
+        self.current_action = conv_action
+        self._conversation_mode = True
+        self._initialized = True
+        return conv_action
+
+    def resume_from_conversation(self, new_day_plan: List[Dict[str, Any]]) -> None:
+        """
+        Called after conversation LLM task completes.
+        Loads the remaining-day plan and clears conversation mode.
+        """
+        self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        self._conversation_mode = False
+        self._pending_plan_action = None
+        self.current_action = None
+        self.next_action = None
+        self._entered_last_action = False
+        self._plan_index = 0
+
+    def replace_day_plan(self, new_day_plan: List[Dict[str, Any]]) -> None:
+        """
+        Replace the day plan mid-stream (e.g. at end-of-day transition).
+        Keeps the current action if it's still valid, otherwise advances.
+        """
+        self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        self._entered_last_action = False
+        self._plan_index = 0
+
     def tick(self, world_tick: int, snapshot: Any = None) -> Optional[ActionState]:
         """
         Advance one tick. Returns the current action state (or None).
@@ -317,6 +389,11 @@ class AgentActionManager:
         This is the main entry point called each simulation tick.
         """
         hhmm = self._minutes_to_hhmm(world_tick % (24 * 60))
+
+        # In conversation mode: don't advance, just return current action.
+        # The agent stays frozen until resume_from_conversation() is called.
+        if self._conversation_mode:
+            return self.current_action
 
         # First tick or after action completed — pick next action
         if self.current_action is None:
@@ -330,6 +407,7 @@ class AgentActionManager:
 
         if current_minute >= current_end:
             # Action finished — advance
+            was_last = self.is_last_action
             self.last_action = self.current_action
             self.current_action = None
 
@@ -345,6 +423,15 @@ class AgentActionManager:
 
                 # Pick next action from plan
                 self._advance_to_next_plan_action(hhmm)
+
+            # If this was the last action and there's a next action (from the plan),
+            # it's not really the last — clear the flag
+            if was_last and self.current_action is not None:
+                self._entered_last_action = False
+
+        # Detect first tick of the last action
+        if self.current_action and self.is_last_action and not self._entered_last_action:
+            self._entered_last_action = True
 
         # If still moving, advance along path
         if (

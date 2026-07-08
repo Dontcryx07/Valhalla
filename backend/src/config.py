@@ -70,7 +70,7 @@ DEFAULT_PERCEPTION_RADIUS = 5 # Tune after we know the actual map scale
 #   REAL_SECONDS_PER_TICK = SIM_MINUTES_PER_TICK * REAL_SECONDS_PER_SIM_MINUTE
 #                           (derived convenience constant — do NOT set manually).
 SIM_MINUTES_PER_TICK = 1
-REAL_SECONDS_PER_SIM_MINUTE = 0.5  # 1 sim-minute = 0.5 real seconds
+REAL_SECONDS_PER_SIM_MINUTE = 1.0  # 1 sim-minute = 1 real second (1:1 real time)
 REAL_SECONDS_PER_TICK: float = SIM_MINUTES_PER_TICK * REAL_SECONDS_PER_SIM_MINUTE
 
 
@@ -107,6 +107,9 @@ if not API_KEYS:
     ]
     API_KEYS = [key for key in [os.environ.get("GEMINI_API_KEY", ""), *numbered_keys] if key]
 
+
+# Conversation cap (per agent per day)
+MAX_CONVERSATIONS_PER_AGENT = 5
 
 # day_planner.py CONFIG
 MAX_PLAN_RETRIES = 3

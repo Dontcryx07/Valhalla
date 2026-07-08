@@ -78,9 +78,9 @@ logger = get_logger(__name__)
 from src.config import MODEL_TIERS, API_KEYS, TEMPERATURE
 
 
-MAX_RETRIES_PER_MODEL = 2       # backoff retries before moving to next model
-BASE_BACKOFF_SECONDS = 1.5
-REQUEST_TIMEOUT_MS = 60_000     # per-request deadline
+MAX_RETRIES_PER_MODEL = 1       # 1 attempt only — immediately skip overloaded models
+BASE_BACKOFF_SECONDS = 0.5
+REQUEST_TIMEOUT_MS = 15_000     # per-request deadline (lower = faster fallback)
 
 # Per-key rate limiting (Google free tier: 5 RPM).
 RPM_LIMIT = 5
@@ -265,8 +265,17 @@ def call_gemini(
     if complexity not in MODEL_TIERS:
         raise ValueError(f"Unknown task_complexity '{complexity}', expected one of {list(MODEL_TIERS)}")
 
-    models = MODEL_TIERS[complexity]
+    # Build the model list: primary tier first, then cascade to all other tiers
+    # as fallbacks when overloaded.
+    primary_models = list(MODEL_TIERS[complexity])
+    fallback_models = [
+        m for tier in MODEL_TIERS.values()
+        for m in tier
+        if m not in primary_models
+    ]
+    models = primary_models + fallback_models
     last_error: Exception | None = None
+    quota_exhausted: set[str] = set()  # models that got 429 — skip for this call
 
     # Track which (key, model) pairs we've already tried so we don't
     # infinite-loop across the key pool.
@@ -276,6 +285,8 @@ def call_gemini(
         api_key = _wait_until_key_available()
 
         for model in models:
+            if model in quota_exhausted:
+                continue
             if (api_key, model) in tried:
                 continue
 
@@ -296,19 +307,19 @@ def call_gemini(
                     _log_attempt(model, False, detail)
 
                     if e.code in FATAL_CODES:
-                        # Key is permanently bad for this model — blacklist it
-                        # with a long cooldown so we stop wasting retries.
                         _mark_cooldown(api_key, duration=3600.0)
                         break
 
                     if e.code not in RETRYABLE_CODES:
                         break
 
-                    # Rate limit → cooldown this key and try another
+                    # Quota/rate limit — skip this model entirely for this call
+                    # (all keys share the same free-tier quota for a given model)
                     if e.code == 429:
                         cooldown = _parse_retry_after(e.message)
                         _mark_cooldown(api_key, duration=cooldown)
-                        break  # break model loop, pick a new key
+                        quota_exhausted.add(model)
+                        break
 
                     if attempt < MAX_RETRIES_PER_MODEL:
                         sleep_s = (

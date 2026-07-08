@@ -1,0 +1,155 @@
+{
+  "persona_name": "Ghanisht Kaushal",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Sleep",
+      "start": "00:00",
+      "end": "07:00",
+      "parent_activity": "Sleep",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Perform morning hygiene routine",
+      "start": "07:00",
+      "end": "07:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Morning workout at hostel gym",
+      "start": "07:30",
+      "end": "08:00",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "hostel_gym"
+    },
+    {
+      "action": "Eat breakfast at campus mess",
+      "start": "08:00",
+      "end": "08:20",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Pack bags and prepare materials for classes",
+      "start": "08:20",
+      "end": "08:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Attend lectures and labs",
+      "start": "08:30",
+      "end": "14:00",
+      "parent_activity": "Attend lectures and labs",
+      "location_id": "SAB",
+      "sub_area": "lecture_halls"
+    },
+    {
+      "action": "Eat lunch at mess",
+      "start": "14:00",
+      "end": "14:30",
+      "parent_activity": "Lunch and campus networking",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Quick clean up and transit to central lawn",
+      "start": "14:30",
+      "end": "14:45",
+      "parent_activity": "Lunch and campus networking",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Network with peers and club members on the lawn",
+      "start": "14:45",
+      "end": "15:30",
+      "parent_activity": "Lunch and campus networking",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Coding and AI model debugging",
+      "start": "15:30",
+      "end": "16:30",
+      "parent_activity": "AI project development and club responsibilities",
+      "location_id": "library",
+      "sub_area": "group_study_rooms"
+    },
+    {
+      "action": "Documentation and literature review for AI project",
+      "start": "16:30",
+      "end": "17:30",
+      "parent_activity": "AI project development and club responsibilities",
+      "location_id": "library",
+      "sub_area": "e_resource_lab"
+    },
+    {
+      "action": "Attend club coordination meeting",
+      "start": "17:30",
+      "end": "18:15",
+      "parent_activity": "AI project development and club responsibilities",
+      "location_id": "sac_utility_block",
+      "sub_area": "club_room_alankar"
+    },
+    {
+      "action": "Handle club emails and administrative tasks",
+      "start": "18:15",
+      "end": "19:00",
+      "parent_activity": "AI project development and club responsibilities",
+      "location_id": "sac_utility_block",
+      "sub_area": "club_room_alankar"
+    },
+    {
+      "action": "Eat dinner at mess",
+      "start": "19:00",
+      "end": "19:45",
+      "parent_activity": "Dinner and personal fitness",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Evening jog and outdoor fitness routine",
+      "start": "19:45",
+      "end": "20:30",
+      "parent_activity": "Dinner and personal fitness",
+      "location_id": "sports_complex",
+      "sub_area": "athletics_track"
+    },
+    {
+      "action": "Competitive programming and DSA practice",
+      "start": "20:30",
+      "end": "23:00",
+      "parent_activity": "Competitive programming and DSA practice",
+      "location_id": "library",
+      "sub_area": "e_resource_lab"
+    },
+    {
+      "action": "Daily review of academic goals and schedule",
+      "start": "23:00",
+      "end": "23:30",
+      "parent_activity": "Evening wind-down and preparation for tomorrow",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Organize notes and set alarm for tomorrow",
+      "start": "23:30",
+      "end": "00:00",
+      "parent_activity": "Evening wind-down and preparation for tomorrow",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    }
+  ],
+  "events": [],
+  "conversations": [],
+  "world_snapshots": [],
+  "daily_summary": null,
+  "archived_to_long_term": false
+}

@@ -297,7 +297,7 @@ def generate_conversation(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             schema=ConversationResult,
-            complexity="complex",
+            complexity="simple",
             temperature=0.7,
         )
         logger.info(
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     setup_logging(run_id="conversation_test", console=True)
 
     from src.config import PERSONALITIES_DIR
-    from src.agents.Short_term import load_day_plan, date_from_simulation_time
+    from src.agents.Short_term import load_day_plan, date_from_simulation_time, append_conversation
 
     parser = argparse.ArgumentParser(
         description="Conversation module self-test -- generate a conversation between two personas"
@@ -459,5 +459,23 @@ if __name__ == "__main__":
     for msg in result.messages:
         print(f"  [{msg.speaker}] {msg.text}")
         print()
+
+    # Save to both personas' Short_term memory
+    date_str = sim_date
+    conv_entry = {
+        "participants": [name_a, name_b],
+        "messages": [{"speaker": m.speaker, "text": m.text} for m in result.messages],
+        "summary": result.summary,
+    }
+
+    append_conversation(name_a, date_str, conv_entry)
+    append_conversation(name_b, date_str, conv_entry)
+    print(f"Saved conversation to {id_a} and {id_b} for {date_str}")
+
+    # Update relationship matrix
+    matrix.update(id_a, id_b, result.relationship_delta)
+    matrix.update(id_b, id_a, result.relationship_delta)
+    matrix.save()
+    print(f"Updated relationship matrix: {id_a}->{id_b} = {matrix.get(id_a, id_b):.2f}")
 
     print(f"\nConversation module self-test passed.")

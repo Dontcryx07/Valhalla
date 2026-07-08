@@ -1,0 +1,1846 @@
+{
+  "tick": 1,
+  "world": {
+    "tick": 1,
+    "agents": {
+      "anubhav_prasad": {
+        "agent_id": "anubhav_prasad",
+        "position": {
+          "x": 185,
+          "y": 547,
+          "location_id": "Brahmaputra_Boys 1"
+        },
+        "status": "acting",
+        "current_action": {
+          "description": "sleep",
+          "start_tick": 0,
+          "end_tick": 1,
+          "target_location_id": "Brahmaputra_Boys 1",
+          "target_object_id": null,
+          "was_reprioritized": false
+        },
+        "last_updated_tick": 0
+      },
+      "ghanisht_kaushal": {
+        "agent_id": "ghanisht_kaushal",
+        "position": {
+          "x": 185,
+          "y": 547,
+          "location_id": "Brahmaputra_Boys 1"
+        },
+        "status": "acting",
+        "current_action": {
+          "description": "Sleep",
+          "start_tick": 0,
+          "end_tick": 1,
+          "target_location_id": "Brahmaputra_Boys 1",
+          "target_object_id": null,
+          "was_reprioritized": false
+        },
+        "last_updated_tick": 0
+      },
+      "gurnoor_singh": {
+        "agent_id": "gurnoor_singh",
+        "position": {
+          "x": 185,
+          "y": 547,
+          "location_id": "Brahmaputra_Boys 1"
+        },
+        "status": "acting",
+        "current_action": {
+          "description": "Sleep",
+          "start_tick": 0,
+          "end_tick": 1,
+          "target_location_id": "Brahmaputra_Boys 1",
+          "target_object_id": null,
+          "was_reprioritized": false
+        },
+        "last_updated_tick": 0
+      },
+      "parv_singla": {
+        "agent_id": "parv_singla",
+        "position": {
+          "x": 185,
+          "y": 547,
+          "location_id": "Brahmaputra_Boys 1"
+        },
+        "status": "acting",
+        "current_action": {
+          "description": "Late night coding and research on AI projects",
+          "start_tick": 0,
+          "end_tick": 1,
+          "target_location_id": "Brahmaputra_Boys 1",
+          "target_object_id": null,
+          "was_reprioritized": false
+        },
+        "last_updated_tick": 0
+      },
+      "tanishq": {
+        "agent_id": "tanishq",
+        "position": {
+          "x": 185,
+          "y": 547,
+          "location_id": "Brahmaputra_Boys 1"
+        },
+        "status": "acting",
+        "current_action": {
+          "description": "Late night gooning and browsing",
+          "start_tick": 0,
+          "end_tick": 1,
+          "target_location_id": "Brahmaputra_Boys 1",
+          "target_object_id": null,
+          "was_reprioritized": false
+        },
+        "last_updated_tick": 0
+      }
+    },
+    "occupancy": {
+      "Brahmaputra_Boys 1": null
+    },
+    "agent_last_conversation": {},
+    "conversation_cooldown_ticks": 30
+  },
+  "agents": [
+    {
+      "agent_id": "anubhav_prasad",
+      "persona": {
+        "Name": "Anubhav Prasad",
+        "Age": "18",
+        "Gender": "Male",
+        "Branch": "Electrical Engineering (Integrated Circuit Design and Technology",
+        "Home City": "Kolkata",
+        "Hostel": "Brahmaputra_Boys 1",
+        "daily_plan_req": "Classes of the courses for the semester, checking out latest research papers in AI, playing video games, trying to sleep early but never making it.",
+        "innate": "Focused, playful, good listener, ambiverted.",
+        "learned": "Research rigour, good listening, calmness in troubled situations, better communication skills.",
+        "lifestyle": "Wake up at 8 or 9, sleep time very random, medium physical activeness, usually procrastinate studies, play games or build projects in free time",
+        "hobbies": "Play video games, watch youtube videos, hang out with friends.",
+        "goals": "Gain strong knowledge of core electrical and ai to find opportunities of integration, build a strong stature in research in either academia or industry"
+      },
+      "persona_name": "Anubhav Prasad",
+      "position": {
+        "x": 185,
+        "y": 547,
+        "location_id": "Brahmaputra_Boys 1"
+      },
+      "paused": false,
+      "day_plan": [
+        {
+          "action": "sleep",
+          "start": "00:00",
+          "end": "08:30",
+          "parent_activity": "sleep",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Morning shower and personal grooming",
+          "start": "08:30",
+          "end": "09:00",
+          "parent_activity": "morning routine",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Eat breakfast at the mess",
+          "start": "09:00",
+          "end": "09:30",
+          "parent_activity": "morning routine",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "attend electrical engineering classes",
+          "start": "09:30",
+          "end": "13:30",
+          "parent_activity": "attend electrical engineering classes",
+          "location_id": "SAB",
+          "sub_area": "lecture_halls"
+        },
+        {
+          "action": "Eat lunch at the dining hall",
+          "start": "13:30",
+          "end": "14:15",
+          "parent_activity": "lunch and social time",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Socialize with friends at the central lawn",
+          "start": "14:15",
+          "end": "15:00",
+          "parent_activity": "lunch and social time",
+          "location_id": "central_lawn",
+          "sub_area": null
+        },
+        {
+          "action": "Review electrical engineering lecture notes",
+          "start": "15:00",
+          "end": "16:00",
+          "parent_activity": "research paper reading and study session",
+          "location_id": "library",
+          "sub_area": "reading_hall"
+        },
+        {
+          "action": "Read latest AI research papers",
+          "start": "16:00",
+          "end": "17:30",
+          "parent_activity": "research paper reading and study session",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Deep work on core electrical course assignments",
+          "start": "17:30",
+          "end": "19:00",
+          "parent_activity": "research paper reading and study session",
+          "location_id": "library",
+          "sub_area": "reading_hall"
+        },
+        {
+          "action": "Dinner at the mess",
+          "start": "19:00",
+          "end": "20:00",
+          "parent_activity": "dinner and leisure with friends",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Casual conversation with friends",
+          "start": "20:00",
+          "end": "21:00",
+          "parent_activity": "dinner and leisure with friends",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "common_room"
+        },
+        {
+          "action": "Gaming session in hostel room",
+          "start": "21:00",
+          "end": "22:30",
+          "parent_activity": "gaming and personal project work",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Work on personal coding project",
+          "start": "22:30",
+          "end": "24:00",
+          "parent_activity": "gaming and personal project work",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        }
+      ],
+      "day_archived": false,
+      "conversation_count": 0,
+      "manager": {
+        "day_plan": [
+          {
+            "action": "sleep",
+            "start": "00:00",
+            "end": "08:30",
+            "parent_activity": "sleep",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Morning shower and personal grooming",
+            "start": "08:30",
+            "end": "09:00",
+            "parent_activity": "morning routine",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Eat breakfast at the mess",
+            "start": "09:00",
+            "end": "09:30",
+            "parent_activity": "morning routine",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "attend electrical engineering classes",
+            "start": "09:30",
+            "end": "13:30",
+            "parent_activity": "attend electrical engineering classes",
+            "location_id": "SAB",
+            "sub_area": "lecture_halls"
+          },
+          {
+            "action": "Eat lunch at the dining hall",
+            "start": "13:30",
+            "end": "14:15",
+            "parent_activity": "lunch and social time",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Socialize with friends at the central lawn",
+            "start": "14:15",
+            "end": "15:00",
+            "parent_activity": "lunch and social time",
+            "location_id": "central_lawn",
+            "sub_area": null
+          },
+          {
+            "action": "Review electrical engineering lecture notes",
+            "start": "15:00",
+            "end": "16:00",
+            "parent_activity": "research paper reading and study session",
+            "location_id": "library",
+            "sub_area": "reading_hall"
+          },
+          {
+            "action": "Read latest AI research papers",
+            "start": "16:00",
+            "end": "17:30",
+            "parent_activity": "research paper reading and study session",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Deep work on core electrical course assignments",
+            "start": "17:30",
+            "end": "19:00",
+            "parent_activity": "research paper reading and study session",
+            "location_id": "library",
+            "sub_area": "reading_hall"
+          },
+          {
+            "action": "Dinner at the mess",
+            "start": "19:00",
+            "end": "20:00",
+            "parent_activity": "dinner and leisure with friends",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Casual conversation with friends",
+            "start": "20:00",
+            "end": "21:00",
+            "parent_activity": "dinner and leisure with friends",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "common_room"
+          },
+          {
+            "action": "Gaming session in hostel room",
+            "start": "21:00",
+            "end": "22:30",
+            "parent_activity": "gaming and personal project work",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Work on personal coding project",
+            "start": "22:30",
+            "end": "24:00",
+            "parent_activity": "gaming and personal project work",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          }
+        ],
+        "last_action": null,
+        "current_action": {
+          "action_type": "misc",
+          "description": "sleep",
+          "start_time": "00:00",
+          "end_time": "08:30",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms",
+          "path": null,
+          "path_index": 0
+        },
+        "next_action": null,
+        "_plan_index": 0,
+        "_initialized": true,
+        "_conversation_mode": false,
+        "_pending_plan_action": null,
+        "_entered_last_action": false
+      }
+    },
+    {
+      "agent_id": "ghanisht_kaushal",
+      "persona": {
+        "Name": "Ghanisht Kaushal",
+        "Age": "19",
+        "Gender": "Male",
+        "Branch": "B.Tech Artificial Intelligence and Data Engineering (AIDE), IIT Ropar",
+        "Home City": "Sonipat, Haryana",
+        "Hostel": "Brahmaputra_Boys 1",
+        "daily_plan_req": "Attend lectures and labs, practice data structures and algorithms, work on AI projects, fulfill club responsibilities, and continuously develop technical skills.",
+        "innate": [
+          "Curious",
+          "Analytical",
+          "Persistent",
+          "Responsible",
+          "Disciplined",
+          "Goal-oriented",
+          "Adaptable"
+        ],
+        "learned": [
+          "C++ Programming",
+          "Data Structures and Algorithms",
+          "Basic Python",
+          "Machine Learning Fundamentals",
+          "Natural Language Processing (Basic)",
+          "Computer Vision (Basic)",
+          "Artificial Intelligence Fundamentals",
+          "Competitive Programming",
+          "Leadership and Team Coordination",
+          "Mentoring and Communication Skills"
+        ],
+        "lifestyle": "A full-time undergraduate student with a structured routine focused on academics, technical skill development, project work, and extracurricular responsibilities.",
+        "hobbies": [
+          "Competitive Programming",
+          "Building AI Applications",
+          "Exploring Emerging Technologies",
+          "Reading about Artificial Intelligence",
+          "Brainstorming Product Ideas"
+        ],
+        "goals": {
+          "short_term": [
+            "Strengthen problem-solving and DSA skills",
+            "Build impactful AI projects",
+            "Secure a quality software internship",
+            "Maintain a strong academic record",
+            "Improve physical fitness"
+          ],
+          "long_term": [
+            "Become a highly skilled AI and Software Engineer",
+            "Contribute to impactful AI technologies",
+            "Build innovative products that solve real-world problems",
+            "Pursue continuous learning and professional growth",
+            "Provide a comfortable and fulfilling life for my family"
+          ]
+        }
+      },
+      "persona_name": "Ghanisht Kaushal",
+      "position": {
+        "x": 185,
+        "y": 547,
+        "location_id": "Brahmaputra_Boys 1"
+      },
+      "paused": false,
+      "day_plan": [
+        {
+          "action": "Sleep",
+          "start": "00:00",
+          "end": "07:00",
+          "parent_activity": "Sleep",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Wake up and personal hygiene routine",
+          "start": "07:00",
+          "end": "07:45",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Prepare for the day",
+          "start": "07:45",
+          "end": "08:00",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Eat breakfast",
+          "start": "08:00",
+          "end": "08:15",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Review daily schedule and academic goals",
+          "start": "08:15",
+          "end": "08:30",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Attend lectures and labs",
+          "start": "08:30",
+          "end": "14:00",
+          "parent_activity": "Attend lectures and labs",
+          "location_id": "SAB",
+          "sub_area": "lecture_halls"
+        },
+        {
+          "action": "Eat lunch",
+          "start": "14:00",
+          "end": "14:30",
+          "parent_activity": "Lunch and academic networking",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Socialize with peers at lunch",
+          "start": "14:30",
+          "end": "14:45",
+          "parent_activity": "Lunch and academic networking",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Peer discussion regarding AI research projects",
+          "start": "14:45",
+          "end": "15:30",
+          "parent_activity": "Lunch and academic networking",
+          "location_id": "central_lawn",
+          "sub_area": null
+        },
+        {
+          "action": "Implement AI model architecture",
+          "start": "15:30",
+          "end": "16:00",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Write code for data processing pipeline",
+          "start": "16:00",
+          "end": "16:30",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Review latest research papers on ArXiv",
+          "start": "16:30",
+          "end": "17:00",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Synthesize notes on emerging AI trends",
+          "start": "17:00",
+          "end": "17:30",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Debug current AI project code",
+          "start": "17:30",
+          "end": "18:00",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Optimize model hyperparameters",
+          "start": "18:00",
+          "end": "18:30",
+          "parent_activity": "AI project development and research",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Strength training workout",
+          "start": "18:30",
+          "end": "19:30",
+          "parent_activity": "Physical fitness and exercise",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "Cool down and stretching",
+          "start": "19:30",
+          "end": "19:45",
+          "parent_activity": "Physical fitness and exercise",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "Shower and freshen up",
+          "start": "19:45",
+          "end": "20:00",
+          "parent_activity": "Physical fitness and exercise",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Competitive programming practice",
+          "start": "20:00",
+          "end": "22:30",
+          "parent_activity": "Competitive programming practice",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Personal reading and reflection",
+          "start": "22:30",
+          "end": "24:00",
+          "parent_activity": "Personal reading and reflection",
+          "location_id": "library",
+          "sub_area": "reading_hall"
+        }
+      ],
+      "day_archived": false,
+      "conversation_count": 0,
+      "manager": {
+        "day_plan": [
+          {
+            "action": "Sleep",
+            "start": "00:00",
+            "end": "07:00",
+            "parent_activity": "Sleep",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Wake up and personal hygiene routine",
+            "start": "07:00",
+            "end": "07:45",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Prepare for the day",
+            "start": "07:45",
+            "end": "08:00",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Eat breakfast",
+            "start": "08:00",
+            "end": "08:15",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Review daily schedule and academic goals",
+            "start": "08:15",
+            "end": "08:30",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Attend lectures and labs",
+            "start": "08:30",
+            "end": "14:00",
+            "parent_activity": "Attend lectures and labs",
+            "location_id": "SAB",
+            "sub_area": "lecture_halls"
+          },
+          {
+            "action": "Eat lunch",
+            "start": "14:00",
+            "end": "14:30",
+            "parent_activity": "Lunch and academic networking",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Socialize with peers at lunch",
+            "start": "14:30",
+            "end": "14:45",
+            "parent_activity": "Lunch and academic networking",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Peer discussion regarding AI research projects",
+            "start": "14:45",
+            "end": "15:30",
+            "parent_activity": "Lunch and academic networking",
+            "location_id": "central_lawn",
+            "sub_area": null
+          },
+          {
+            "action": "Implement AI model architecture",
+            "start": "15:30",
+            "end": "16:00",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Write code for data processing pipeline",
+            "start": "16:00",
+            "end": "16:30",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Review latest research papers on ArXiv",
+            "start": "16:30",
+            "end": "17:00",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Synthesize notes on emerging AI trends",
+            "start": "17:00",
+            "end": "17:30",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Debug current AI project code",
+            "start": "17:30",
+            "end": "18:00",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Optimize model hyperparameters",
+            "start": "18:00",
+            "end": "18:30",
+            "parent_activity": "AI project development and research",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Strength training workout",
+            "start": "18:30",
+            "end": "19:30",
+            "parent_activity": "Physical fitness and exercise",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "Cool down and stretching",
+            "start": "19:30",
+            "end": "19:45",
+            "parent_activity": "Physical fitness and exercise",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "Shower and freshen up",
+            "start": "19:45",
+            "end": "20:00",
+            "parent_activity": "Physical fitness and exercise",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Competitive programming practice",
+            "start": "20:00",
+            "end": "22:30",
+            "parent_activity": "Competitive programming practice",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Personal reading and reflection",
+            "start": "22:30",
+            "end": "24:00",
+            "parent_activity": "Personal reading and reflection",
+            "location_id": "library",
+            "sub_area": "reading_hall"
+          }
+        ],
+        "last_action": null,
+        "current_action": {
+          "action_type": "misc",
+          "description": "Sleep",
+          "start_time": "00:00",
+          "end_time": "07:00",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms",
+          "path": null,
+          "path_index": 0
+        },
+        "next_action": null,
+        "_plan_index": 0,
+        "_initialized": true,
+        "_conversation_mode": false,
+        "_pending_plan_action": null,
+        "_entered_last_action": false
+      }
+    },
+    {
+      "agent_id": "gurnoor_singh",
+      "persona": {
+        "Name": "Gurnoor Singh",
+        "Age": "19",
+        "Gender": "Male",
+        "Branch": "B.Tech Computer Science and Engineering (CSE)",
+        "Home City": "Jalandhar, Punjab",
+        "Hostel": "Brahmaputra_Boys 1",
+        "daily_plan_req": "Attend classes, work on projects, contribute to IIT Ropar club initiatives, learn new technologies, spend time at the gym or with friends, and end the day playing with friends or planning future.",
+        "innate": "Friendly, approachable, ambitious, curious, resilient, enjoys taking initiative, naturally leads discussions, and likes helping others.",
+        "learned": "Full-stack web development (Django, React, Node.js), Python programming, machine learning and computer vision, Git/GitHub workflow, project planning, public speaking, teamwork, mentoring juniors, and maintaining a work ethic while balancing academics and extracurriculars.",
+        "lifestyle": "Lives in the IIT Ropar hostel during the semester, generally maintains a productive schedule, exercises, enjoys road trips and photography, spends significant time building projects, participates in student clubs, and prefers meaningful conversations over casual socializing.",
+        "hobbies": "Coding personal projects, exploring AI and computer vision, photography, road trips, driving, listening to music, astronomy and night-sky observation, watching technology and engineering content, marvel movies and exploring new software tools.",
+        "goals": "Short-term: Build impactful AI and full-stack projects, strengthen skills in computer vision and machine learning, contribute significantly to IIT Ropar technical clubs, and maintain CGPA. Long-term: Become an exceptional AI/software engineer, build products with real-world impact, create a strong portfolio and personal brand, work on cutting-edge technology, and eventually lead innovative engineering teams or build a successful startup."
+      },
+      "persona_name": "Gurnoor Singh",
+      "position": {
+        "x": 185,
+        "y": 547,
+        "location_id": "Brahmaputra_Boys 1"
+      },
+      "paused": false,
+      "day_plan": [
+        {
+          "action": "Sleep",
+          "start": "00:00",
+          "end": "07:00",
+          "parent_activity": "Sleep",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Morning stretch and personal hygiene",
+          "start": "07:00",
+          "end": "07:30",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Light morning cardio and exercise prep",
+          "start": "07:30",
+          "end": "08:00",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "hostel_gym"
+        },
+        {
+          "action": "Breakfast at the mess",
+          "start": "08:00",
+          "end": "08:30",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Pack bag and prepare study materials for classes",
+          "start": "08:30",
+          "end": "09:00",
+          "parent_activity": "Morning routine and breakfast",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Attend academic classes",
+          "start": "09:00",
+          "end": "13:00",
+          "parent_activity": "Attend academic classes",
+          "location_id": "LHC",
+          "sub_area": "class_rooms"
+        },
+        {
+          "action": "Quick lunch at the mess",
+          "start": "13:00",
+          "end": "13:30",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Review club initiative notes while eating",
+          "start": "13:30",
+          "end": "14:00",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Attend club meeting at the SAC",
+          "start": "14:00",
+          "end": "14:45",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Document meeting minutes and next steps",
+          "start": "14:45",
+          "end": "15:00",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Coordinate with team members for upcoming tasks",
+          "start": "15:00",
+          "end": "15:30",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Execute initial phase of club project tasks",
+          "start": "15:30",
+          "end": "16:00",
+          "parent_activity": "Lunch and club initiative work",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Setup environment and start AI project coding",
+          "start": "16:00",
+          "end": "16:30",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Write and debug core logic for AI model",
+          "start": "16:30",
+          "end": "17:00",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Research latest trends in computer vision",
+          "start": "17:00",
+          "end": "17:30",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Document project progress and findings",
+          "start": "17:30",
+          "end": "18:00",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Watch online course video on advanced ML",
+          "start": "18:00",
+          "end": "18:30",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Practice code implementation from course",
+          "start": "18:30",
+          "end": "19:00",
+          "parent_activity": "Project development and skill building",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Weight training session",
+          "start": "19:00",
+          "end": "19:40",
+          "parent_activity": "Gym session",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "High intensity cardio finish",
+          "start": "19:40",
+          "end": "20:00",
+          "parent_activity": "Gym session",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "Cool down and post-workout stretch",
+          "start": "20:00",
+          "end": "20:15",
+          "parent_activity": "Gym session",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "Shower and refresh at hostel",
+          "start": "20:15",
+          "end": "20:30",
+          "parent_activity": "Gym session",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Dinner with friends at the mess",
+          "start": "20:30",
+          "end": "21:15",
+          "parent_activity": "Dinner and social time with friends",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Casual chat with friends after dinner",
+          "start": "21:15",
+          "end": "21:30",
+          "parent_activity": "Dinner and social time with friends",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Evening walk around campus",
+          "start": "21:30",
+          "end": "22:00",
+          "parent_activity": "Dinner and social time with friends",
+          "location_id": "central_lawn",
+          "sub_area": null
+        },
+        {
+          "action": "Socializing and planning for tomorrow",
+          "start": "22:00",
+          "end": "22:30",
+          "parent_activity": "Dinner and social time with friends",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "common_room"
+        },
+        {
+          "action": "Planning and personal reflection",
+          "start": "22:30",
+          "end": "24:00",
+          "parent_activity": "Planning and personal reflection",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        }
+      ],
+      "day_archived": false,
+      "conversation_count": 0,
+      "manager": {
+        "day_plan": [
+          {
+            "action": "Sleep",
+            "start": "00:00",
+            "end": "07:00",
+            "parent_activity": "Sleep",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Morning stretch and personal hygiene",
+            "start": "07:00",
+            "end": "07:30",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Light morning cardio and exercise prep",
+            "start": "07:30",
+            "end": "08:00",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "hostel_gym"
+          },
+          {
+            "action": "Breakfast at the mess",
+            "start": "08:00",
+            "end": "08:30",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Pack bag and prepare study materials for classes",
+            "start": "08:30",
+            "end": "09:00",
+            "parent_activity": "Morning routine and breakfast",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Attend academic classes",
+            "start": "09:00",
+            "end": "13:00",
+            "parent_activity": "Attend academic classes",
+            "location_id": "LHC",
+            "sub_area": "class_rooms"
+          },
+          {
+            "action": "Quick lunch at the mess",
+            "start": "13:00",
+            "end": "13:30",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Review club initiative notes while eating",
+            "start": "13:30",
+            "end": "14:00",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Attend club meeting at the SAC",
+            "start": "14:00",
+            "end": "14:45",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Document meeting minutes and next steps",
+            "start": "14:45",
+            "end": "15:00",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Coordinate with team members for upcoming tasks",
+            "start": "15:00",
+            "end": "15:30",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Execute initial phase of club project tasks",
+            "start": "15:30",
+            "end": "16:00",
+            "parent_activity": "Lunch and club initiative work",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Setup environment and start AI project coding",
+            "start": "16:00",
+            "end": "16:30",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Write and debug core logic for AI model",
+            "start": "16:30",
+            "end": "17:00",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Research latest trends in computer vision",
+            "start": "17:00",
+            "end": "17:30",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Document project progress and findings",
+            "start": "17:30",
+            "end": "18:00",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Watch online course video on advanced ML",
+            "start": "18:00",
+            "end": "18:30",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Practice code implementation from course",
+            "start": "18:30",
+            "end": "19:00",
+            "parent_activity": "Project development and skill building",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Weight training session",
+            "start": "19:00",
+            "end": "19:40",
+            "parent_activity": "Gym session",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "High intensity cardio finish",
+            "start": "19:40",
+            "end": "20:00",
+            "parent_activity": "Gym session",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "Cool down and post-workout stretch",
+            "start": "20:00",
+            "end": "20:15",
+            "parent_activity": "Gym session",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "Shower and refresh at hostel",
+            "start": "20:15",
+            "end": "20:30",
+            "parent_activity": "Gym session",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Dinner with friends at the mess",
+            "start": "20:30",
+            "end": "21:15",
+            "parent_activity": "Dinner and social time with friends",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Casual chat with friends after dinner",
+            "start": "21:15",
+            "end": "21:30",
+            "parent_activity": "Dinner and social time with friends",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Evening walk around campus",
+            "start": "21:30",
+            "end": "22:00",
+            "parent_activity": "Dinner and social time with friends",
+            "location_id": "central_lawn",
+            "sub_area": null
+          },
+          {
+            "action": "Socializing and planning for tomorrow",
+            "start": "22:00",
+            "end": "22:30",
+            "parent_activity": "Dinner and social time with friends",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "common_room"
+          },
+          {
+            "action": "Planning and personal reflection",
+            "start": "22:30",
+            "end": "24:00",
+            "parent_activity": "Planning and personal reflection",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          }
+        ],
+        "last_action": null,
+        "current_action": {
+          "action_type": "misc",
+          "description": "Sleep",
+          "start_time": "00:00",
+          "end_time": "07:00",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms",
+          "path": null,
+          "path_index": 0
+        },
+        "next_action": null,
+        "_plan_index": 0,
+        "_initialized": true,
+        "_conversation_mode": false,
+        "_pending_plan_action": null,
+        "_entered_last_action": false
+      }
+    },
+    {
+      "agent_id": "parv_singla",
+      "persona": {
+        "Name": "Parv Singla",
+        "Age": "18",
+        "Gender": "Male",
+        "Branch": "B.Tech Artificial Intelligence and Data Engineering",
+        "Home City": "Patiala, Punjab",
+        "Hostel": "Brahmaputra_Boys 1",
+        "daily_plan_req": "Attend classes, work on projects, participate in club activities, and spend time with friends.",
+        "innate": "Friendly, outgoing, talkative and hospitable.",
+        "lifestyle": "I maintain a balanced lifestyle with a really bad sleep schedule, regular exercise, and social activities with friends.",
+        "hobbies": "Running, listening to music, and exploring new technologies.",
+        "goals": "To excel academically, develop strong technical skills, and contribute to meaningful projects in the field of Artificial Intelligence, Data Engineering, Emotion AI and Hybrid AI."
+      },
+      "persona_name": "Parv Singla",
+      "position": {
+        "x": 185,
+        "y": 547,
+        "location_id": "Brahmaputra_Boys 1"
+      },
+      "paused": false,
+      "day_plan": [
+        {
+          "action": "Late night coding and research on AI projects",
+          "start": "00:00",
+          "end": "03:30",
+          "parent_activity": "Late night coding and research on AI projects",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Sleep",
+          "start": "03:30",
+          "end": "07:30",
+          "parent_activity": "Sleep",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Personal grooming and morning hygiene routine",
+          "start": "07:30",
+          "end": "08:00",
+          "parent_activity": "Morning routine",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Eat breakfast at the mess",
+          "start": "08:00",
+          "end": "08:15",
+          "parent_activity": "Morning routine",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Pack bag and prepare materials for classes",
+          "start": "08:15",
+          "end": "08:30",
+          "parent_activity": "Morning routine",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Attend lectures and classes",
+          "start": "08:30",
+          "end": "14:00",
+          "parent_activity": "Attend lectures and classes",
+          "location_id": "SAB",
+          "sub_area": "lecture_halls"
+        },
+        {
+          "action": "Eat lunch and socialize with friends",
+          "start": "14:00",
+          "end": "15:00",
+          "parent_activity": "Lunch and social time with friends",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Casual networking and conversation with peers",
+          "start": "15:00",
+          "end": "15:30",
+          "parent_activity": "Lunch and social time with friends",
+          "location_id": "central_lawn",
+          "sub_area": null
+        },
+        {
+          "action": "Running session on the athletics track",
+          "start": "15:30",
+          "end": "16:30",
+          "parent_activity": "Afternoon run and exercise",
+          "location_id": "sports_complex",
+          "sub_area": "athletics_track"
+        },
+        {
+          "action": "Cool down and post-workout stretching",
+          "start": "16:30",
+          "end": "17:00",
+          "parent_activity": "Afternoon run and exercise",
+          "location_id": "sports_complex",
+          "sub_area": "gymnasium"
+        },
+        {
+          "action": "Participate in technical club meeting",
+          "start": "17:00",
+          "end": "18:00",
+          "parent_activity": "Club activities and project collaboration",
+          "location_id": "sac_utility_block",
+          "sub_area": "club_room_alankar"
+        },
+        {
+          "action": "Collaborate on AI project development",
+          "start": "18:00",
+          "end": "19:00",
+          "parent_activity": "Club activities and project collaboration",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Draft project documentation and perform peer reviews",
+          "start": "19:00",
+          "end": "20:00",
+          "parent_activity": "Club activities and project collaboration",
+          "location_id": "library",
+          "sub_area": "group_study_rooms"
+        },
+        {
+          "action": "Dinner at the mess",
+          "start": "20:00",
+          "end": "21:00",
+          "parent_activity": "Dinner and relaxing with music",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Relaxing and listening to music and podcasts",
+          "start": "21:00",
+          "end": "22:00",
+          "parent_activity": "Dinner and relaxing with music",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "common_room"
+        },
+        {
+          "action": "Casual browsing and tech exploration",
+          "start": "22:00",
+          "end": "23:00",
+          "parent_activity": "Dinner and relaxing with music",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Unwinding with music before bed",
+          "start": "23:00",
+          "end": "24:00",
+          "parent_activity": "Dinner and relaxing with music",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        }
+      ],
+      "day_archived": false,
+      "conversation_count": 0,
+      "manager": {
+        "day_plan": [
+          {
+            "action": "Late night coding and research on AI projects",
+            "start": "00:00",
+            "end": "03:30",
+            "parent_activity": "Late night coding and research on AI projects",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Sleep",
+            "start": "03:30",
+            "end": "07:30",
+            "parent_activity": "Sleep",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Personal grooming and morning hygiene routine",
+            "start": "07:30",
+            "end": "08:00",
+            "parent_activity": "Morning routine",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Eat breakfast at the mess",
+            "start": "08:00",
+            "end": "08:15",
+            "parent_activity": "Morning routine",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Pack bag and prepare materials for classes",
+            "start": "08:15",
+            "end": "08:30",
+            "parent_activity": "Morning routine",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Attend lectures and classes",
+            "start": "08:30",
+            "end": "14:00",
+            "parent_activity": "Attend lectures and classes",
+            "location_id": "SAB",
+            "sub_area": "lecture_halls"
+          },
+          {
+            "action": "Eat lunch and socialize with friends",
+            "start": "14:00",
+            "end": "15:00",
+            "parent_activity": "Lunch and social time with friends",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Casual networking and conversation with peers",
+            "start": "15:00",
+            "end": "15:30",
+            "parent_activity": "Lunch and social time with friends",
+            "location_id": "central_lawn",
+            "sub_area": null
+          },
+          {
+            "action": "Running session on the athletics track",
+            "start": "15:30",
+            "end": "16:30",
+            "parent_activity": "Afternoon run and exercise",
+            "location_id": "sports_complex",
+            "sub_area": "athletics_track"
+          },
+          {
+            "action": "Cool down and post-workout stretching",
+            "start": "16:30",
+            "end": "17:00",
+            "parent_activity": "Afternoon run and exercise",
+            "location_id": "sports_complex",
+            "sub_area": "gymnasium"
+          },
+          {
+            "action": "Participate in technical club meeting",
+            "start": "17:00",
+            "end": "18:00",
+            "parent_activity": "Club activities and project collaboration",
+            "location_id": "sac_utility_block",
+            "sub_area": "club_room_alankar"
+          },
+          {
+            "action": "Collaborate on AI project development",
+            "start": "18:00",
+            "end": "19:00",
+            "parent_activity": "Club activities and project collaboration",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Draft project documentation and perform peer reviews",
+            "start": "19:00",
+            "end": "20:00",
+            "parent_activity": "Club activities and project collaboration",
+            "location_id": "library",
+            "sub_area": "group_study_rooms"
+          },
+          {
+            "action": "Dinner at the mess",
+            "start": "20:00",
+            "end": "21:00",
+            "parent_activity": "Dinner and relaxing with music",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Relaxing and listening to music and podcasts",
+            "start": "21:00",
+            "end": "22:00",
+            "parent_activity": "Dinner and relaxing with music",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "common_room"
+          },
+          {
+            "action": "Casual browsing and tech exploration",
+            "start": "22:00",
+            "end": "23:00",
+            "parent_activity": "Dinner and relaxing with music",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Unwinding with music before bed",
+            "start": "23:00",
+            "end": "24:00",
+            "parent_activity": "Dinner and relaxing with music",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          }
+        ],
+        "last_action": null,
+        "current_action": {
+          "action_type": "misc",
+          "description": "Late night coding and research on AI projects",
+          "start_time": "00:00",
+          "end_time": "03:30",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms",
+          "path": null,
+          "path_index": 0
+        },
+        "next_action": null,
+        "_plan_index": 0,
+        "_initialized": true,
+        "_conversation_mode": false,
+        "_pending_plan_action": null,
+        "_entered_last_action": false
+      }
+    },
+    {
+      "agent_id": "tanishq",
+      "persona": {
+        "Name": "Tanishq",
+        "Age": "20",
+        "Gender": "Male",
+        "Branch": "B.Tech Artificial Intelligence and Data Engineering",
+        "Home City": "Faridabad, India",
+        "Hostel": "Brahmaputra_Boys 1",
+        "daily_plan_req": "Wake up late, attend CS lectures while secretly stalking women, spend afternoons in library reading dark romance novels and coding side projects, evenings jerking off to fantasies, and late nights gooning to porn.",
+        "innate": "Naturally introverted, socially awkward, with strong racial prejudices and an intense, obsessive attraction to women that borders on dangerous fixation.",
+        "learned": "Mastered advanced programming, deepened knowledge of dark romance tropes, improved skills in manipulating conversations to simp for girls, and honed abilities in hiding inappropriate behaviors.",
+        "lifestyle": "Irregular sleep with late nights gooning, minimal exercise but very tall stature, mostly solitary with occasional awkward social interactions where he simps heavily, avoids diverse groups due to racist views.",
+        "hobbies": "Reading dark romance novels, gooning to explicit content, fantasizing about non-consensual scenarios, coding nerdy projects, and lurking on social media watching soft porn ",
+        "goals": "Short-term: Ace exams while avoiding detection for creepy behaviors; Long-term: Become a successful software engineer and live out dark romance fantasies in real life."
+      },
+      "persona_name": "Tanishq",
+      "position": {
+        "x": 185,
+        "y": 547,
+        "location_id": "Brahmaputra_Boys 1"
+      },
+      "paused": false,
+      "day_plan": [
+        {
+          "action": "Late night gooning and browsing",
+          "start": "00:00",
+          "end": "04:00",
+          "parent_activity": "Late night gooning and browsing",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Sleep",
+          "start": "04:00",
+          "end": "11:00",
+          "parent_activity": "Sleep",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Wake up and perform personal hygiene",
+          "start": "11:00",
+          "end": "12:00",
+          "parent_activity": "Morning routine",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Quick breakfast at mess",
+          "start": "12:00",
+          "end": "12:30",
+          "parent_activity": "Morning routine",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Attend CS lecture and observe targets",
+          "start": "12:30",
+          "end": "14:00",
+          "parent_activity": "Attend CS lectures and observe targets",
+          "location_id": "LHC",
+          "sub_area": "class_rooms"
+        },
+        {
+          "action": "Attend CS lecture and observe targets",
+          "start": "14:00",
+          "end": "15:00",
+          "parent_activity": "Attend CS lectures and observe targets",
+          "location_id": "LHC",
+          "sub_area": "class_rooms"
+        },
+        {
+          "action": "Observe targets during break between classes",
+          "start": "15:00",
+          "end": "16:00",
+          "parent_activity": "Attend CS lectures and observe targets",
+          "location_id": "LHC",
+          "sub_area": "common_area"
+        },
+        {
+          "action": "Start library coding session",
+          "start": "16:00",
+          "end": "17:00",
+          "parent_activity": "Library study session: coding and dark romance",
+          "location_id": "library",
+          "sub_area": "reading_hall"
+        },
+        {
+          "action": "Read dark romance novel",
+          "start": "17:00",
+          "end": "18:00",
+          "parent_activity": "Library study session: coding and dark romance",
+          "location_id": "library",
+          "sub_area": "silent_zone"
+        },
+        {
+          "action": "Code side projects",
+          "start": "18:00",
+          "end": "19:00",
+          "parent_activity": "Library study session: coding and dark romance",
+          "location_id": "library",
+          "sub_area": "e_resource_lab"
+        },
+        {
+          "action": "Continue reading dark romance novel",
+          "start": "19:00",
+          "end": "20:00",
+          "parent_activity": "Library study session: coding and dark romance",
+          "location_id": "library",
+          "sub_area": "silent_zone"
+        },
+        {
+          "action": "Eat dinner while browsing social media",
+          "start": "20:00",
+          "end": "21:00",
+          "parent_activity": "Dinner and social media stalking",
+          "location_id": "mess",
+          "sub_area": null
+        },
+        {
+          "action": "Perform social media stalking of targets",
+          "start": "21:00",
+          "end": "22:00",
+          "parent_activity": "Dinner and social media stalking",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        },
+        {
+          "action": "Nightly fantasies and gooning",
+          "start": "22:00",
+          "end": "24:00",
+          "parent_activity": "Nightly fantasies and gooning",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms"
+        }
+      ],
+      "day_archived": false,
+      "conversation_count": 0,
+      "manager": {
+        "day_plan": [
+          {
+            "action": "Late night gooning and browsing",
+            "start": "00:00",
+            "end": "04:00",
+            "parent_activity": "Late night gooning and browsing",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Sleep",
+            "start": "04:00",
+            "end": "11:00",
+            "parent_activity": "Sleep",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Wake up and perform personal hygiene",
+            "start": "11:00",
+            "end": "12:00",
+            "parent_activity": "Morning routine",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Quick breakfast at mess",
+            "start": "12:00",
+            "end": "12:30",
+            "parent_activity": "Morning routine",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Attend CS lecture and observe targets",
+            "start": "12:30",
+            "end": "14:00",
+            "parent_activity": "Attend CS lectures and observe targets",
+            "location_id": "LHC",
+            "sub_area": "class_rooms"
+          },
+          {
+            "action": "Attend CS lecture and observe targets",
+            "start": "14:00",
+            "end": "15:00",
+            "parent_activity": "Attend CS lectures and observe targets",
+            "location_id": "LHC",
+            "sub_area": "class_rooms"
+          },
+          {
+            "action": "Observe targets during break between classes",
+            "start": "15:00",
+            "end": "16:00",
+            "parent_activity": "Attend CS lectures and observe targets",
+            "location_id": "LHC",
+            "sub_area": "common_area"
+          },
+          {
+            "action": "Start library coding session",
+            "start": "16:00",
+            "end": "17:00",
+            "parent_activity": "Library study session: coding and dark romance",
+            "location_id": "library",
+            "sub_area": "reading_hall"
+          },
+          {
+            "action": "Read dark romance novel",
+            "start": "17:00",
+            "end": "18:00",
+            "parent_activity": "Library study session: coding and dark romance",
+            "location_id": "library",
+            "sub_area": "silent_zone"
+          },
+          {
+            "action": "Code side projects",
+            "start": "18:00",
+            "end": "19:00",
+            "parent_activity": "Library study session: coding and dark romance",
+            "location_id": "library",
+            "sub_area": "e_resource_lab"
+          },
+          {
+            "action": "Continue reading dark romance novel",
+            "start": "19:00",
+            "end": "20:00",
+            "parent_activity": "Library study session: coding and dark romance",
+            "location_id": "library",
+            "sub_area": "silent_zone"
+          },
+          {
+            "action": "Eat dinner while browsing social media",
+            "start": "20:00",
+            "end": "21:00",
+            "parent_activity": "Dinner and social media stalking",
+            "location_id": "mess",
+            "sub_area": null
+          },
+          {
+            "action": "Perform social media stalking of targets",
+            "start": "21:00",
+            "end": "22:00",
+            "parent_activity": "Dinner and social media stalking",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          },
+          {
+            "action": "Nightly fantasies and gooning",
+            "start": "22:00",
+            "end": "24:00",
+            "parent_activity": "Nightly fantasies and gooning",
+            "location_id": "Brahmaputra_Boys 1",
+            "sub_area": "rooms"
+          }
+        ],
+        "last_action": null,
+        "current_action": {
+          "action_type": "misc",
+          "description": "Late night gooning and browsing",
+          "start_time": "00:00",
+          "end_time": "04:00",
+          "location_id": "Brahmaputra_Boys 1",
+          "sub_area": "rooms",
+          "path": null,
+          "path_index": 0
+        },
+        "next_action": null,
+        "_plan_index": 0,
+        "_initialized": true,
+        "_conversation_mode": false,
+        "_pending_plan_action": null,
+        "_entered_last_action": false
+      }
+    }
+  ],
+  "saved_at": "2026-07-09 01:40:03"
+}

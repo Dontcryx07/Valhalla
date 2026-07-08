@@ -421,7 +421,43 @@ async def finalize_day(persona_name: str, date_str: str) -> dict:
     }
 
 
-def clear_day(persona_name: str, date_str: str) -> bool:
+# Long-term archive directory
+LONG_TERM_DIR = DATA_DIR / "Long_term_db"
+
+
+async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
+    """
+    End-of-day archival: generate daily summary, save a copy to Long_term_db,
+    and mark the short-term entry as archived.
+
+    Returns the archive payload dict with keys: summary, persona_name, date,
+    event_count, conversation_count.
+    """
+    result = await finalize_day(persona_name, date_str)
+    data = result.get("full_data")
+    if data is None:
+        return {"summary": f"No data for {persona_name} on {date_str}"}
+
+    # Write to Long_term_db
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name.strip()).strip("._-").lower() or "unknown"
+    archive_dir = LONG_TERM_DIR / safe_name
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / f"{date_str}.json"
+    archive_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    logger.info(
+        "[Short_term] archived %s on %s to Long_term_db (%d events, %d conversations)",
+        persona_name, date_str,
+        len(data.get("events", [])), len(data.get("conversations", [])),
+    )
+
+    return {
+        "summary": result.get("summary", ""),
+        "persona_name": persona_name,
+        "date": date_str,
+        "event_count": len(data.get("events", [])),
+        "conversation_count": len(data.get("conversations", [])),
+    }
     """Delete the short-term file after successful long-term archival."""
     path = _day_file_path(persona_name, date_str)
     if path.exists():

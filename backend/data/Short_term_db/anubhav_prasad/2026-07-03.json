@@ -1,0 +1,131 @@
+{
+  "persona_name": "Anubhav Prasad",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Sleep",
+      "start": "00:00",
+      "end": "08:30",
+      "parent_activity": "Sleep",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Wake up and perform morning hygiene",
+      "start": "08:30",
+      "end": "09:00",
+      "parent_activity": "Morning routine",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Dress and organize materials for classes",
+      "start": "09:00",
+      "end": "09:30",
+      "parent_activity": "Morning routine",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Attend electrical engineering classes",
+      "start": "09:30",
+      "end": "13:30",
+      "parent_activity": "Attend electrical engineering classes",
+      "location_id": "SAB",
+      "sub_area": "lecture_halls"
+    },
+    {
+      "action": "Eat lunch at the mess",
+      "start": "13:30",
+      "end": "14:15",
+      "parent_activity": "Lunch and social time",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Walk to social area",
+      "start": "14:15",
+      "end": "14:30",
+      "parent_activity": "Lunch and social time",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Socialize with peers at the central lawn",
+      "start": "14:30",
+      "end": "15:00",
+      "parent_activity": "Lunch and social time",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Research paper reading and AI study",
+      "start": "15:00",
+      "end": "18:00",
+      "parent_activity": "Research paper reading and AI study",
+      "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Work on personal AI project",
+      "start": "18:00",
+      "end": "18:45",
+      "parent_activity": "Personal project development and gaming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Refine project documentation and code",
+      "start": "18:45",
+      "end": "19:30",
+      "parent_activity": "Personal project development and gaming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Play video games with hostel friends",
+      "start": "19:30",
+      "end": "20:30",
+      "parent_activity": "Personal project development and gaming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Continue gaming session",
+      "start": "20:30",
+      "end": "21:30",
+      "parent_activity": "Personal project development and gaming",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Have dinner at the mess",
+      "start": "21:30",
+      "end": "22:00",
+      "parent_activity": "Dinner and hanging out with friends",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Hang out and chat with friends",
+      "start": "22:00",
+      "end": "23:00",
+      "parent_activity": "Dinner and hanging out with friends",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Procrastinating sleep with YouTube videos",
+      "start": "23:00",
+      "end": "24:00",
+      "parent_activity": "Procrastinating sleep with YouTube videos",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    }
+  ],
+  "events": [],
+  "conversations": [],
+  "world_snapshots": [],
+  "daily_summary": null,
+  "archived_to_long_term": false
+}

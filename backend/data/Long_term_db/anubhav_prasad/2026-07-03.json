@@ -1,0 +1,176 @@
+{
+  "persona_name": "Anubhav Prasad",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Finish eating lunch",
+      "start": "12:53",
+      "end": "13:10",
+      "parent_activity": "Finish lunch and socialize at the mess",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Socialize with friends at the mess",
+      "start": "13:10",
+      "end": "13:30",
+      "parent_activity": "Finish lunch and socialize at the mess",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Review latest AI research papers in the library",
+      "start": "13:30",
+      "end": "16:00",
+      "parent_activity": "Review latest AI research papers in the library",
+      "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Draft IC circuit schematics on workstation",
+      "start": "16:00",
+      "end": "17:00",
+      "parent_activity": "Work on personal IC design project",
+      "location_id": "SAB",
+      "sub_area": "department_labs"
+    },
+    {
+      "action": "Run circuit simulations",
+      "start": "17:00",
+      "end": "17:30",
+      "parent_activity": "Work on personal IC design project",
+      "location_id": "SAB",
+      "sub_area": "department_labs"
+    },
+    {
+      "action": "Debug simulation errors and optimize parameters",
+      "start": "17:30",
+      "end": "18:00",
+      "parent_activity": "Work on personal IC design project",
+      "location_id": "SAB",
+      "sub_area": "department_labs"
+    },
+    {
+      "action": "Document project findings and review progress",
+      "start": "18:00",
+      "end": "18:30",
+      "parent_activity": "Work on personal IC design project",
+      "location_id": "SAB",
+      "sub_area": "department_labs"
+    },
+    {
+      "action": "Eat dinner at the mess",
+      "start": "18:30",
+      "end": "19:15",
+      "parent_activity": "Dinner and break with friends",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Socialize and chat with friends in the common area",
+      "start": "19:15",
+      "end": "20:00",
+      "parent_activity": "Dinner and break with friends",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Gaming session",
+      "start": "20:00",
+      "end": "22:00",
+      "parent_activity": "Gaming session",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "indoor_games_room"
+    },
+    {
+      "action": "Catch up on YouTube videos and leisure browsing",
+      "start": "22:00",
+      "end": "23:30",
+      "parent_activity": "Catch up on YouTube videos and leisure browsing",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Attempt to sleep early",
+      "start": "23:30",
+      "end": "23:59",
+      "parent_activity": "Attempt to sleep early",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    }
+  ],
+  "events": [],
+  "conversations": [
+    {
+      "timestamp": "2026-07-08T19:33:59.202898+00:00",
+      "participants": [
+        "Anubhav Prasad",
+        "Ghanisht Kaushal"
+      ],
+      "messages": [
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "Hey Ghanisht, looks like we are stuck in this lecture together again. How are you holding up?"
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "Hey Anubhav! I'm doing alright, just trying to stay focused. This professor is really diving deep into the hardware side of things today, which is actually pretty interesting for my AI model optimization."
+        },
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "Exactly! That's why I'm here. I'm trying to figure out how to better integrate these IC designs with the AI projects I'm working on. It's a lot to balance, though."
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "I feel you. I'm planning to spend some time in the library later to code up a new model. If you're heading there too, maybe we can compare notes on some papers later?"
+        },
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "That sounds like a plan. I'll be there by late afternoon. Good luck with the rest of this lecture!"
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "Thanks, you too. See you later!"
+        }
+      ],
+      "summary": "Anubhav and Ghanisht briefly caught up during a lecture and planned to discuss AI research papers at the library later in the day."
+    },
+    {
+      "timestamp": "2026-07-08T19:34:43.419848+00:00",
+      "participants": [
+        "Anubhav Prasad",
+        "Ghanisht Kaushal"
+      ],
+      "messages": [
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "Hey Ghanisht, good to see you. How was that AI Fundamentals lecture this morning? You look like you're already deep in thought."
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "Hey Anubhav! It was pretty intense, honestly. We dove into some complex optimization techniques that I'm still trying to wrap my head around. How about your EE lecture? Still grinding on those circuit designs?"
+        },
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "Definitely. I've got a busy afternoon ahead at the SAB\u2014need to draft some schematics and run simulations. It's tough, but I'm trying to figure out how to bridge these hardware circuits with some AI models I've been reading about."
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "That sounds like a killer combination. If you need a hand with the algorithmic side or some performance validation, just let me know. I'll be at the utility block for some CP practice later, but I'm always down to talk tech."
+        },
+        {
+          "speaker": "Anubhav Prasad",
+          "text": "I'll take you up on that. Good luck with your training and the CP practice today. Catch you later for dinner?"
+        },
+        {
+          "speaker": "Ghanisht Kaushal",
+          "text": "For sure, let's meet at the mess around 7:30. See you then!"
+        }
+      ],
+      "summary": "Anubhav and Ghanisht caught up over lunch, discussing their respective academic challenges in EE and AI while planning to meet later for dinner."
+    }
+  ],
+  "world_snapshots": [],
+  "daily_summary": "No events recorded for Anubhav Prasad on 2026-07-03.",
+  "archived_to_long_term": true
+}

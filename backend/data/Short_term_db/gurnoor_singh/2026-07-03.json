@@ -1,0 +1,171 @@
+{
+  "persona_name": "Gurnoor Singh",
+  "date": "2026-07-03",
+  "day_plan": [
+    {
+      "action": "Sleep",
+      "start": "00:00",
+      "end": "07:00",
+      "parent_activity": "Sleep",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Wake up and perform morning hygiene",
+      "start": "07:00",
+      "end": "07:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Prepare for the day and pack belongings",
+      "start": "07:30",
+      "end": "08:00",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Eat breakfast at the mess",
+      "start": "08:00",
+      "end": "08:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Review academic schedule and lecture notes",
+      "start": "08:30",
+      "end": "09:00",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "library",
+      "sub_area": "reading_hall"
+    },
+    {
+      "action": "Attend academic classes and labs",
+      "start": "09:00",
+      "end": "14:00",
+      "parent_activity": "Attend academic classes and labs",
+      "location_id": "SAB",
+      "sub_area": "lecture_halls"
+    },
+    {
+      "action": "Have lunch with friends",
+      "start": "14:00",
+      "end": "14:45",
+      "parent_activity": "Lunch and social interaction with friends",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Walk to the campus central lawn",
+      "start": "14:45",
+      "end": "15:00",
+      "parent_activity": "Lunch and social interaction with friends",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Engage in casual conversation and campus walk",
+      "start": "15:00",
+      "end": "15:30",
+      "parent_activity": "Lunch and social interaction with friends",
+      "location_id": "central_lawn",
+      "sub_area": null
+    },
+    {
+      "action": "Work on technical project code",
+      "start": "15:30",
+      "end": "16:30",
+      "parent_activity": "Technical project development and club work",
+      "location_id": "library",
+      "sub_area": "group_study_rooms"
+    },
+    {
+      "action": "Commit project updates to GitHub",
+      "start": "16:30",
+      "end": "17:00",
+      "parent_activity": "Technical project development and club work",
+      "location_id": "library",
+      "sub_area": "group_study_rooms"
+    },
+    {
+      "action": "Attend club meeting and plan initiatives",
+      "start": "17:00",
+      "end": "18:00",
+      "parent_activity": "Technical project development and club work",
+      "location_id": "sac_utility_block",
+      "sub_area": "club_room_alankar"
+    },
+    {
+      "action": "Collaborate with club members on upcoming events",
+      "start": "18:00",
+      "end": "18:30",
+      "parent_activity": "Technical project development and club work",
+      "location_id": "sac_utility_block",
+      "sub_area": "club_room_alankar"
+    },
+    {
+      "action": "Perform gym training session",
+      "start": "18:30",
+      "end": "19:30",
+      "parent_activity": "Gym session",
+      "location_id": "sports_complex",
+      "sub_area": "gymnasium"
+    },
+    {
+      "action": "Post-workout shower and cool down",
+      "start": "19:30",
+      "end": "20:00",
+      "parent_activity": "Gym session",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Have dinner",
+      "start": "20:00",
+      "end": "20:45",
+      "parent_activity": "Dinner and evening leisure",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Check emails and finalize dinner",
+      "start": "20:45",
+      "end": "21:00",
+      "parent_activity": "Dinner and evening leisure",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Relax and catch up with friends in the common room",
+      "start": "21:00",
+      "end": "21:30",
+      "parent_activity": "Dinner and evening leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room"
+    },
+    {
+      "action": "Plan for tomorrow and prepare for sleep",
+      "start": "21:30",
+      "end": "22:00",
+      "parent_activity": "Dinner and evening leisure",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Night-time coding and planning for tomorrow",
+      "start": "22:00",
+      "end": "24:00",
+      "parent_activity": "Night-time coding and planning for tomorrow",
+      "location_id": "library",
+      "sub_area": "reference_section"
+    }
+  ],
+  "events": [],
+  "conversations": [],
+  "world_snapshots": [],
+  "daily_summary": null,
+  "archived_to_long_term": false
+}

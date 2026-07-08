@@ -210,6 +210,8 @@ class DayPlannerState(TypedDict, total=False):
     yesterday_summary: Optional[str]
     current_time: str  # e.g. "2026-07-03 06:00"
     places: List[Place]  # known campus locations, from places.json
+    mode: str  # "full_day", "remaining", or "next_day"
+    current_location_id: Optional[str] = None
 
     # ---- working state ----
     coarse_plan: List[Dict[str, Any]]
@@ -256,10 +258,27 @@ def _memories_block(memories: List[str]) -> str:
 
 def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
     persona = state["persona"]
+    mode = state.get("mode", "full_day")
+    current_time = state.get("current_time", "unknown")
+
+    if mode == "full_day":
+        coverage = "covering the full 24 hours (00:00 to 24:00)"
+    elif mode == "next_day":
+        coverage = "covering the full next day (00:00 to 24:00)"
+    elif mode == "remaining":
+        coverage = f"covering ONLY the REMAINDER of the day from the current time onward -- do NOT schedule anything before the current time"
+    else:
+        coverage = "covering the full 24 hours (00:00 to 24:00)"
+
+    loc_hint = ""
+    current_loc = state.get("current_location_id")
+    if current_loc:
+        loc_hint = f"\nThe agent is currently at: {current_loc}. Start the plan from this location."
+
     system_prompt = (
         "You are simulating one day in the life of a character in a generative-agents "
-        "simulation. Produce a COARSE day plan: 5 to 8 broad blocks of activity covering "
-        "the full 24 hours (00:00 to 24:00), with no gaps and no overlaps. "
+        "simulation. Produce a COARSE day plan: 5 to 8 broad blocks of activity "
+        f"{coverage}, with no gaps and no overlaps. "
         "Stay true to the persona's traits and background.\n\n"
         "For EACH block, tag it as 'atomic' or 'flexible':\n"
         "- atomic: a single continuous activity with no meaningful internal sub-steps "
@@ -277,7 +296,9 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
         f"PERSONA:\n{_persona_block(persona)}\n\n"
         f"RELEVANT MEMORIES:\n{_memories_block(state.get('relevant_memories', []))}\n\n"
         f"YESTERDAY'S SUMMARY:\n{state.get('yesterday_summary') or '(no history yet, this is day 1)'}\n\n"
-        f"Current in-simulation time: {state.get('current_time', 'unknown')}\n\n"
+        f"Current in-simulation time: {current_time}\n"
+        f"Plan mode: {mode}\n"
+        f"Agent location: {current_loc or 'unknown'}{loc_hint}\n\n"
         "Generate the coarse plan now."
     )
 
@@ -404,7 +425,7 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
 
     return {**state, "fine_plan": fine_actions}
 
-def _local_overlap_check(actions: List[Dict[str, Any]]) -> Optional[str]:
+def _local_overlap_check(actions: List[Dict[str, Any]], mode: str = "full_day") -> Optional[str]:
     """Cheap deterministic pre-check before spending an LLM call on validation --
     catches the most common failure mode (bad overlaps/gaps) for free."""
     if not actions:
@@ -419,7 +440,8 @@ def _local_overlap_check(actions: List[Dict[str, Any]]) -> Optional[str]:
     except Exception as e:  # malformed time strings
         return f"unparsable time value: {e}"
 
-    if to_minutes(sorted_actions[0]["start"]) != 0:
+    # Remaining-day plans start at the current time, not necessarily 00:00
+    if mode != "remaining" and to_minutes(sorted_actions[0]["start"]) != 0:
         return f"plan does not start at 00:00 (starts at {sorted_actions[0]['start']})"
 
     for prev, curr in zip(sorted_actions, sorted_actions[1:]):
@@ -429,9 +451,11 @@ def _local_overlap_check(actions: List[Dict[str, Any]]) -> Optional[str]:
                 f"and '{curr['action']}' (starts {curr['start']})"
             )
 
-    last_end = sorted_actions[-1]["end"]
-    if to_minutes(last_end) not in (24 * 60, 0):
-        return f"plan does not end at 24:00 (ends at {last_end})"
+    # Remaining-day plans don't need to perfectly hit 24:00
+    if mode != "remaining":
+        last_end = sorted_actions[-1]["end"]
+        if to_minutes(last_end) not in (24 * 60, 0):
+            return f"plan does not end at 24:00 (ends at {last_end})"
 
     return None
 
@@ -458,7 +482,7 @@ def _local_location_check(actions: List[Dict[str, Any]], places: List[Place]) ->
 
 
 def validate_plan(state: DayPlannerState) -> DayPlannerState:
-    local_issue = _local_overlap_check(state["fine_plan"]) or _local_location_check(
+    local_issue = _local_overlap_check(state["fine_plan"], mode=state.get("mode", "full_day")) or _local_location_check(
         state["fine_plan"], state.get("places", [])
     )
     if local_issue:
@@ -584,12 +608,17 @@ def run(agent: Any, world_state: dict) -> dict:
         agent.persona            -> dict
         agent.relevant_memories  -> List[str]   (empty for now)
         agent.yesterday_summary  -> Optional[str] (empty for now)
-    world_state is expected to expose a 'current_time' key (str), and
-    optionally a 'places' key (List[Dict[str, str]]) -- if omitted, places
-    are loaded from places.json via load_places(). If provided, 'persona_name'
-    is used when saving the final plan to data/Short_term_db.
+    world_state is expected to expose:
+        'current_time' key (str)
+        optionally a 'places' key (List[Dict[str, str]]) -- if omitted,
+            places are loaded from places.json via load_places().
+        'persona_name' is used when saving the final plan to data/Short_term_db.
+        'mode' can be 'full_day' (default), 'remaining', or 'next_day'.
+        'current_location_id' optionally tells the planner where the agent is
+            (useful for remaining-day and next-day planning).
     """
     places = world_state.get("places") or load_places()
+    mode = world_state.get("mode", "full_day")
 
     initial_state: DayPlannerState = {
         "persona": getattr(agent, "persona", {}),
@@ -597,6 +626,8 @@ def run(agent: Any, world_state: dict) -> dict:
         "yesterday_summary": getattr(agent, "yesterday_summary", None),
         "current_time": world_state.get("current_time", "00:00"),
         "places": places,
+        "mode": mode,
+        "current_location_id": world_state.get("current_location_id"),
         "retry_count": 0,
     }
 

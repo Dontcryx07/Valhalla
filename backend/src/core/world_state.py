@@ -112,6 +112,10 @@ class WorldState(BaseModel):
     occupancy: Dict[str, Optional[str]] = Field(default_factory=dict)
     history: List[ActionLogEntry] = Field(default_factory=list)
 
+    # Conversation cooldown tracking
+    agent_last_conversation: Dict[str, int] = Field(default_factory=dict)
+    conversation_cooldown_ticks: int = 30
+
     # Agent registry
 
     def register_agent(self, agent_id: str, position: Position) -> None:
@@ -190,6 +194,23 @@ class WorldState(BaseModel):
         agent.status = AgentStatus.INTERRUPTED
         self.release_all_for_agent(agent_id)
 
+    # Conversation cooldown
+
+    def record_conversation(self, agent_id: str) -> None:
+        """Record that an agent just finished a conversation."""
+        self.agent_last_conversation[agent_id] = self.tick
+
+    def can_converse(self, agent_id: str, other_id: str) -> bool:
+        """
+        Check if two agents can start a conversation based on cooldown.
+        Returns False if either agent is still on cooldown.
+        """
+        for aid in (agent_id, other_id):
+            last = self.agent_last_conversation.get(aid)
+            if last is not None and self.tick - last < self.conversation_cooldown_ticks:
+                return False
+        return True
+
     def clear_agent_action(self, agent_id: str) -> None:
         agent = self.get_agent(agent_id)
         agent.current_action = None
@@ -199,14 +220,16 @@ class WorldState(BaseModel):
 
     def agents_ready_for_decision(self) -> List[str]:
         """
-        Agents who need a decision this tick: no current action, current
-        action just finished, or were flagged INTERRUPTED.
+        Agents who need a decision this tick: no current action at all,
+        or were flagged INTERRUPTED by the WorldEngine.
+        Planned action transitions are handled by Actions.py's state
+        machine -- the tick graph only runs for unplanned gaps or
+        interruptions.
         """
         ready = []
         for agent_id, agent in self.agents.items():
             if (
                 agent.current_action is None
-                or agent.current_action.is_finished(self.tick)
                 or agent.status == AgentStatus.INTERRUPTED
             ):
                 ready.append(agent_id)
