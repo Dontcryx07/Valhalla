@@ -208,6 +208,71 @@ def load_day_plan(persona_name: str, date_str: str) -> list[dict]:
     return data.day_plan if data else []
 
 
+# ---------------------------------------------------------------------------
+# Single-file hygiene (one short-term file per agent; clean start each run)
+# ---------------------------------------------------------------------------
+
+def is_pristine_plan(persona_name: str, date_str: str) -> bool:
+    """True if the day file holds a plan but none of the run-time record yet
+    (no events, conversations, or world snapshots)."""
+    data = _load_day_data(persona_name, date_str)
+    return bool(
+        data and data.day_plan
+        and not data.events and not data.conversations and not data.world_snapshots
+    )
+
+
+def reset_day_runtime(persona_name: str, date_str: str) -> None:
+    """Clear the run-time record (events / conversations / snapshots) but keep
+    the plan, so a day starts fresh — the file holds only the plan again."""
+    data = _load_day_data(persona_name, date_str)
+    if data is None:
+        return
+    data.events = []
+    data.conversations = []
+    data.world_snapshots = []
+    data.archived_to_long_term = False
+    _save_day_data(persona_name, date_str, data)
+
+
+def list_day_files(persona_name: str) -> list[str]:
+    """All simulation dates that currently have a short-term file for this agent."""
+    d = _persona_dir(persona_name)
+    return sorted(p.stem for p in d.glob("*.json"))
+
+
+def archive_copy_no_llm(persona_name: str, date_str: str) -> bool:
+    """Append a compressed record of a short-term day into the agent's single
+    long-term memory file (no LLM). Used when consolidating stray day files."""
+    data = _load_day_data(persona_name, date_str)
+    if data is None:
+        return False
+    append_to_long_term(persona_name, _compress_day(data.model_dump()))
+    return True
+
+
+def consolidate_to_single_day(persona_name: str, keep_date: str) -> list[str]:
+    """Ensure the agent keeps only ONE short-term file (for `keep_date`).
+    Any other day files are archived to Long_term_db (no LLM) and removed from
+    short-term. Returns the list of dates that were pushed to long-term.
+    """
+    moved: list[str] = []
+    # Migrate any legacy per-date long-term files into the single memory.json.
+    _load_longterm(persona_name)
+    for date_str in list_day_files(persona_name):
+        if date_str == keep_date:
+            continue
+        archive_copy_no_llm(persona_name, date_str)
+        clear_short_term_data(persona_name, date_str)
+        moved.append(date_str)
+    if moved:
+        logger.info(
+            "[Short_term] consolidated %s: archived %d stray day file(s) to long-term (%s)",
+            persona_name, len(moved), ", ".join(moved),
+        )
+    return moved
+
+
 def append_event(persona_name: str, date_str: str, event: dict) -> None:
     """
     Append an event during the day.
@@ -366,22 +431,29 @@ async def generate_daily_summary(persona_name: str, date_str: str) -> str:
     
     system_prompt = (
         "You are summarizing one day in the life of a simulated college student agent. "
-        "Write a concise paragraph (3-5 sentences) capturing the key activities, "
-        "social interactions, and outcomes. Be specific about locations, people, and results. "
+        "You will be provided the Initial day plan, the conversations the agent had throughout and some extra stuff. "
+        "Write a concise summary of about 100 words prioritizing the most important:\n"
+        "- High-priority tasks and whether they were completed\n"
+        "- Important events and social interactions\n"
+        "- Significant conversations and decisions\n"
+        "- Anything likely to matter in future days\n"
+        "Only focus on routine low-value chores unless no important event happened that day.\n"
         "Also list 3-5 key events as bullet points."
     )
     user_prompt = (
         f"Persona: {persona_name}\n"
         f"Date: {date_str}\n"
         f"Day plan: {len(data.day_plan)} scheduled actions\n\n"
-        f"Events:\n{event_text}\n\n"
+        f"Initial day plan:\n" +
+        "\n".join(f"  - {a.get('start','?')}-{a.get('end','?')} {a.get('action','?')} at {a.get('location_id','?')}" for a in data.day_plan[:15]) +
+        f"\n\nEvents:\n{event_text}\n\n"
         f"Conversations ({len(data.conversations)}):\n" +
         "\n".join(f"- {c.summary} (with {', '.join(c.participants)})" for c in data.conversations[:5]) +
-        "\n\nGenerate the daily summary and key events list."
+        "\n\nGenerate the daily summary (~100 words) and key events list."
     )
     
     try:
-        result = call_gemini(system_prompt, user_prompt, SummaryOutput, "simple", temperature=0.5)
+        result = call_gemini(system_prompt, user_prompt, SummaryOutput, "default", temperature=0.5)
         # Format for long-term storage
         key_events_text = "\n".join(f"- {evt}" for evt in result.key_events)
         return f"Summary: {result.summary}\nKey events:\n{key_events_text}"
@@ -425,10 +497,87 @@ async def finalize_day(persona_name: str, date_str: str) -> dict:
 LONG_TERM_DIR = DATA_DIR / "Long_term_db"
 
 
+# ---------------------------------------------------------------------------
+# Long-term memory = ONE compressed file per agent (Long_term_db/<agent>/memory.json)
+# ---------------------------------------------------------------------------
+
+def _safe(persona_name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name.strip()).strip("._-").lower() or "unknown"
+
+
+def _longterm_file(persona_name: str) -> Path:
+    return LONG_TERM_DIR / _safe(persona_name) / "memory.json"
+
+
+def _compress_day(data: dict, summary_text: Optional[str] = None) -> dict:
+    """Shrink a full short-term day into a compact long-term record."""
+    convs = data.get("conversations", []) or []
+    events = data.get("events", []) or []
+    return {
+        "date": data.get("date"),
+        "summary": summary_text or data.get("daily_summary") or "",
+        "conversations": [
+            {"participants": c.get("participants", []), "summary": c.get("summary", "")}
+            for c in convs
+        ],
+        "event_count": len(events),
+        "conversation_count": len(convs),
+    }
+
+
+def _load_longterm(persona_name: str) -> dict:
+    """Load the agent's single long-term file. Migrates any legacy per-date
+    files into it (and deletes them) the first time it's read."""
+    path = _longterm_file(persona_name)
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    mem = {"persona_name": persona_name, "days": []}
+    legacy_dir = LONG_TERM_DIR / _safe(persona_name)
+    migrated = False
+    if legacy_dir.is_dir():
+        for f in sorted(legacy_dir.glob("*.json")):
+            if f.name == "memory.json":
+                continue
+            try:
+                mem["days"].append(_compress_day(json.loads(f.read_text(encoding="utf-8"))))
+                migrated = True
+            except Exception:
+                pass
+            try:
+                f.unlink()  # remove the legacy per-date file
+            except Exception:
+                pass
+    if migrated:
+        mem["days"].sort(key=lambda d: d.get("date", ""))
+        _save_longterm(persona_name, mem)  # persist immediately so nothing is lost
+    return mem
+
+
+def _save_longterm(persona_name: str, mem: dict) -> None:
+    path = _longterm_file(persona_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(mem, indent=2), encoding="utf-8")
+
+
+def append_to_long_term(persona_name: str, day_entry: dict) -> None:
+    """Add (or replace) one compressed day record in the agent's single
+    long-term memory file, keeping entries sorted by date."""
+    mem = _load_longterm(persona_name)
+    days = [d for d in mem.get("days", []) if d.get("date") != day_entry.get("date")]
+    days.append(day_entry)
+    days.sort(key=lambda d: d.get("date", ""))
+    mem["days"] = days
+    mem["persona_name"] = persona_name
+    _save_longterm(persona_name, mem)
+
+
 async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
     """
-    End-of-day archival: generate daily summary, save a copy to Long_term_db,
-    and mark the short-term entry as archived.
+    End-of-day archival: generate a daily summary, compress the day, and append
+    it to the agent's single long-term memory file.
 
     Returns the archive payload dict with keys: summary, persona_name, date,
     event_count, conversation_count.
@@ -438,15 +587,10 @@ async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
     if data is None:
         return {"summary": f"No data for {persona_name} on {date_str}"}
 
-    # Write to Long_term_db
-    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name.strip()).strip("._-").lower() or "unknown"
-    archive_dir = LONG_TERM_DIR / safe_name
-    archive_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = archive_dir / f"{date_str}.json"
-    archive_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    append_to_long_term(persona_name, _compress_day(data, summary_text=result.get("summary")))
 
     logger.info(
-        "[Short_term] archived %s on %s to Long_term_db (%d events, %d conversations)",
+        "[Short_term] archived %s on %s into single long-term file (%d events, %d conversations)",
         persona_name, date_str,
         len(data.get("events", [])), len(data.get("conversations", [])),
     )
@@ -458,7 +602,14 @@ async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
         "event_count": len(data.get("events", [])),
         "conversation_count": len(data.get("conversations", [])),
     }
-    """Delete the short-term file after successful long-term archival."""
+
+
+def clear_short_term_data(persona_name: str, date_str: str) -> bool:
+    """Delete the short-term file after successful long-term archival.
+
+    Not called automatically — archival keeps the short-term copy in place so
+    the running day is not disturbed. Exposed for maintenance/cleanup use.
+    """
     path = _day_file_path(persona_name, date_str)
     if path.exists():
         path.unlink()

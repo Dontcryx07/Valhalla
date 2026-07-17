@@ -31,6 +31,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 import json
+import random
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -40,6 +41,17 @@ from src.core.log import get_logger
 from src.core.world_state import WorldState, Position, CurrentAction, AgentStatus
 
 logger = get_logger(__name__)
+
+
+def _interpolate_line(a: Tuple[int, int], b: Tuple[int, int], steps: int = 40) -> List[Tuple[int, int]]:
+    """A straight line of `steps` points from a to b (inclusive). Used as a
+    fallback route so agents still animate when no walkable path is found."""
+    (x0, y0), (x1, y1) = a, b
+    steps = max(2, steps)
+    return [
+        (round(x0 + (x1 - x0) * i / (steps - 1)), round(y0 + (y1 - y0) * i / (steps - 1)))
+        for i in range(steps)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +79,8 @@ class ActionState(BaseModel):
     position: Optional[Position] = None  # pixel coords (filled by resolver)
     path: Optional[List[Tuple[int, int]]] = None  # if MOVE, the pixel path
     path_index: int = 0       # current position along path
+    energy_change: float = 0.0      # total change over entire action
+    emotion_change: float = 0.0     # total change over entire action
 
 
 # ---------------------------------------------------------------------------
@@ -111,13 +125,16 @@ class LocationResolver:
 
         self._entrypoints: Dict[str, Dict[str, Any]] = {}
         self._places_inline: Dict[str, Tuple[int, int]] = {}
+        self._name_to_polykey: Dict[str, str] = {}   # entrypoint name -> "PolygonBuilding_N"
+        self._bbox_by_name: Dict[str, Tuple[int, int, int, int]] = {}  # name -> (xmin,ymin,xmax,ymax)
 
         # Load entrypoints
         if entrypoint_path.exists():
             raw = json.loads(entrypoint_path.read_text())
-            for _key, data in raw.items():
+            for key, data in raw.items():
                 name = data.get("name", "")
                 self._entrypoints[name] = {"x": data["x"], "y": data["y"]}
+                self._name_to_polykey[name] = key
 
         # Load inline coordinates from places.json (3 locations have this)
         if places_path.exists():
@@ -131,9 +148,36 @@ class LocationResolver:
                     y = int(parts[1].split("=")[1].strip())
                     self._places_inline[loc["id"]] = (x, y)
 
+        # Load building bounding boxes: union all decomposed parts per polygon.
+        bbox_path = ENVIRONMENT_DIR / "buildings_polygon_decomposed.json"
+        polykey_bbox: Dict[str, Tuple[int, int, int, int]] = {}
+        if bbox_path.exists():
+            try:
+                parts = json.loads(bbox_path.read_text())
+                for p in parts:
+                    base = p.get("building_name", "").rsplit("_part", 1)[0]
+                    corners = [p.get("top_left"), p.get("top_right"),
+                               p.get("bottom_left"), p.get("bottom_right")]
+                    xs = [c[0] for c in corners if c]
+                    ys = [c[1] for c in corners if c]
+                    if not xs or not ys:
+                        continue
+                    x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
+                    if base in polykey_bbox:
+                        px0, py0, px1, py1 = polykey_bbox[base]
+                        polykey_bbox[base] = (min(px0, x0), min(py0, y0), max(px1, x1), max(py1, y1))
+                    else:
+                        polykey_bbox[base] = (x0, y0, x1, y1)
+            except Exception as e:
+                logger.warning("[LocationResolver] failed to load building bboxes: %s", e)
+        # Link entrypoint name -> bbox via the shared polygon key.
+        for name, key in self._name_to_polykey.items():
+            if key in polykey_bbox:
+                self._bbox_by_name[name] = polykey_bbox[key]
+
         logger.info(
-            "[LocationResolver] loaded %d entrypoints, %d inline coords",
-            len(self._entrypoints), len(self._places_inline),
+            "[LocationResolver] loaded %d entrypoints, %d inline coords, %d building bboxes",
+            len(self._entrypoints), len(self._places_inline), len(self._bbox_by_name),
         )
 
     def resolve(self, location_id: str) -> Optional[Position]:
@@ -161,6 +205,60 @@ class LocationResolver:
     def has_location(self, location_id: str) -> bool:
         """Check if we can resolve this ID."""
         return self.resolve(location_id) is not None
+
+    def _entrypoint_name_for(self, location_id: str) -> Optional[str]:
+        """Resolve a location_id to its entrypoint building name (for bbox lookup)."""
+        name = _PLACES_TO_ENTRYPOINT.get(location_id)
+        if name and name in self._entrypoints:
+            return name
+        normalized = location_id.lower().replace("_", "").replace(" ", "")
+        for nm in self._entrypoints:
+            if nm.lower().replace("_", "").replace(" ", "") == normalized:
+                return nm
+        return None
+
+    def bbox_for(self, location_id: str) -> Optional[Tuple[int, int, int, int]]:
+        """Return (xmin, ymin, xmax, ymax) for a location's building, or None."""
+        name = self._entrypoint_name_for(location_id)
+        if name and name in self._bbox_by_name:
+            return self._bbox_by_name[name]
+        return None
+
+    def random_interior_point(
+        self,
+        location_id: str,
+        occupied: Optional[List[Tuple[int, int]]] = None,
+        min_gap: int = 6,
+        max_tries: int = 40,
+    ) -> Position:
+        """A random pixel INSIDE the building's bounding box, kept at least
+        `min_gap` px away from any `occupied` point. Falls back to a small
+        jitter around the entrypoint when no bbox is known."""
+        occupied = occupied or []
+        bbox = self.bbox_for(location_id)
+        ep = self.resolve(location_id)
+
+        if bbox is not None:
+            x0, y0, x1, y1 = bbox
+            # small inset so points aren't exactly on the wall
+            if x1 - x0 > 4:
+                x0, x1 = x0 + 2, x1 - 2
+            if y1 - y0 > 4:
+                y0, y1 = y0 + 2, y1 - 2
+        elif ep is not None:
+            x0, y0, x1, y1 = ep.x - 14, ep.y - 14, ep.x + 14, ep.y + 14
+        else:
+            return Position(x=0, y=0, location_id=location_id)
+
+        best = None
+        for _ in range(max_tries):
+            x = random.randint(int(x0), int(x1))
+            y = random.randint(int(y0), int(y1))
+            if all((x - ox) ** 2 + (y - oy) ** 2 >= min_gap * min_gap for ox, oy in occupied):
+                return Position(x=x, y=y, location_id=location_id)
+            best = (x, y)
+        x, y = best if best else (int((x0 + x1) / 2), int((y0 + y1) / 2))
+        return Position(x=x, y=y, location_id=location_id)
 
 
 # ---------------------------------------------------------------------------
@@ -203,14 +301,13 @@ class AgentActionManager:
 
     @property
     def is_last_action(self) -> bool:
-        """True if the current action is the final entry in the day plan."""
+        """True if the current action is the final entry in the day plan.
+        Uses description match only — start_time may differ when rescheduled
+        after a conversation or a long move that shifted the timeline."""
         if not self.day_plan or not self.current_action:
             return False
         last = self.day_plan[-1]
-        return (
-            self.current_action.description == last.get("action", "")
-            and self.current_action.start_time == last.get("start", "")
-        )
+        return self.current_action.description == last.get("action", "")
 
     @property
     def is_plan_exhausted(self) -> bool:
@@ -253,6 +350,8 @@ class AgentActionManager:
             location_id=location_id,
             sub_area=plan_action.get("sub_area"),
             position=position,
+            energy_change=plan_action.get("energy_change", 0.0),
+            emotion_change=plan_action.get("emotion_change", 0.0),
         )
 
     def _create_move_action(
@@ -262,18 +361,33 @@ class AgentActionManager:
         start_time: str,
         end_time: str,
     ) -> ActionState:
-        """Create a MOVE action with a path from pathfinder."""
-        path = None
+        """Create a MOVE action that walks the agent DOOR to DOOR.
+
+        The route is: current spot -> current building's entry door ->
+        (pathfinder route along the walkable grid) -> destination building's
+        entry door. Arrival then settles the agent inside the destination
+        (handled in tick()). If the pathfinder can't produce a route we fall
+        back to a densely interpolated straight line so motion is still visible.
+        """
+        # Resolve the two front doors (walkable entrypoints).
+        from_door = self.resolver.resolve(from_pos.location_id) if from_pos.location_id else None
+        to_door = self.resolver.resolve(to_pos.location_id) if to_pos.location_id else None
+        d_from = (from_door.x, from_door.y) if from_door else (from_pos.x, from_pos.y)
+        d_to = (to_door.x, to_door.y) if to_door else (to_pos.x, to_pos.y)
+
+        road: List[Tuple[int, int]] = []
         try:
             from pathfinder import shortest_path
-            path = shortest_path((from_pos.x, from_pos.y), (to_pos.x, to_pos.y))
+            road = shortest_path(d_from, d_to) or []
         except Exception as e:
-            logger.warning(
-                "[Actions] pathfinder failed for %s: %s — using direct path",
-                self.agent_id, e,
-            )
-            # Fallback: direct path (start -> end)
-            path = [(from_pos.x, from_pos.y), (to_pos.x, to_pos.y)]
+            logger.warning("[Actions] pathfinder failed for %s: %s", self.agent_id, e)
+            road = []
+
+        if len(road) < 2:
+            road = _interpolate_line(d_from, d_to, steps=40)
+
+        # Prepend the agent's current spot so it visibly steps out to its door.
+        path: List[Tuple[int, int]] = [(from_pos.x, from_pos.y)] + [p for p in road]
 
         return ActionState(
             action_type=ActionType.MOVE,
@@ -282,7 +396,7 @@ class AgentActionManager:
             end_time=end_time,
             location_id=to_pos.location_id or "",
             position=to_pos,
-            path=path or [],
+            path=path,
             path_index=0,
         )
 
@@ -317,20 +431,24 @@ class AgentActionManager:
             self.current_action = self._create_action_state(plan_action)
             self.current_action.start_time = current_hhmm
         else:
-            # Agent needs to move first
-            # Estimate travel time: ~10 min per 100 pixels (rough)
-            dx = abs(target_position.x - self.position.x)
-            dy = abs(target_position.y - self.position.y)
-            distance = max(dx, dy)
-            travel_minutes = max(5, distance // 10)  # at least 5 min
-
-            start_minute = self._hhmm_to_minutes(current_hhmm)
-            end_minute = start_minute + travel_minutes
-            end_time = self._minutes_to_hhmm(min(end_minute, 24 * 60))
-
+            # Agent needs to move first — create move action with BFS path,
+            # then compute travel time from the schedule's allocated duration
+            # so the agent arrives exactly when the plan expects.
             self.current_action = self._create_move_action(
-                self.position, target_position, current_hhmm, end_time
+                self.position, target_position, current_hhmm, "23:59"
             )
+            path = self.current_action.path
+            path_len = len(path) if path else 100
+            # Schedule-aware speed: arrive by the plan's end time.
+            plan_end_min = self._hhmm_to_minutes(plan_action.get("end", "24:00"))
+            start_minute = self._hhmm_to_minutes(current_hhmm)
+            allocated_minutes = max(1, plan_end_min - start_minute)
+            _PIXELS_PER_MIN_MAX = 50
+            speed_needed = path_len / allocated_minutes
+            effective_speed = min(_PIXELS_PER_MIN_MAX, speed_needed)
+            travel_minutes = max(5, int(path_len / max(0.1, effective_speed)))
+            end_minute = start_minute + travel_minutes
+            self.current_action.end_time = self._minutes_to_hhmm(min(end_minute, 24 * 60))
             # The actual activity becomes the next action
             self.next_action = self._create_action_state(plan_action)
 
@@ -415,10 +533,21 @@ class AgentActionManager:
             if self.last_action.action_type == ActionType.MOVE and self.next_action is not None:
                 self.current_action = self.next_action
                 self.next_action = None
-                self.position = self.current_action.position or self.position
+                # Arrived at the destination building — settle at a random spot
+                # INSIDE its footprint (not stacked on the entrypoint).
+                if self.current_action.location_id:
+                    self.position = self.resolver.random_interior_point(
+                        self.current_action.location_id
+                    )
+                else:
+                    self.position = self.current_action.position or self.position
             else:
-                # Movement completed — update position to destination
-                if self.last_action.action_type == ActionType.MOVE and self.last_action.position:
+                # Movement completed — settle inside the destination building
+                if self.last_action.action_type == ActionType.MOVE and self.last_action.location_id:
+                    self.position = self.resolver.random_interior_point(
+                        self.last_action.location_id
+                    )
+                elif self.last_action.action_type == ActionType.MOVE and self.last_action.position:
                     self.position = self.last_action.position
 
                 # Pick next action from plan
@@ -433,22 +562,38 @@ class AgentActionManager:
         if self.current_action and self.is_last_action and not self._entered_last_action:
             self._entered_last_action = True
 
-        # If still moving, advance along path
+        # If still moving, advance along the path proportionally to elapsed
+        # time, so the agent visibly walks the whole route (start -> destination)
+        # over the move's duration instead of jumping.
         if (
             self.current_action is not None
             and self.current_action.action_type == ActionType.MOVE
             and self.current_action.path
         ):
             path = self.current_action.path
-            idx = self.current_action.path_index
-            if idx < len(path) - 1:
-                # Move one step along the path
-                next_x, next_y = path[idx + 1]
+            total = len(path)
+            if total >= 2:
+                start_min = self._hhmm_to_minutes(self.current_action.start_time)
+                end_min = self._hhmm_to_minutes(self.current_action.end_time)
+                dur = max(1, end_min - start_min)
+                progress = (current_minute - start_min) / dur
+                progress = min(1.0, max(0.0, progress))
+                # Fractional index so we move continuously *between* path points,
+                # not just land on them — smooth even for short/sparse routes.
+                fidx = progress * (total - 1)
+                i = int(fidx)
+                if i >= total - 1:
+                    nx, ny = path[-1]
+                else:
+                    frac = fidx - i
+                    (ax, ay), (bx, by) = path[i], path[i + 1]
+                    nx = round(ax + (bx - ax) * frac)
+                    ny = round(ay + (by - ay) * frac)
                 self.position = Position(
-                    x=next_x, y=next_y,
+                    x=nx, y=ny,
                     location_id=self.current_action.location_id,
                 )
-                self.current_action.path_index = idx + 1
+                self.current_action.path_index = i
 
         return self.current_action
 

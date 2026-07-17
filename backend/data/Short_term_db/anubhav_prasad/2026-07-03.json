@@ -3,124 +3,156 @@
   "date": "2026-07-03",
   "day_plan": [
     {
-      "action": "Sleep",
+      "action": "sleep",
       "start": "00:00",
-      "end": "08:30",
-      "parent_activity": "Sleep",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Wake up and perform morning hygiene",
-      "start": "08:30",
       "end": "09:00",
-      "parent_activity": "Morning routine",
-      "location_id": "Brahmaputra_Boys 1",
+      "parent_activity": "sleep",
+      "location_id": "Brahmaputra_Boys 2",
       "sub_area": "rooms"
     },
     {
-      "action": "Dress and organize materials for classes",
+      "action": "Wake up and stretch",
       "start": "09:00",
-      "end": "09:30",
-      "parent_activity": "Morning routine",
+      "end": "09:10",
+      "parent_activity": "morning routine",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Attend electrical engineering classes",
+      "action": "Take a quick, refreshing shower",
+      "start": "09:10",
+      "end": "09:30",
+      "parent_activity": "morning routine",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Walk to the mess for breakfast",
       "start": "09:30",
-      "end": "13:30",
-      "parent_activity": "Attend electrical engineering classes",
-      "location_id": "SAB",
-      "sub_area": "lecture_halls"
+      "end": "09:40",
+      "parent_activity": "morning routine",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "Eat a quick breakfast",
+      "start": "09:40",
+      "end": "10:00",
+      "parent_activity": "morning routine",
+      "location_id": "mess",
+      "sub_area": null
+    },
+    {
+      "action": "attend university classes",
+      "start": "10:00",
+      "end": "14:00",
+      "parent_activity": "attend university classes",
+      "location_id": "LHC",
+      "sub_area": "class_rooms"
+    },
+    {
+      "action": "Walk to the mess for lunch",
+      "start": "14:00",
+      "end": "14:10",
+      "parent_activity": "lunch and break",
+      "location_id": "mess",
+      "sub_area": null
     },
     {
       "action": "Eat lunch at the mess",
-      "start": "13:30",
-      "end": "14:15",
-      "parent_activity": "Lunch and social time",
+      "start": "14:10",
+      "end": "14:40",
+      "parent_activity": "lunch and break",
       "location_id": "mess",
       "sub_area": null
     },
     {
-      "action": "Walk to social area",
-      "start": "14:15",
-      "end": "14:30",
-      "parent_activity": "Lunch and social time",
-      "location_id": "central_lawn",
-      "sub_area": null
+      "action": "Walk back to the hostel room",
+      "start": "14:40",
+      "end": "14:50",
+      "parent_activity": "lunch and break",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
     },
     {
-      "action": "Socialize with peers at the central lawn",
-      "start": "14:30",
-      "end": "15:00",
-      "parent_activity": "Lunch and social time",
-      "location_id": "central_lawn",
-      "sub_area": null
+      "action": "Mindless scrolling on phone to decompress",
+      "start": "14:50",
+      "end": "15:30",
+      "parent_activity": "lunch and break",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
     },
     {
-      "action": "Research paper reading and AI study",
-      "start": "15:00",
-      "end": "18:00",
-      "parent_activity": "Research paper reading and AI study",
+      "action": "deep dive into AI research papers",
+      "start": "15:30",
+      "end": "18:30",
+      "parent_activity": "deep dive into AI research papers",
       "location_id": "library",
-      "sub_area": "reading_hall"
+      "sub_area": "e_resource_lab"
     },
     {
-      "action": "Work on personal AI project",
-      "start": "18:00",
-      "end": "18:45",
-      "parent_activity": "Personal project development and gaming",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Refine project documentation and code",
-      "start": "18:45",
-      "end": "19:30",
-      "parent_activity": "Personal project development and gaming",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Play video games with hostel friends",
-      "start": "19:30",
-      "end": "20:30",
-      "parent_activity": "Personal project development and gaming",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "common_room"
-    },
-    {
-      "action": "Continue gaming session",
-      "start": "20:30",
-      "end": "21:30",
-      "parent_activity": "Personal project development and gaming",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "common_room"
-    },
-    {
-      "action": "Have dinner at the mess",
-      "start": "21:30",
-      "end": "22:00",
-      "parent_activity": "Dinner and hanging out with friends",
+      "action": "Walk to the mess for dinner",
+      "start": "18:30",
+      "end": "18:40",
+      "parent_activity": "dinner and relaxing",
       "location_id": "mess",
       "sub_area": null
     },
     {
-      "action": "Hang out and chat with friends",
-      "start": "22:00",
-      "end": "23:00",
-      "parent_activity": "Dinner and hanging out with friends",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "common_room"
+      "action": "Eat a quick dinner",
+      "start": "18:40",
+      "end": "19:10",
+      "parent_activity": "dinner and relaxing",
+      "location_id": "mess",
+      "sub_area": null
     },
     {
-      "action": "Procrastinating sleep with YouTube videos",
-      "start": "23:00",
-      "end": "24:00",
-      "parent_activity": "Procrastinating sleep with YouTube videos",
+      "action": "Walk back to the hostel room",
+      "start": "19:10",
+      "end": "19:20",
+      "parent_activity": "dinner and relaxing",
       "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "common_room"
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Staring at the wall in annoyance",
+      "start": "19:20",
+      "end": "20:00",
+      "parent_activity": "dinner and relaxing",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "study electrical engineering core",
+      "start": "20:00",
+      "end": "23:00",
+      "parent_activity": "study electrical engineering core",
+      "location_id": "library",
+      "sub_area": "silent_zone"
+    },
+    {
+      "action": "Boot up the gaming PC",
+      "start": "23:00",
+      "end": "23:10",
+      "parent_activity": "gaming session",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Intense gaming session to vent anger",
+      "start": "23:10",
+      "end": "23:45",
+      "parent_activity": "gaming session",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
+    },
+    {
+      "action": "Shut down PC and prepare for bed",
+      "start": "23:45",
+      "end": "24:00",
+      "parent_activity": "gaming session",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms"
     }
   ],
   "events": [],

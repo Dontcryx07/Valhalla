@@ -30,7 +30,14 @@ class AgentRuntimeState(BaseModel):
     paused: bool = False       # True while in conversation or other blocking state
     day_plan: list = []        # current day plan actions
     day_archived: bool = False  # True when the current sim day has been archived
+    conversation_start_tick: int = 0  # tick when the active conversation started (0 = not in one)
     conversation_count: int = 0  # how many conversations today
+    replan_count: int = 0        # mid-day full replans today (budget cap)
+    last_conversation_partner: Optional[str] = None  # agent_id of most recent chat partner
+    active_conversation: Optional[dict] = None  # {"partner_name": str, "partner_id": str, "messages": list[dict]}
+    emotion_state: float = 0.5   # [0, 1], starts neutral
+    energy_level: float = 1.0    # [0, 1], starts full
+    color: str = "#888888"  # frontend color (set by server on init)
 
 
 class AgentRegistry:

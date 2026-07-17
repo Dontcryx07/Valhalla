@@ -1,0 +1,60 @@
+:root {
+  --bg-deep: #000000;
+  --bg-surface: #0a0a0a;
+  --bg-panel: rgba(10, 10, 10, 0.88);
+  --gold: #d4a04a;
+  --gold-dim: #a07830;
+  --steel: #5b7db5;
+  --steel-dim: #3a5075;
+  --text: #d0d0da;
+  --text-dim: #6b6b78;
+  --text-bright: #eeeef4;
+  --border: rgba(212, 160, 74, 0.12);
+  --border-glow: rgba(212, 160, 74, 0.25);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  font-family: 'Outfit', sans-serif;
+  color: var(--text);
+}
+
+.app-root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+canvas {
+  display: block;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 160, 74, 0.2);
+  border-radius: 2px;
+}
+
+::selection {
+  background: rgba(212, 160, 74, 0.3);
+  color: var(--text-bright);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

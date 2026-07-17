@@ -25,8 +25,8 @@ Usage:
             A Pydantic model class describing the expected JSON response schema.
             The function returns an instance of this class (parsed/validated).
         complexity : str, optional
-            Which model tier to use from `MODEL_TIERS` (e.g. "simple" or "complex").
-            Must be one of the keys in `MODEL_TIERS`. Default: "simple".
+            Which model tier to use from `MODEL_TIERS` (e.g. "default").
+            Must be one of the keys in `MODEL_TIERS`. Default: "default".
         temperature : float, optional
             Sampling temperature for the generation call. Typical range [0.0, 1.0].
 
@@ -75,16 +75,16 @@ logger = get_logger(__name__)
 
 
 # Configuration
-from src.config import MODEL_TIERS, API_KEYS, TEMPERATURE
+from src.config import MODEL_TIERS, API_KEYS, TEMPERATURE, API_RPM_LIMIT
 
 
 MAX_RETRIES_PER_MODEL = 1       # 1 attempt only — immediately skip overloaded models
 BASE_BACKOFF_SECONDS = 0.5
-REQUEST_TIMEOUT_MS = 15_000     # per-request deadline (lower = faster fallback)
+REQUEST_TIMEOUT_MS = 15_000     # per-request deadline (Gemini models are fast)
 
-# Per-key rate limiting (Google free tier: 5 RPM).
-RPM_LIMIT = 5
-MIN_INTERVAL_S = 60.0 / RPM_LIMIT   # 12 seconds between calls on the same key
+# Per-key rate limiting (configurable via .env SIM_API_RPM_LIMIT).
+RPM_LIMIT = API_RPM_LIMIT
+MIN_INTERVAL_S = 60.0 / RPM_LIMIT   # seconds between calls on the same key
 
 
 # Errors
@@ -246,6 +246,7 @@ def _single_attempt(
             response_schema=schema,
             temperature=temperature,
             http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
+            thinking_config=types.ThinkingConfig(thinking_level="medium"),
         ),
     )
 
@@ -259,7 +260,7 @@ def call_gemini(
     system_prompt: str,
     user_prompt: str,
     schema: Type[BaseModel],
-    complexity: str = "simple",
+    complexity: str = "default",
     temperature: float = TEMPERATURE,
 ) -> BaseModel:
     if complexity not in MODEL_TIERS:
@@ -299,6 +300,11 @@ def call_gemini(
                     )
                     _mark_used(api_key)
                     _log_attempt(model, True, f"attempt={attempt}")
+                    try:
+                        from src.core.budget import GOVERNOR
+                        GOVERNOR.record(kind=complexity, model=model)
+                    except Exception:
+                        pass
                     return result
 
                 except errors.APIError as e:

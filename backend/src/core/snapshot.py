@@ -93,6 +93,39 @@ class WorldSnapshot(BaseModel):
                 nearby.append(other)
         return nearby
 
+    def agents_within_px(self, agent_id: str, radius_px: float) -> List[AgentState]:
+        """
+        Euclidean (circle) proximity query in **pixel** space -- everyone whose
+        pixel position is within `radius_px` of `agent_id`, nearest first.
+
+        This is the query behind the 50px proximity circle used for perception
+        and proximity-based conversation triggering. Agent positions are pixel
+        coordinates, so this is a true straight-line distance.
+        """
+        me = self.get_agent(agent_id)
+        r2 = float(radius_px) * float(radius_px)
+        scored = []
+        for other in self.other_agents(agent_id):
+            dx = other.position.x - me.position.x
+            dy = other.position.y - me.position.y
+            d2 = dx * dx + dy * dy
+            if d2 <= r2:
+                scored.append((d2, other))
+        scored.sort(key=lambda t: t[0])
+        return [o for _d2, o in scored]
+
+    def distance_px(self, agent_a: str, agent_b: str) -> float:
+        """Straight-line pixel distance between two agents."""
+        a = self.get_agent(agent_a)
+        b = self.get_agent(agent_b)
+        dx = a.position.x - b.position.x
+        dy = a.position.y - b.position.y
+        return (dx * dx + dy * dy) ** 0.5
+
+    def crowd_at(self, location_id: str) -> int:
+        """How many agents currently share a named location (crowdedness)."""
+        return len(self.agents_at_location(location_id))
+
     def agents_at_location(self, location_id: str) -> List[AgentState]:
         """Everyone currently standing in a named semantic zone."""
         return [a for a in self.agents.values() if a.position.location_id == location_id]

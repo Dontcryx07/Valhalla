@@ -6,3 +6,6 @@ pydantic
 protobuf
 uvicorn
 fastapi
+# Optional — only needed when SIM_MEMORY_BACKEND=vector (semantic long-term memory).
+# The project runs fully without it (keyword backend is the default).
+qdrant-client

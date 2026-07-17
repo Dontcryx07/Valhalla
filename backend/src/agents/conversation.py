@@ -78,6 +78,11 @@ class ConversationResult(BaseModel):
     duration_minutes: int
     sentiment: Literal["positive", "neutral", "negative"]
     relationship_delta: float
+    # Folded-in replan decision: avoids a separate 4-call day-plan regeneration
+    # per agent after every conversation. True only when the conversation
+    # genuinely changes an agent's immediate intentions.
+    should_replan: bool = False
+    plan_change: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -154,16 +159,19 @@ Two student personas with distinct personalities and daily schedules have encoun
 
 Generate a short, natural conversation between them based on:
 - Their personalities, hobbies, and goals
-- What each is currently doing
-- Their day plans (what they've done and what's coming up)
-- Their existing relationship
+- What each is currently doing at this moment
+- Their day plans (what they've done today and what's coming up next)
+- Their existing relationship with each other
+- The current time of day and location on campus
+- What each might have recently experienced or remembers about the other
 
 Rules:
-- Start naturally from the current situation
+- Start naturally from the current situation and surroundings
 - Keep duration realistic (5-30 minutes typical)
 - Match tone to personality (friendly, awkward, casual, competitive, etc.)
 - Each message must have a "speaker" (the agent's full name) and "text" (what they say)
 - The conversation must have a natural ending
+- Reference the time of day and campus context naturally in the dialogue
 - Return ONLY valid JSON matching the schema -- no extra text or commentary"""
 
 
@@ -207,9 +215,17 @@ def _build_prompts(
     rel_b_to_a: float,
     location_id: str,
     current_hhmm: str,
+    memories_a: Optional[List[str]] = None,
+    memories_b: Optional[List[str]] = None,
+    energy_a: float = 0.5, emotion_a: float = 0.5,
+    energy_b: float = 0.5, emotion_b: float = 0.5,
 ) -> Tuple[str, str]:
     """Build system and user prompts for the conversation LLM call."""
 
+    def _mem_block(mems: Optional[List[str]]) -> str:
+        if not mems:
+            return "(nothing notable recalled)"
+        return "\n".join(f"  - {m}" for m in mems[:4])
     def _rel_label(score: float) -> str:
         if score >= 0.8:
             return "close friends"
@@ -222,6 +238,34 @@ def _build_prompts(
         else:
             return "negative / strained"
 
+    hour = int(current_hhmm.split(":")[0]) if ":" in current_hhmm else 12
+    if hour < 6:
+        time_desc = "early morning — campus is quiet, most students are asleep"
+    elif hour < 10:
+        time_desc = "morning — students heading to breakfast or first classes"
+    elif hour < 12:
+        time_desc = "late morning — classes are in session around campus"
+    elif hour < 14:
+        time_desc = "lunchtime — the mess and cafeterias are busy"
+    elif hour < 17:
+        time_desc = "afternoon — afternoon classes and study sessions"
+    elif hour < 19:
+        time_desc = "late afternoon — some students heading to sports or hobbies"
+    elif hour < 21:
+        time_desc = "evening — dinner time, socializing on campus"
+    elif hour < 23:
+        time_desc = "late evening — students heading back to hostels"
+    else:
+        time_desc = "night — campus is winding down"
+
+    def _emotion_label(v: float) -> str:
+        if v >= 0.9: return "Extremely Joyful"
+        if v >= 0.7: return "Very Happy"
+        if v >= 0.5: return "Happy"
+        if v >= 0.3: return "Neutral"
+        if v >= 0.1: return "Sad"
+        return "Extremely Sad"
+
     user = f"""Generate a conversation between two students at IIT Ropar.
 
 ── AGENT: {agent_a_id} ──────────────────────
@@ -229,18 +273,25 @@ def _build_prompts(
 Current action: "{action_a.description}"
 Today's plan:
 {_plan_summary(plan_a, current_hhmm)}
+Energy: {energy_a:.2f}/1.0 | Emotion: {emotion_a:.2f}/1.0 ({_emotion_label(emotion_a)})
 
 ── AGENT: {agent_b_id} ──────────────────────
 {_personality_summary(persona_b)}
 Current action: "{action_b.description}"
 Today's plan:
 {_plan_summary(plan_b, current_hhmm)}
+Energy: {energy_b:.2f}/1.0 | Emotion: {emotion_b:.2f}/1.0 ({_emotion_label(emotion_b)})
 
 ── CONTEXT ──────────────────────
 Location: {location_id}
-Current time: {current_hhmm}
+Current time: {current_hhmm} ({time_desc})
 {persona_a.get('Name', agent_a_id)}'s relationship toward {persona_b.get('Name', agent_b_id)}: {rel_a_to_b} ({_rel_label(rel_a_to_b)})
 {persona_b.get('Name', agent_b_id)}'s relationship toward {persona_a.get('Name', agent_a_id)}: {rel_b_to_a} ({_rel_label(rel_b_to_a)})
+
+What {persona_a.get('Name', agent_a_id)} remembers about {persona_b.get('Name', agent_b_id)}:
+{_mem_block(memories_a)}
+What {persona_b.get('Name', agent_b_id)} remembers about {persona_a.get('Name', agent_a_id)}:
+{_mem_block(memories_b)}
 
 ── OUTPUT ───────────────────────
 Return a JSON object with:
@@ -248,7 +299,9 @@ Return a JSON object with:
 - "summary": one-sentence summary of what they talked about
 - "duration_minutes": int (how many minutes the conversation lasts)
 - "sentiment": "positive" | "neutral" | "negative"
-- "relationship_delta": float between -1.0 and 1.0 (how this conversation changes their relationship)"""
+- "relationship_delta": float between -1.0 and 1.0 (how this conversation changes their relationship)
+- "should_replan": boolean — true ONLY if this conversation genuinely changes what one of them intends to do next (e.g. they agree to meet, go somewhere together, or drop a task). Default false; most casual chats do NOT require replanning.
+- "plan_change": short string describing the change if should_replan is true, else null"""
 
     return SYSTEM_PROMPT, user
 
@@ -271,6 +324,10 @@ def generate_conversation(
     rel_b_to_a: float,
     location_id: str,
     current_hhmm: str,
+    memories_a: Optional[List[str]] = None,
+    memories_b: Optional[List[str]] = None,
+    energy_a: float = 0.5, emotion_a: float = 0.5,
+    energy_b: float = 0.5, emotion_b: float = 0.5,
 ) -> Optional[ConversationResult]:
     """
     Generate a conversation between two agents via a single Gemini call.
@@ -285,6 +342,9 @@ def generate_conversation(
         action_a, action_b,
         rel_a_to_b, rel_b_to_a,
         location_id, current_hhmm,
+        memories_a, memories_b,
+        energy_a=energy_a, emotion_a=emotion_a,
+        energy_b=energy_b, emotion_b=emotion_b,
     )
 
     logger.info(
@@ -297,7 +357,7 @@ def generate_conversation(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             schema=ConversationResult,
-            complexity="simple",
+            complexity="default",
             temperature=0.7,
         )
         logger.info(

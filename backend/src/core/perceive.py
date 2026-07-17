@@ -80,6 +80,46 @@ def perceive(
     return observations
 
 
+def perceive_px(
+    snapshot: WorldSnapshot,
+    agent_id: str,
+    radius_px: float,
+) -> List[Observation]:
+    """
+    Pixel-space (Euclidean circle) perception -- everything `agent_id` can see
+    within `radius_px` pixels, nearest first. This is the 0-LLM sensory input
+    behind the 50px proximity circle. Distance is rounded pixel distance.
+    """
+    if agent_id not in snapshot.agents:
+        raise KeyError(f"'{agent_id}' not present in this snapshot")
+
+    me = snapshot.get_agent(agent_id)
+    nearby = snapshot.agents_within_px(agent_id, radius_px)
+
+    observations: List[Observation] = []
+    for other in nearby:
+        dx = other.position.x - me.position.x
+        dy = other.position.y - me.position.y
+        dist = int(round((dx * dx + dy * dy) ** 0.5))
+        observations.append(
+            Observation(
+                tick=snapshot.tick,
+                observer_id=agent_id,
+                subject_agent_id=other.agent_id,
+                description=_describe(other),
+                location_id=other.position.location_id,
+                distance=dist,
+            )
+        )
+    # agents_within_px already returns nearest-first; keep that order.
+    if observations:
+        logger.debug(
+            "Agent '%s' perceived %d agent(s) within %spx at tick %d",
+            agent_id, len(observations), radius_px, snapshot.tick,
+        )
+    return observations
+
+
 def _describe(agent: AgentState) -> str:
     if agent.current_action is not None:
         return f"{agent.agent_id} is {agent.current_action.description}"

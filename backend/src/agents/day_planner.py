@@ -48,8 +48,6 @@ from src.core.log import get_logger
 from src.llm.gemini_client import call_gemini, AllModelsFailedError
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
-from google import genai
-from google.genai import types
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
@@ -60,20 +58,8 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Config -> in config.py
 # ---------------------------------------------------------------------------
-from src.config import GEMINI_MODEL, GEMINI_API_KEY, ENVIRONMENT_DIR, DATA_DIR
+from src.config import ENVIRONMENT_DIR, DATA_DIR
 from src.config import MAX_PLAN_RETRIES, PERSONA_FIELD_GLOSSARY
-
-
-# genai.Client() picks up GEMINI_API_KEY (or GOOGLE_API_KEY) from the
-_client: genai.Client = genai.Client(api_key=GEMINI_API_KEY)
-
-
-def get_client() -> genai.Client | None:
-    """Returns google-genai client """
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=GEMINI_API_KEY)
-    return _client
 
 
 def load_places(places_file: Optional[Path] = None) -> List[Place]:
@@ -141,6 +127,8 @@ class CoarseBlock(BaseModel):
             "breaking down (e.g. 'morning routine', 'gym session', 'work on project')."
         )
     )
+    energy_change: float = 0.0
+    emotion_change: float = 0.0
 
 
 class CoarsePlanOutput(BaseModel):
@@ -152,6 +140,8 @@ class HourlyBlock(BaseModel):
     start: str
     end: str
     parent_activity: str = Field(description="The coarse block this refines")
+    energy_change: float = 0.0
+    emotion_change: float = 0.0
 
 
 class HourlyPlanOutput(BaseModel):
@@ -165,6 +155,8 @@ class FineAction(BaseModel):
     parent_activity: str = Field(description="The hourly block this refines")
     location_id: str = Field(description="Must exactly match an 'id' from the known places list")
     sub_area: Optional[str] = Field(default=None, description="One of that place's sub_areas, if applicable")
+    energy_change: float = Field(description="Energy change [-1.0, 1.0] over this action; positive=restorative, negative=tiring")
+    emotion_change: float = Field(description="Emotion change [-1.0, 1.0] over this action; positive=uplifting, negative=draining")
 
 
 class FinePlanOutput(BaseModel):
@@ -175,6 +167,8 @@ class AtomicLocationAssignment(BaseModel):
     activity: str
     location_id: str
     sub_area: Optional[str] = None
+    energy_change: float = 0.0
+    emotion_change: float = 0.0
 
 class AtomicLocationOutput(BaseModel):
     assignments: List[AtomicLocationAssignment]
@@ -212,6 +206,8 @@ class DayPlannerState(TypedDict, total=False):
     places: List[Place]  # known campus locations, from places.json
     mode: str  # "full_day", "remaining", or "next_day"
     current_location_id: Optional[str] = None
+    daily_theme: str  # random theme (e.g. "Sports", "Academics")
+    daily_emotion: str  # random mood (e.g. "Happy", "Melancholic")
 
     # ---- working state ----
     coarse_plan: List[Dict[str, Any]]
@@ -252,6 +248,12 @@ def _memories_block(memories: List[str]) -> str:
     return "\n".join(f"- {m}" for m in memories)
 
 
+def _flavor_block(state: DayPlannerState) -> str:
+    theme = state.get("daily_theme", "Neutral")
+    emotion = state.get("daily_emotion", "Neutral")
+    return f"Today's vibe: {emotion}, leaning into {theme}."
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -262,9 +264,9 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
     current_time = state.get("current_time", "unknown")
 
     if mode == "full_day":
-        coverage = "covering the full 24 hours (00:00 to 24:00)"
+        coverage = "covering the full 24 hours (00:00 to 24:00). The very first action MUST start at 00:00 — do not skip morning/midnight hours."
     elif mode == "next_day":
-        coverage = "covering the full next day (00:00 to 24:00)"
+        coverage = "covering the full next calendar day from 00:00 to 24:00. The very first action MUST start at 00:00 — this is a brand-new day, do not skip ahead."
     elif mode == "remaining":
         coverage = f"covering ONLY the REMAINDER of the day from the current time onward -- do NOT schedule anything before the current time"
     else:
@@ -275,27 +277,38 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
     if current_loc:
         loc_hint = f"\nThe agent is currently at: {current_loc}. Start the plan from this location."
 
-    system_prompt = (
-        "You are simulating one day in the life of a character in a generative-agents "
-        "simulation. Produce a COARSE day plan: 5 to 8 broad blocks of activity "
-        f"{coverage}, with no gaps and no overlaps. "
-        "Stay true to the persona's traits and background.\n\n"
-        "For EACH block, tag it as 'atomic' or 'flexible':\n"
-        "- atomic: a single continuous activity with no meaningful internal sub-steps "
-        "worth planning separately. Examples: sleeping, attending a class/lecture, "
-        "commuting/travel, sitting an exam, watching a movie, a long uninterrupted "
-        "study/deep-work session.\n"
-        "- flexible: an activity that naturally contains distinct sub-activities a person "
-        "would actually think of as separate steps. Examples: 'morning routine' (wake up, "
-        "shower, get dressed), 'gym session' (warm-up, lifting, cooldown), 'dinner with "
-        "friends' (walk over, eat, chat).\n"
-        "When in doubt, prefer 'atomic' -- do not manufacture sub-steps for something a "
-        "person would just describe as one thing."
-    )
+        system_prompt = (
+            "You are simulating one day in the life of a character in a generative-agents "
+            "simulation. Produce a COARSE day plan: 5 to 8 broad blocks of activity "
+            f"{coverage}, with no gaps and no overlaps. "
+            "Stay true to the persona's traits, background, goals, and daily habits.\n\n"
+            "Each block must represent a meaningful chunk of the persona's day. Consider:\n"
+            "- The persona's typical schedule (classes, meals, social time, sleep)\n"
+            "- Their stated goals and what matters to them\n"
+            "- The time windows: morning (00:00-12:00), afternoon (12:00-18:00), evening (18:00-24:00)\n"
+            "- Location transitions: ensure enough time between distant places\n\n"
+            "For EACH block, tag it as 'atomic' or 'flexible':\n"
+            "- atomic: a single continuous activity with no meaningful internal sub-steps "
+            "worth planning separately. Examples: sleeping, attending a class/lecture, "
+            "commuting/travel, sitting an exam, watching a movie, a long uninterrupted "
+            "study/deep-work session.\n"
+            "- flexible: an activity that naturally contains distinct sub-activities a person "
+            "would actually think of as separate steps. Examples: 'morning routine' (wake up, "
+            "shower, get dressed), 'gym session' (warm-up, lifting, cooldown), 'dinner with "
+            "friends' (walk over, eat, chat).\n"
+            "When in doubt, prefer 'atomic' -- do not manufacture sub-steps for something a "
+            "person would just describe as one thing.\n\n"
+            "For EACH block, assign realistic energy_change and emotion_change values in range [-1.0, 1.0]:\n"
+            "- energy_change: positive = restorative (sleep +0.6), negative = tiring (exercise -0.4)\n"
+            "- emotion_change: positive = uplifting (fun activity +0.4), negative = draining (boring work -0.2)\n"
+            "- The absolute value must be < 1.0\n"
+            "- Be realistic for the persona"
+        )
     user_prompt = (
         f"PERSONA:\n{_persona_block(persona)}\n\n"
         f"RELEVANT MEMORIES:\n{_memories_block(state.get('relevant_memories', []))}\n\n"
         f"YESTERDAY'S SUMMARY:\n{state.get('yesterday_summary') or '(no history yet, this is day 1)'}\n\n"
+        f"{_flavor_block(state)}\n\n"
         f"Current in-simulation time: {current_time}\n"
         f"Plan mode: {mode}\n"
         f"Agent location: {current_loc or 'unknown'}{loc_hint}\n\n"
@@ -308,7 +321,7 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
             f"{state['conflict_reason']}"
         )
 
-    result = call_gemini(system_prompt, user_prompt, CoarsePlanOutput, "complex")
+    result = call_gemini(system_prompt, user_prompt, CoarsePlanOutput, "default")
     logger.info("[day_planner] coarse plan generated: %d blocks", len(result.blocks))
 
     return {
@@ -338,20 +351,28 @@ def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
 
     if flexible_blocks:
         system_prompt = (
-            "You refine a coarse day plan into hourly-resolution blocks. Each coarse "
+            "You refine flexible coarse blocks into hourly-resolution blocks. Each coarse "
             "block should be broken into one or more hourly blocks that together span "
-            "exactly its start/end range. Do not introduce gaps or overlaps. "
-            "Only the blocks provided here need refining -- they have already been "
-            "identified as containing genuine sub-activities."
+            "exactly its start/end range with no gaps or overlaps. "
+            "Make each sub-block feel natural and persona-aligned — a real person would "
+            "think of these as distinct steps. Consider reasonable time boundaries "
+            "(e.g. a meal block of 2 hours can contain 'walk to mess', 'eat', 'socialize'). "
+            "Only the blocks provided here need refining.\n\n"
+            "For EACH block, assign realistic energy_change and emotion_change values in range [-1.0, 1.0]:\n"
+            "- energy_change: positive = restorative, negative = tiring\n"
+            "- emotion_change: positive = uplifting, negative = draining\n"
+            "- The absolute value must be < 1.0\n"
+            "- Be realistic for the persona"
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"{_flavor_block(state)}\n\n"
             f"FULL COARSE PLAN (context only):\n{json.dumps(state['coarse_plan'], indent=2)}\n\n" # Hand the whole day
             f"BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n" # The ONLY data to modify 
             "Produce the hourly-resolution plan for the blocks listed under "
             "'BLOCKS TO REFINE' only."
         )
-        result = call_gemini(system_prompt, user_prompt, HourlyPlanOutput)
+        result = call_gemini(system_prompt, user_prompt, HourlyPlanOutput, "default")
         refined = [b.model_dump() for b in result.blocks]
         for b in refined:
             b["granularity"] = "flexible"
@@ -379,16 +400,26 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
     # Atomic blocks: keep as single continuous actions, just resolve location.
     if atomic_blocks:
         system_prompt = (
-            "For each activity below, assign exactly one location_id (and optionally "
-            "a sub_area) from the known places list -- pick whichever place fits the "
-            "activity best. Do not suggest splitting the activity."
+            "For each atomic activity below, assign exactly one location_id (and optionally "
+            "a sub_area) from the known places list. Pick whichever place fits the "
+            "activity best. Consider commute distance: if the agent is moving between "
+            "locations, ensure the distance is reasonable for the time available. "
+            "Default to locations that make sense for this specific persona. "
+            "Do not suggest splitting the activity.\n\n"
+            "For EACH block, assign realistic energy_change and emotion_change values in range [-1.0, 1.0]:\n"
+            "- energy_change: positive = restorative, negative = tiring\n"
+            "- emotion_change: positive = uplifting, negative = draining\n"
+            "- The absolute value must be < 1.0\n"
+            "- Be realistic for the persona"
         )
         user_prompt = (
+            f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"{_flavor_block(state)}\n\n"
             f"ACTIVITIES:\n{json.dumps(atomic_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             "Assign a location to each activity now."
         )
-        result = call_gemini(system_prompt, user_prompt, AtomicLocationOutput)
+        result = call_gemini(system_prompt, user_prompt, AtomicLocationOutput, "default")
         loc_by_activity = {a.activity: a for a in result.assignments}
 
         for b in atomic_blocks:
@@ -409,15 +440,25 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "at roughly 5-15 minute granularity. Each hourly block should be broken "
             "into one or more fine actions spanning exactly its start/end range, no "
             "gaps or overlaps. Every action MUST be assigned a location_id, chosen "
-            "EXACTLY from the provided list -- never invent one."
+            "EXACTLY from the provided list -- never invent one.\n\n"
+            "Make action boundaries feel natural — group related sub-actions together. "
+            "Consider typical durations: eating ~20-40min, walking between buildings "
+            "~5-10min, studying ~30-120min. Ensure location transitions are realistic "
+            "(don't teleport between far apart buildings back to back without a commute action).\n\n"
+            "For EACH action, assign realistic energy_change and emotion_change values in range [-1.0, 1.0]:\n"
+            "- energy_change: positive = restorative, negative = tiring\n"
+            "- emotion_change: positive = uplifting, negative = draining\n"
+            "- The absolute value must be < 1.0\n"
+            "- Be realistic for the persona"
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"{_flavor_block(state)}\n\n"
             f"HOURLY BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             "Produce the fine-grained action plan for these blocks now."
         )
-        result = call_gemini(system_prompt, user_prompt, FinePlanOutput)
+        result = call_gemini(system_prompt, user_prompt, FinePlanOutput, "default")
         fine_actions.extend(a.model_dump() for a in result.actions)
 
     fine_actions.sort(key=lambda a: a["start"])
@@ -497,16 +538,23 @@ def validate_plan(state: DayPlannerState) -> DayPlannerState:
     # Local checks passed -- do one semantic sanity pass via the LLM
     # (catches persona-incoherence, not just arithmetic).
     system_prompt = (
-        "You are QA-checking a simulated character's day plan for internal consistency "
-        "with their persona (not just time-math, which has already been verified). "
-        "Flag it invalid only for clear persona contradictions or nonsensical sequencing."
+        "You are QA-checking a simulated character's day plan for consistency "
+        "with their persona (time-math has already been verified). "
+        "Flag it invalid only for clear issues:\n"
+        "- Persona contradictions (e.g. a night owl waking at 5am, a vegetarian eating at a grill)\n"
+        "- Nonsensical sequencing (e.g. going to bed right before a morning class across campus)\n"
+        "- Missing essential activities given the persona's habits\n"
+        "- Impossible location transitions given available time windows\n"
+        "If everything looks reasonable for this persona, mark it valid."
     )
     user_prompt = (
         f"PERSONA:\n{_persona_block(state['persona'])}\n\n"
+        f"DETAILED PERSONA:\n{json.dumps(state['persona'], indent=2)}\n\n"
         f"FINE PLAN:\n{json.dumps(state['fine_plan'], indent=2)}\n\n"
-        "Is this plan valid?"
+        "Is this plan valid for this persona? Check for contradictions, "
+        "nonsensical sequencing, and missing essential activities."
     )
-    result = call_gemini(system_prompt, user_prompt, ValidationResult, "complex")
+    result = call_gemini(system_prompt, user_prompt, ValidationResult, "default")
 
     if not result.valid:
         logger.info("[day_planner] semantic validation failed: %s", result.reason)
@@ -544,9 +592,34 @@ def route_after_validation(state: DayPlannerState) -> str:
 
 def _force_accept(state: DayPlannerState) -> DayPlannerState:
     """Terminal fallback so a stubborn persona can never infinite-loop the graph."""
+    plan = state.get("fine_plan", [])
+    mode = state.get("mode", "full_day")
+
+    # Safety clamp: for full_day / next_day, ensure plan starts at 00:00.
+    # If the LLM refused to schedule before a later hour, prepend a Sleep block.
+    if mode in ("full_day", "next_day") and plan:
+        def _hhmm(m):
+            h, mn = m.split(":")
+            return int(h) * 60 + int(mn)
+        first_start = _hhmm(plan[0].get("start", "00:00"))
+        if first_start > 0:
+            plan.insert(0, {
+                "action": "Sleep",
+                "start": "00:00",
+                "end": plan[0]["start"],
+                "location_id": plan[0].get("location_id", ""),
+                "sub_area": "bed",
+                "energy_change": 0.6,
+                "emotion_change": 0.1,
+            })
+            logger.warning(
+                "[day_planner] force-accept: prepended Sleep 00:00-%s to fix gap",
+                plan[1]["start"],
+            )
+
     return {
         **state,
-        "day_plan": state.get("fine_plan", []),
+        "day_plan": plan,
         "error": f"accepted after {MAX_PLAN_RETRIES} retries, last issue: {state.get('conflict_reason')}",
     }
 
@@ -620,6 +693,10 @@ def run(agent: Any, world_state: dict) -> dict:
     places = world_state.get("places") or load_places()
     mode = world_state.get("mode", "full_day")
 
+    from src.agents.daily_flavor import pick_theme, pick_emotion
+    theme = world_state.get("daily_theme") or pick_theme()
+    emotion = world_state.get("daily_emotion") or pick_emotion()
+
     initial_state: DayPlannerState = {
         "persona": getattr(agent, "persona", {}),
         "relevant_memories": getattr(agent, "relevant_memories", []) or [],
@@ -628,6 +705,8 @@ def run(agent: Any, world_state: dict) -> dict:
         "places": places,
         "mode": mode,
         "current_location_id": world_state.get("current_location_id"),
+        "daily_theme": theme,
+        "daily_emotion": emotion,
         "retry_count": 0,
     }
 

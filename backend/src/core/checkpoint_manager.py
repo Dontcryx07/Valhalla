@@ -83,6 +83,7 @@ def _agent_to_dict(state: AgentRuntimeState) -> Dict[str, Any]:
         "day_plan": state.day_plan,
         "day_archived": state.day_archived,
         "conversation_count": state.conversation_count,
+        "color": state.color,
         "manager": _manager_to_dict(state.manager) if state.manager else None,
     }
 
@@ -204,6 +205,7 @@ def load_checkpoint(
             day_plan=agent_data["day_plan"],
             day_archived=agent_data["day_archived"],
             conversation_count=agent_data.get("conversation_count", 0),
+            color=agent_data.get("color", "#888888"),
         )
         state.current_action = (
             manager.current_action.model_dump()
