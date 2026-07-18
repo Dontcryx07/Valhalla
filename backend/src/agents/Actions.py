@@ -500,6 +500,24 @@ class AgentActionManager:
         self._entered_last_action = False
         self._plan_index = 0
 
+    def begin_new_day(self, new_day_plan: List[Dict[str, Any]]) -> None:
+        """Install a new calendar day's plan without moving the agent.
+
+        Position is intentionally retained: the first action of the new plan
+        must account for where the previous day actually ended.  Schedule
+        bookkeeping is reset so a previous day's ``24:00`` action cannot wrap
+        around and continue into the next day.
+        """
+        self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        self.last_action = self.current_action
+        self.current_action = None
+        self.next_action = None
+        self._pending_plan_action = None
+        self._conversation_mode = False
+        self._entered_last_action = False
+        self._plan_index = 0
+        self._initialized = False
+
     def tick(self, world_tick: int, snapshot: Any = None) -> Optional[ActionState]:
         """
         Advance one tick. Returns the current action state (or None).

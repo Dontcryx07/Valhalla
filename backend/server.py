@@ -156,17 +156,25 @@ async def _run_sim(resume_checkpoint: bool = False):
 
     while True:
         try:
-            await engine.run(max_tick=1440, on_tick=_on_tick, tick_speed=TICK_SPEED)
+            day_end_tick = ((engine.world.tick // (24 * 60)) + 1) * (24 * 60)
+            await engine.run(max_tick=day_end_tick, on_tick=_on_tick, tick_speed=TICK_SPEED)
 
-            # Day transition — advance the simulation date by one day
-            start_date = (datetime.strptime(start_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+            # Keep this engine and its agent/action state alive. The handoff
+            # drains conversations, archives the completed day, then installs
+            # next-day plans in place.
+            start_date = (
+                datetime.strptime(engine.sim_start_date, "%Y-%m-%d") + timedelta(days=1)
+            ).strftime("%Y-%m-%d")
             logger.info("[SimManager] day transition — advancing to %s", start_date)
 
-            await _sim_broadcaster.broadcast({"type": "day_reset", "date": start_date})
-            await asyncio.sleep(1)
-
-            engine = WorldEngine(sim_start_date=start_date, sim_start_hhmm="00:00")
-            await engine.initialize()
+            _latest_snapshot = {
+                "type": "day_handoff",
+                "phase": "draining",
+                "date": start_date,
+            }
+            await _sim_broadcaster.broadcast(_latest_snapshot)
+            _latest_snapshot = await engine.handoff_to_next_day(start_date)
+            await _sim_broadcaster.broadcast(_latest_snapshot)
             _print_agent_plans(engine)
         except asyncio.CancelledError:
             print("[SimManager] sim task cancelled")

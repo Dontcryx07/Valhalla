@@ -23,10 +23,17 @@ The brain never moves the student directly. It *decides* ("keep studying",
 out. This mirrors how people work, and it keeps the thinking cleanly separated
 from the doing.
 
-A central clock ("the world") ticks forward one simulated minute at a time.
-On every tick, all students act at once, and the world checks whether anyone
-should bump into anyone else. By default one simulated day takes about **96
-real minutes**, so it plays out at a calm, watchable pace.
+A central clock ("the world") advances by a configurable number of simulated
+minutes on each tick. All students act together, then the world checks who is
+near whom. The wall-clock length of a simulated day is:
+
+```text
+1440 × real-seconds-per-simulated-minute ÷ speed multiplier
+```
+
+The code default is 4 seconds per simulated minute, but `.env` and command-line
+overrides take precedence. Check the status bar or run the settings command
+below for the active duration.
 
 ---
 
@@ -36,10 +43,9 @@ real minutes**, so it plays out at a calm, watchable pace.
    path, finishing an activity, or starting the next one. This is pure
    movement; it costs nothing and never calls the AI.
 
-2. **They perceive.** Each student looks around a small circle (50 pixels) and
-   notices who has just come near, where they are, and how crowded it is. This
-   is simple geometry — no AI — and the moment someone new enters the circle,
-   it's written into that student's memory.
+2. **They perceive.** Each student looks around a configurable circle (50
+   pixels by default) and notices nearby students and their activities. This
+   spatial check is simple geometry and does not itself call the AI.
 
 3. **They may talk.** If two students' circles overlap and the moment is right
    (they're both awake and free, they haven't just spoken, and it's a clean
@@ -47,17 +53,19 @@ real minutes**, so it plays out at a calm, watchable pace.
    is written once by the AI, in a single request, and both students remember
    it afterwards.
 
-4. **They react (rarely).** Normally a student just keeps doing what they were
-   doing — a reflex, no thinking required. Only in special, opt‑in situations
-   would the brain pause to reconsider (this is switched off by default; see
-   Settings).
+4. **They decide when something changes.** A new nearby situation can prompt a
+   student to either continue their plan or request a remaining-day replan.
+   Energy, emotion, the daily replan limit, and the shared AI budget can all
+   suppress that request.
 
-5. **The day turns over.** When a student reaches the last thing on their plan,
-   the day is filed away into long‑term memory and the next day's plan is
-   prepared, informed by what they remember.
+5. **The day is archived and turns over.** Reaching the final planned activity
+   starts that student's archive early. At midnight, the running simulation
+   lets active conversations finish for a bounded time, performs a final
+   archive so late conversations are included, and installs the next-day plans
+   without replacing the students or their physical state.
 
-6. **A snapshot is saved and broadcast.** The world writes a small recovery
-   file and sends the latest state to the browser so the map stays live.
+6. **A checkpoint is saved and broadcast.** The world writes recovery state and
+   sends the latest state to the browser so the map stays live.
 
 ---
 
@@ -83,9 +91,9 @@ There are two ways memory recall can work, and you choose which:
   memories by shared words and recency. This is what the demo uses.
 - **Meaning‑based recall (optional).** A smarter mode that understands the
   *meaning* of a query, so it can surface a related memory even when the exact
-  words differ. It needs an extra piece of software installed and uses a little
-  of the AI budget, so it's off unless you turn it on. If it isn't available,
-  the system quietly falls back to keyword recall — nothing breaks.
+  words differ. It uses Qdrant and Gemini embeddings, consumes budget, and is
+  off unless selected. If it is unavailable, the system falls back to keyword
+  recall without stopping the simulation.
 
 ---
 
@@ -94,19 +102,16 @@ There are two ways memory recall can work, and you choose which:
 The AI runs on a small pool of free‑tier keys that are easily exhausted, so the
 simulation is designed to spend as little as possible.
 
-- **A normal tick costs nothing.** Moving, looking around, and remembering are
-  all free. The AI is only used at a few specific moments.
-- **The reflex "should I reconsider?" thinking is turned off** for the demo,
-  so students never spend AI just because they saw someone.
-- **A conversation is a single request** — and that same request also decides
-  whether either student needs to rethink their plan, so a chat no longer
-  quietly triggers a pile of extra planning.
+- **Movement and spatial checks cost nothing.** AI is used for initial plans,
+  conversations, and eligible decisions after a novel observation.
+- **Conversation is a single request.** After a chat, the current build resumes
+  the existing plan; it does not automatically generate a replacement plan.
 - **A budget watchdog** keeps a running count of AI usage. If you set a limit
   and it's reached, the extra thinking is skipped and the simulation keeps
   running on its free path — it never crashes for lack of budget.
-- **The slow clock helps too.** Stretching a day to ~96 real minutes spreads
-  the same handful of AI requests over far more time, which keeps you under the
-  per‑minute rate limits.
+- **A slower clock helps too.** Increasing the configured wall-clock duration
+  spreads the same requests over more real time, which helps avoid per-minute
+  rate limits.
 
 The result: on a quiet stretch, the whole campus makes **zero** AI requests.
 
@@ -201,14 +206,13 @@ override it for a single run with a command‑line flag. A flag always wins over
 
 | What it controls | `.env` setting | Command‑line flag | Default |
 |---|---|---|---|
-| Reflex "reconsider" thinking (uses AI) | `SIM_REFLEX_LLM` | `--reflex-llm` | off |
 | Overall speed multiplier | `SIM_TICK_SPEED` | `--tick-speed` | 1.0 |
-| Real seconds per simulated minute | `SIM_REAL_SECONDS_PER_SIM_MINUTE` | `--real-seconds-per-sim-minute` | 4.0 (≈96 min/day) |
+| Real seconds per simulated minute | `SIM_REAL_SECONDS_PER_SIM_MINUTE` | `--real-seconds-per-sim-minute` | 4.0 code default; use the formula above for day length |
 | How close counts as "near" (pixels) | `SIM_PERCEPTION_RADIUS_PX` | `--perception-radius-px` | 50 |
-| Looking around each tick | `SIM_PERCEPTION_ENABLED` | `--perception` | on |
 | Memory recall mode | `SIM_MEMORY_BACKEND` | `--memory-backend` | keyword |
 | Max conversations per student per day | `SIM_MAX_CONVERSATIONS_PER_AGENT` | `--max-conversations` | 5 |
 | Max mid‑day replans per student | `SIM_MAX_REPLANS_PER_AGENT_PER_DAY` | `--max-replans` | 3 |
+| Conversation wait at day handoff | `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` | `--day-handoff-conversation-timeout` | 45 seconds |
 | AI requests allowed per real hour (0 = no limit) | `SIM_LLM_HOURLY_CEILING` | `--llm-hourly-ceiling` | 0 |
 
 Examples:
@@ -217,7 +221,7 @@ Examples:
 # Faster day, tighter budget
 $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --tick-speed 4 --llm-hourly-ceiling 30
 
-# Turn on meaning-based memory (after you've installed its optional package)
+# Turn on meaning-based memory
 $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --memory-backend vector
 ```
 
@@ -229,7 +233,7 @@ $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --memory-back
 |---|---|
 | `backend/` | The simulation and the web server |
 | `backend/data/personalities/` | The student profiles |
-| `backend/data/Short_term_db/` | Each student's day‑by‑day memory |
+| `backend/data/Short_term_db/` | Each student's active-day plan and runtime history |
 | `backend/data/Long_term_db/` | The archived history each student builds up |
 | `backend/data/checkpoints/` | Save files for crash recovery |
 | `backend/data/environment/` | The campus places, entry points, and relationships |

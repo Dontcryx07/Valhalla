@@ -21,7 +21,7 @@ import random
 import sys
 import time as _time
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from types import SimpleNamespace
@@ -48,6 +48,7 @@ from src.agents.Short_term import (
     get_yesterday_summary,
     get_relevant_memories,
     consolidate_to_single_day,
+    clear_short_term_data,
     reset_day_runtime,
 )
 from src.config import (
@@ -408,11 +409,6 @@ class WorldEngine:
         """
         current_tick = self.world.tick
         hhmm = self._minutes_to_hhmm(current_tick % (24 * 60))
-
-        # Detect end-of-day (tick >= 24*60)
-        if current_tick >= 24 * 60:
-            logger.info("[WorldEngine] day %d complete — ending simulation", self._day_index)
-            return {}
 
         agent_states = self.registry.all_states()
 
@@ -1272,6 +1268,193 @@ class WorldEngine:
             else:
                 self.world.clear_agent_action(agent_id)
 
+    async def _drain_conversations_for_handoff(self, timeout_seconds: float) -> int:
+        """Give active conversations a bounded chance to persist their results."""
+        tasks = list(self._conversation_tasks.values())
+        if not tasks:
+            return 0
+
+        logger.info(
+            "[WorldEngine] day handoff: waiting up to %.0fs for %d conversation(s)",
+            timeout_seconds, len(tasks),
+        )
+        _done, pending = await asyncio.wait(tasks, timeout=max(0.0, timeout_seconds))
+        if not pending:
+            return 0
+
+        logger.warning(
+            "[WorldEngine] day handoff timed out with %d conversation(s); cancelling them",
+            len(pending),
+        )
+        timed_out_requests = list(self._pending_conversations.values())
+        for task in pending:
+            task.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
+
+        for request in timed_out_requests:
+            try:
+                self._end_conversation(self.registry.get(request["agent_a_id"]))
+                self._end_conversation(self.registry.get(request["agent_b_id"]))
+            except KeyError:
+                pass
+            self._pending_conversations.pop(
+                self._conversation_key(request["agent_a_id"], request["agent_b_id"]), None,
+            )
+        return len(pending)
+
+    async def handoff_to_next_day(
+        self,
+        next_date: str,
+        conversation_timeout_seconds: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Finish one calendar day without replacing the engine or agents.
+
+        Conversation output is allowed to settle first, then every agent's
+        completed day is compressed into long-term memory.  New plans are
+        generated with the ending action, location, and wellbeing as explicit
+        continuity context; positions, brains, relationships, and action
+        managers remain owned by this same engine instance.
+        """
+        old_date = self.sim_start_date
+        timeout = (
+            _cfg.DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS
+            if conversation_timeout_seconds is None else conversation_timeout_seconds
+        )
+        cancelled = await self._drain_conversations_for_handoff(timeout)
+
+        # Preserve the full replay before resetting the per-day action log.
+        save_history(self.world, old_date)
+
+        async def _archive_and_clear(state: AgentRuntimeState) -> bool:
+            try:
+                await archive_to_long_term(state.persona_name, old_date)
+                clear_short_term_data(state.persona_name, old_date)
+                state.day_archived = True
+                return True
+            except Exception as exc:
+                logger.error(
+                    "[WorldEngine] final archive failed for '%s': %s",
+                    state.persona_name, exc,
+                )
+                return False
+
+        archive_results = await asyncio.gather(
+            *[_archive_and_clear(state) for state in self.registry.all_states()],
+            return_exceptions=False,
+        )
+
+        from src.agents.day_planner import run as day_planner_run
+
+        def _handoff_context(state: AgentRuntimeState) -> str:
+            action = state.manager.current_action if state.manager else None
+            action_text = action.description if action else "no active action"
+            location = state.position.location_id or "their current campus position"
+            return (
+                f"The previous day ended while the agent was {action_text} at {location}. "
+                f"Energy is {state.energy_level:.2f}/1.0 and emotion is "
+                f"{state.emotion_state:.2f}/1.0. Continue naturally from this "
+                "physical and emotional state; do not abruptly relocate them."
+            )
+
+        async def _plan_next_day(state: AgentRuntimeState) -> tuple[AgentRuntimeState, list]:
+            memories, yesterday = self._memory_context(
+                state.persona_name, state.persona, before_date=next_date,
+            )
+            proxy = SimpleNamespace(
+                persona=state.persona,
+                relevant_memories=memories,
+                yesterday_summary=yesterday,
+            )
+            try:
+                result = await asyncio.to_thread(
+                    day_planner_run,
+                    proxy,
+                    {
+                        "current_time": f"{next_date} 00:00",
+                        "places": None,
+                        "persona_name": state.persona_name,
+                        "mode": "next_day",
+                        "current_location_id": state.position.location_id,
+                        "handoff_context": _handoff_context(state),
+                    },
+                )
+                plan = result.get("day_plan", [])
+                if plan:
+                    return state, plan
+            except Exception as exc:
+                logger.error(
+                    "[WorldEngine] next-day plan failed for '%s': %s",
+                    state.persona_name, exc,
+                )
+            # A failed planner must not strand the agent. Reusing the previous
+            # schedule is the safest fallback because it preserves continuity.
+            return state, state.day_plan
+
+        planned = await asyncio.gather(
+            *[_plan_next_day(state) for state in self.registry.all_states()],
+            return_exceptions=False,
+        )
+
+        self.sim_start_date = next_date
+        self.sim_start_hhmm = "00:00"
+        self._day_index += 1
+        self._recent_convs.clear()
+        self._in_range.clear()
+        self._last_obs.clear()
+        self._tick_observations.clear()
+        self.world.history.clear()
+
+        for state, plan in planned:
+            state.day_plan = plan
+            state.day_archived = False
+            state.conversation_count = 0
+            state.replan_count = 0
+            state.conversation_start_tick = 0
+            state.active_conversation = None
+            state.paused = False
+            if state.manager:
+                state.manager.begin_new_day(plan)
+                action = state.manager.tick(self.world.tick)
+                state.position = state.manager.position
+                state.current_action = action.model_dump() if action else None
+
+        self._sync_to_world_state()
+        save_checkpoint(
+            self.world,
+            self.registry,
+            self.world.tick,
+            engine_state=self.checkpoint_state(),
+        )
+        prune_checkpoints(keep_last=10)
+
+        return {
+            "type": "day_initialized",
+            "phase": "initialized",
+            "date": next_date,
+            "day": self._day_index + 1,
+            "cancelled_conversations": cancelled,
+            "archived_agents": sum(bool(result) for result in archive_results),
+            "agents": {
+                state.agent_id: {
+                    "name": state.persona_name,
+                    "color": state.color,
+                    "position": state.position.model_dump(),
+                    "current_action": state.manager.current_action.model_dump()
+                    if state.manager and state.manager.current_action else None,
+                    "activity": state.manager.current_action.description
+                    if state.manager and state.manager.current_action else "Idle",
+                    "paused": state.paused,
+                    "in_conversation": False,
+                    "in_last_action": state.manager.is_last_action if state.manager else False,
+                    "energy_level": state.energy_level,
+                    "emotion_state": state.emotion_state,
+                    "conversation": None,
+                }
+                for state in self.registry.all_states()
+            },
+            "recent_conversations": [],
+        }
+
     # ------------------------------------------------------------------ #
     # Main run loop
     # ------------------------------------------------------------------ #
@@ -1424,8 +1607,9 @@ if __name__ == "__main__":
                         "[WorldEngine] resumed from tick %d — %d agents",
                         resume_tick, len(registry),
                     )
-                    await engine.run(max_tick=1440)
-                    save_history(engine.world, args.start_date)
+                    day_end_tick = ((engine.world.tick // (24 * 60)) + 1) * (24 * 60)
+                    await engine.run(max_tick=day_end_tick)
+                    save_history(engine.world, engine.sim_start_date)
                     return
             else:
                 # --resume <tick>
@@ -1448,8 +1632,9 @@ if __name__ == "__main__":
                     "[WorldEngine] resumed from tick %d — %d agents",
                     resume_tick, len(registry),
                 )
-                await engine.run(max_tick=1440)
-                save_history(engine.world, args.start_date)
+                day_end_tick = ((engine.world.tick // (24 * 60)) + 1) * (24 * 60)
+                await engine.run(max_tick=day_end_tick)
+                save_history(engine.world, engine.sim_start_date)
                 return
 
         # Fresh start
@@ -1460,17 +1645,14 @@ if __name__ == "__main__":
         await engine.initialize()
         for day in range(args.days):
             logger.info("[WorldEngine] --- Day %d ---", day + 1)
-            await engine.run(max_tick=1440)
-
-            # Save per-day action history for replay/analytics
-            date_str = (
-                datetime.fromisoformat(args.start_date) + timedelta(days=day)
-            ).strftime("%Y-%m-%d")
-            save_history(engine.world, date_str)
-
+            day_end_tick = ((engine.world.tick // (24 * 60)) + 1) * (24 * 60)
+            await engine.run(max_tick=day_end_tick)
             if day < args.days - 1:
-                engine.world = WorldState()
-                engine.registry = AgentRegistry()
-                await engine.initialize()
+                next_date = (
+                    datetime.fromisoformat(engine.sim_start_date) + timedelta(days=1)
+                ).strftime("%Y-%m-%d")
+                await engine.handoff_to_next_day(next_date)
+            else:
+                save_history(engine.world, engine.sim_start_date)
 
     asyncio.run(_main())

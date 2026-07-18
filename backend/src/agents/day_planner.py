@@ -206,6 +206,7 @@ class DayPlannerState(TypedDict, total=False):
     places: List[Place]  # known campus locations, from places.json
     mode: str  # "full_day", "remaining", or "next_day"
     current_location_id: Optional[str] = None
+    handoff_context: Optional[str] = None
     daily_theme: str  # random theme (e.g. "Sports", "Academics")
     daily_emotion: str  # random mood (e.g. "Happy", "Melancholic")
 
@@ -312,6 +313,7 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
         f"Current in-simulation time: {current_time}\n"
         f"Plan mode: {mode}\n"
         f"Agent location: {current_loc or 'unknown'}{loc_hint}\n\n"
+        f"DAY-HANDOFF CONTINUITY:\n{state.get('handoff_context') or '(none)'}\n\n"
         "Generate the coarse plan now."
     )
 
@@ -710,6 +712,7 @@ def run(agent: Any, world_state: dict) -> dict:
         "places": places,
         "mode": mode,
         "current_location_id": world_state.get("current_location_id"),
+        "handoff_context": world_state.get("handoff_context"),
         "daily_theme": theme,
         "daily_emotion": emotion,
         "retry_count": 0,

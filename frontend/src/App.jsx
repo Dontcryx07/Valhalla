@@ -25,7 +25,7 @@ export default function App() {
 
   useEffect(() => {
     if (!snapshot) return;
-    if (snapshot.type === "day_reset" || snapshot.type === "reset") {
+    if (snapshot.type === "day_reset" || snapshot.type === "reset" || snapshot.type === "day_handoff") {
       setAgentMap(null);
       setPlaced({});
       return;

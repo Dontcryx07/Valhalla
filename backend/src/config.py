@@ -211,6 +211,12 @@ API_KEYS = [
 # Conversation cap (per agent per day)
 MAX_CONVERSATIONS_PER_AGENT = _env_int("SIM_MAX_CONVERSATIONS_PER_AGENT", 5)
 
+# At the calendar boundary, allow active conversation jobs this many real
+# seconds to finish and persist before the engine cancels the remainder.
+DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS = _env_float(
+    "SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS", 45.0,
+)
+
 # day_planner.py CONFIG
 MAX_PLAN_RETRIES = 3
 # What is expected in persona.json file
@@ -247,6 +253,7 @@ _OVERRIDE_MAP = {
     "decide_min_emotion": "DECIDE_MIN_EMOTION",
     "conversation_min_energy": "CONVERSATION_MIN_ENERGY",
     "conversation_min_emotion": "CONVERSATION_MIN_EMOTION",
+    "day_handoff_conversation_timeout_seconds": "DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS",
 }
 
 
@@ -297,6 +304,8 @@ def add_cli_arguments(parser) -> None:
                    default=None, help="Min energy for conversation (default 0.05)")
     g.add_argument("--conv-min-emotion", dest="conversation_min_emotion", type=float,
                    default=None, help="Min emotion for conversation (default 0.05)")
+    g.add_argument("--day-handoff-conversation-timeout", dest="day_handoff_conversation_timeout_seconds", type=float,
+                   default=None, help="Real seconds to wait for conversations at day rollover (default 45)")
 
 
 def _str2bool(value: str) -> bool:
@@ -328,6 +337,7 @@ def describe_settings() -> str:
         f"  LLM hourly ceiling           : {LLM_HOURLY_CEILING or 'none'}\n"
         f"  Decide min energy/emotion    : {DECIDE_MIN_ENERGY} / {DECIDE_MIN_EMOTION}\n"
         f"  Conv min energy/emotion      : {CONVERSATION_MIN_ENERGY} / {CONVERSATION_MIN_EMOTION}\n"
+        f"  Day-handoff conversation wait: {DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS:.0f}s\n"
     )
 
 
