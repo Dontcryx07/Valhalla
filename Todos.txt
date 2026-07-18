@@ -1,4 +1,0 @@
-Have to create resources in the world.
-Like a table that an agent can occupy.
-
-Add a FOV for the agents to perceive the world.

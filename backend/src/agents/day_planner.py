@@ -236,7 +236,7 @@ def _persona_block(persona: dict) -> str:
         if value:
             lines.append(f"- {field} ({meaning}): {value}")
 
-    identity_fields = ["Age", "Gender", "Branch", "Home City"]
+    identity_fields = ["Age", "Gender", "Branch", "Home City", "Hostel"]
     lines.extend(f"{f}: {persona[f]}" for f in identity_fields if persona.get(f))
 
     return "\n".join(lines)
@@ -389,6 +389,7 @@ def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
 def decompose_fine(state: DayPlannerState) -> DayPlannerState:
     persona = state["persona"]
     places = state.get("places", [])
+    current_loc = state.get("current_location_id", "unknown")
 
     atomic_blocks = [b for b in state["hourly_plan"] if b["granularity"] == "atomic"]
     flexible_blocks = [b for b in state["hourly_plan"] if b["granularity"] == "flexible"]
@@ -417,6 +418,8 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             f"{_flavor_block(state)}\n\n"
             f"ACTIVITIES:\n{json.dumps(atomic_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
+            f"The agent currently resides at: {current_loc}. "
+            "Ensure sleep, rest, and personal activities use this location.\n\n"
             "Assign a location to each activity now."
         )
         result = call_gemini(system_prompt, user_prompt, AtomicLocationOutput, "default")
@@ -456,6 +459,8 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             f"{_flavor_block(state)}\n\n"
             f"HOURLY BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
+            f"The agent currently resides at: {current_loc}. "
+            "Ensure sleep, rest, and personal activities use this location.\n\n"
             "Produce the fine-grained action plan for these blocks now."
         )
         result = call_gemini(system_prompt, user_prompt, FinePlanOutput, "default")

@@ -41,6 +41,8 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 import json
+import os
+import threading
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel
@@ -50,6 +52,20 @@ from src.core.world_state import CurrentAction
 from src.llm.gemini_client import call_gemini, AllModelsFailedError
 
 logger = get_logger(__name__)
+
+
+# The engine normally owns a single relationship matrix, but a day handoff or
+# a standalone conversation job can briefly create another instance pointing
+# at the same file.  Coordinate those instances in-process and make each save
+# an atomic replacement so unrelated pairs cannot overwrite one another.
+_MATRIX_LOCK_GUARD = threading.Lock()
+_MATRIX_LOCKS: Dict[Path, threading.RLock] = {}
+
+
+def _matrix_lock(path: Path) -> threading.RLock:
+    resolved = path.resolve()
+    with _MATRIX_LOCK_GUARD:
+        return _MATRIX_LOCKS.setdefault(resolved, threading.RLock())
 
 
 # ---------------------------------------------------------------------------
@@ -107,22 +123,45 @@ class RelationshipMatrix:
 
         self.path: Path = path or ENVIRONMENT_DIR / "relationship_matrix.json"
         self._matrix: Dict[str, float] = {}
+        self._pending_deltas: List[tuple[str, float]] = []
         self.load()
 
     def _pair_key(self, a: str, b: str) -> str:
         return f"{a}->{b}"
 
     def load(self) -> None:
-        if self.path.exists():
-            raw = json.loads(self.path.read_text())
-            self._matrix = {k: float(v) for k, v in raw.items()}
+        with _matrix_lock(self.path):
+            self._matrix = self._read_disk()
+            self._pending_deltas.clear()
+        if self._matrix:
             logger.info("[RelationshipMatrix] loaded %d pairs from %s", len(self._matrix), self.path.name)
         else:
             logger.warning("[RelationshipMatrix] %s not found -- starting empty", self.path)
 
-    def save(self) -> None:
+    def _read_disk(self) -> Dict[str, float]:
+        if not self.path.exists():
+            return {}
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        return {key: float(value) for key, value in raw.items()}
+
+    def _write_atomic(self, matrix: Dict[str, float]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self._matrix, indent=2))
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text(json.dumps(matrix, indent=2), encoding="utf-8")
+        os.replace(temporary, self.path)
+
+    def save(self) -> None:
+        # Reload while holding the file's lock, then replay only this
+        # instance's changes.  Two independent conversations updating
+        # different pairs therefore compose instead of last-writer-wins.
+        with _matrix_lock(self.path):
+            merged = self._read_disk()
+            for key, delta in self._pending_deltas:
+                current = merged.get(key, 0.5)
+                merged[key] = round(max(-1.0, min(1.0, current + delta)), 4)
+            self._write_atomic(merged)
+            self._matrix = merged
+            self._pending_deltas.clear()
         logger.info("[RelationshipMatrix] saved %d pairs to %s", len(self._matrix), self.path.name)
 
     def get(self, a: str, b: str) -> float:
@@ -135,7 +174,19 @@ class RelationshipMatrix:
         current = self.get(a, b)
         new_val = max(-1.0, min(1.0, current + delta))
         self._matrix[key] = round(new_val, 4)
+        self._pending_deltas.append((key, delta))
         logger.info("[RelationshipMatrix] %s: %.2f -> %.2f (delta=%.2f)", key, current, new_val, delta)
+
+    def snapshot(self) -> Dict[str, float]:
+        """Return a JSON-safe copy for the simulation checkpoint."""
+        return dict(self._matrix)
+
+    def restore(self, matrix: Dict[str, float]) -> None:
+        """Make a checkpoint's relationship state authoritative again."""
+        with _matrix_lock(self.path):
+            self._matrix = {key: float(value) for key, value in matrix.items()}
+            self._pending_deltas.clear()
+            self._write_atomic(self._matrix)
 
 
 # ---------------------------------------------------------------------------

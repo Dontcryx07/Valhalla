@@ -78,9 +78,13 @@ logger = get_logger(__name__)
 from src.config import MODEL_TIERS, API_KEYS, TEMPERATURE, API_RPM_LIMIT
 
 
-MAX_RETRIES_PER_MODEL = 1       # 1 attempt only — immediately skip overloaded models
+# ``range(MAX_RETRIES_PER_MODEL)`` drives the actual attempts below, so one
+# desired attempt must be represented by ``1`` rather than ``0``.  Keeping this
+# at one preserves the fail-fast behaviour while ensuring every selected
+# key/model pair is actually tried.
+MAX_RETRIES_PER_MODEL = 1       # try each model/key once; then move on immediately
 BASE_BACKOFF_SECONDS = 0.5
-REQUEST_TIMEOUT_MS = 15_000     # per-request deadline (Gemini models are fast)
+REQUEST_TIMEOUT_MS = 10_000     # per-request deadline — fail fast so we hit the next fallback
 
 # Per-key rate limiting (configurable via .env SIM_API_RPM_LIMIT).
 RPM_LIMIT = API_RPM_LIMIT

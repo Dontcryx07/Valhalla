@@ -3,171 +3,195 @@
   "date": "2026-07-03",
   "day_plan": [
     {
-      "action": "Sleep",
+      "action": "Sleeping",
       "start": "00:00",
-      "end": "08:00",
-      "parent_activity": "Sleep",
-      "location_id": "Brahmaputra_Boys 2",
+      "end": "07:00",
+      "parent_activity": "Sleeping",
+      "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     },
     {
-      "action": "Wake up and stretch in bed",
+      "action": "Morning hygiene and shower",
+      "start": "07:00",
+      "end": "07:30",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms",
+      "energy_change": -0.05,
+      "emotion_change": 0.05
+    },
+    {
+      "action": "Getting ready and packing bag for the day",
+      "start": "07:30",
+      "end": "08:00",
+      "parent_activity": "Morning routine and breakfast",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms",
+      "energy_change": -0.05,
+      "emotion_change": 0.05
+    },
+    {
+      "action": "Walking to the mess",
       "start": "08:00",
       "end": "08:10",
       "parent_activity": "Morning routine and breakfast",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "rooms"
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.0,
+      "emotion_change": 0.0
     },
     {
-      "action": "Brush teeth and freshen up",
+      "action": "Having breakfast and catching up with friends",
       "start": "08:10",
-      "end": "08:25",
-      "parent_activity": "Morning routine and breakfast",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Get dressed for the day",
-      "start": "08:25",
-      "end": "08:30",
-      "parent_activity": "Morning routine and breakfast",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Walk to the mess for breakfast",
-      "start": "08:30",
-      "end": "08:40",
+      "end": "08:50",
       "parent_activity": "Morning routine and breakfast",
       "location_id": "mess",
-      "sub_area": null
+      "sub_area": null,
+      "energy_change": 0.0,
+      "emotion_change": 0.1
     },
     {
-      "action": "Eat a healthy breakfast",
-      "start": "08:40",
-      "end": "09:10",
+      "action": "Walking back from the mess",
+      "start": "08:50",
+      "end": "09:00",
       "parent_activity": "Morning routine and breakfast",
-      "location_id": "mess",
-      "sub_area": null
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms",
+      "energy_change": 0.0,
+      "emotion_change": 0.0
     },
     {
-      "action": "Browse latest AI and Data Engineering tech news",
-      "start": "09:10",
-      "end": "09:30",
-      "parent_activity": "Morning routine and breakfast",
-      "location_id": "mess",
-      "sub_area": null
+      "action": "Attending academic classes",
+      "start": "09:00",
+      "end": "13:00",
+      "parent_activity": "Attending academic classes",
+      "location_id": "LHC",
+      "sub_area": "class_rooms"
     },
     {
-      "action": "Attend B.Tech AI and Data Engineering classes",
-      "start": "09:30",
+      "action": "Walking to the mess for lunch",
+      "start": "13:00",
+      "end": "13:10",
+      "parent_activity": "Lunch and social time with friends",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.05,
+      "emotion_change": 0.05
+    },
+    {
+      "action": "Enjoying lunch with friends",
+      "start": "13:10",
+      "end": "13:50",
+      "parent_activity": "Lunch and social time with friends",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.05,
+      "emotion_change": 0.05
+    },
+    {
+      "action": "Walking back to hostel",
+      "start": "13:50",
+      "end": "14:00",
+      "parent_activity": "Lunch and social time with friends",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room",
+      "energy_change": 0.0,
+      "emotion_change": 0.0
+    },
+    {
+      "action": "Casual social time and chatting with friends",
+      "start": "14:00",
       "end": "15:00",
-      "parent_activity": "Attend B.Tech AI and Data Engineering classes",
-      "location_id": "SAB",
-      "sub_area": "lecture_halls"
+      "parent_activity": "Lunch and social time with friends",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room",
+      "energy_change": 0.0,
+      "emotion_change": 0.2
     },
     {
-      "action": "Walk to sports complex",
+      "action": "Deep work on AI and data engineering projects",
       "start": "15:00",
-      "end": "15:10",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "athletics_track"
-    },
-    {
-      "action": "Dynamic stretching and joint mobility exercises",
-      "start": "15:10",
-      "end": "15:30",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "athletics_track"
-    },
-    {
-      "action": "High-intensity interval run on the track",
-      "start": "15:30",
-      "end": "16:00",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "athletics_track"
-    },
-    {
-      "action": "Weight training session at the gymnasium",
-      "start": "16:00",
-      "end": "16:30",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "gymnasium"
-    },
-    {
-      "action": "Walking cool-down and deep breathing",
-      "start": "16:30",
-      "end": "16:45",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "athletics_track"
-    },
-    {
-      "action": "Rehydrate and replenish electrolytes",
-      "start": "16:45",
-      "end": "17:00",
-      "parent_activity": "Running and fitness session",
-      "location_id": "sports_complex",
-      "sub_area": "athletics_track"
-    },
-    {
-      "action": "Walk back to hostel and take a refreshing shower",
-      "start": "17:00",
-      "end": "17:30",
-      "parent_activity": "Shower and late lunch/snack",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Prepare and eat a post-workout protein snack",
-      "start": "17:30",
       "end": "18:00",
-      "parent_activity": "Shower and late lunch/snack",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "rooms"
-    },
-    {
-      "action": "Study and work on AI/Emotion AI projects",
-      "start": "18:00",
-      "end": "21:00",
-      "parent_activity": "Study and work on AI/Emotion AI projects",
+      "parent_activity": "Deep work on AI and data engineering projects",
       "location_id": "library",
-      "sub_area": "e_resource_lab"
+      "sub_area": "group_study_rooms"
     },
     {
-      "action": "Hang out and chat with friends in the common room",
+      "action": "Walking to the sports complex",
+      "start": "18:00",
+      "end": "18:10",
+      "parent_activity": "Running and sports training",
+      "location_id": "sports_complex",
+      "sub_area": "athletics_track",
+      "energy_change": -0.05,
+      "emotion_change": 0.05
+    },
+    {
+      "action": "Running with music",
+      "start": "18:10",
+      "end": "19:00",
+      "parent_activity": "Running and sports training",
+      "location_id": "sports_complex",
+      "sub_area": "athletics_track",
+      "energy_change": -0.25,
+      "emotion_change": 0.15
+    },
+    {
+      "action": "Intense sports training session",
+      "start": "19:00",
+      "end": "20:00",
+      "parent_activity": "Running and sports training",
+      "location_id": "sports_complex",
+      "sub_area": "football_field",
+      "energy_change": -0.2,
+      "emotion_change": 0.2
+    },
+    {
+      "action": "Walking to the mess for dinner",
+      "start": "20:00",
+      "end": "20:10",
+      "parent_activity": "Dinner and group hanging out",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.0,
+      "emotion_change": 0.0
+    },
+    {
+      "action": "Having dinner at the mess",
+      "start": "20:10",
+      "end": "20:50",
+      "parent_activity": "Dinner and group hanging out",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.1,
+      "emotion_change": 0.1
+    },
+    {
+      "action": "Walking back to hostel",
+      "start": "20:50",
+      "end": "21:00",
+      "parent_activity": "Dinner and group hanging out",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room",
+      "energy_change": 0.0,
+      "emotion_change": 0.0
+    },
+    {
+      "action": "Hanging out and chatting with friends in common room",
       "start": "21:00",
       "end": "22:00",
-      "parent_activity": "Socialize with friends and dinner",
-      "location_id": "Brahmaputra_Boys 2",
-      "sub_area": "common_room"
+      "parent_activity": "Dinner and group hanging out",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "common_room",
+      "energy_change": 0.0,
+      "emotion_change": 0.2
     },
     {
-      "action": "Walk to the mess for dinner",
+      "action": "Exploring new technologies and late night study",
       "start": "22:00",
-      "end": "22:10",
-      "parent_activity": "Socialize with friends and dinner",
-      "location_id": "mess",
-      "sub_area": null
-    },
-    {
-      "action": "Eat dinner and engage in lively conversations with peers",
-      "start": "22:10",
-      "end": "23:00",
-      "parent_activity": "Socialize with friends and dinner",
-      "location_id": "mess",
-      "sub_area": null
-    },
-    {
-      "action": "Wind down and sleep",
-      "start": "23:00",
       "end": "24:00",
-      "parent_activity": "Wind down and sleep",
-      "location_id": "Brahmaputra_Boys 2",
+      "parent_activity": "Exploring new technologies and late night study",
+      "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms"
     }
   ],

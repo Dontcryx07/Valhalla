@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
@@ -17,6 +18,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import re
 import uvicorn
+
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pathfinder import shortest_path, stats, ROOT
@@ -59,21 +62,25 @@ _sim_broadcaster = SimBroadcaster()
 _sim_task: Optional[asyncio.Task] = None; bool
 
 
-def _clear_cache():
-    """Wipe Short_term_db and checkpoints for a fresh sim start."""
+def _clear_runtime_state():
+    """Remove short-term memory and checkpoints for an intentional fresh run."""
     import shutil
-    for d in [os.path.join(DATA_DIR, "Short_term_db"),
-              os.path.join(ROOT, "backend", "data", "checkpoints")]:
+    for d in [
+        os.path.join(DATA_DIR, "Short_term_db"),
+        os.path.join(ROOT, "backend", "data", "checkpoints"),
+    ]:
         if os.path.isdir(d):
-            for entry in os.listdir(d):
-                p = os.path.join(d, entry)
-                try:
-                    if os.path.isdir(p):
-                        shutil.rmtree(p)
-                    else:
-                        os.remove(p)
-                except Exception:
-                    pass
+            shutil.rmtree(d)
+
+
+def _resume_checkpoint_requested() -> bool:
+    """Read only Valhalla's startup flag without consuming Uvicorn arguments."""
+    import argparse
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--resume-checkpoint", action="store_true")
+    args, _ = parser.parse_known_args()
+    return args.resume_checkpoint
 
 
 def _print_agent_plans(engine):
@@ -94,11 +101,12 @@ def _print_agent_plans(engine):
     print()
 
 
-async def _run_sim(checkpoint: bool = False):
+async def _run_sim(resume_checkpoint: bool = False):
     """Background task: initialize WorldEngine and drive the tick loop.
     
     Args:
-        checkpoint: If True, try to resume from the latest checkpoint instead of fresh start.
+        resume_checkpoint: If True, resume from the latest checkpoint without
+            deleting saved runtime data.
     """
     global _latest_snapshot
     from src.core.world_engine import WorldEngine
@@ -113,33 +121,30 @@ async def _run_sim(checkpoint: bool = False):
 
     engine = WorldEngine(sim_start_date=start_date, sim_start_hhmm=_cfg.SIM_START_TIME)
 
-    if checkpoint:
+    if resume_checkpoint:
         ticks = list_checkpoints()
         if ticks:
             resume_tick = ticks[-1]
             print(f"[SimManager] found checkpoint at tick {resume_tick} — resuming")
-            world, registry = load_checkpoint(resume_tick, engine.resolver)
+            world, registry, checkpoint_state = load_checkpoint(
+                resume_tick, engine.resolver, return_metadata=True,
+            )
             engine.world = world
             engine.registry = registry
+            engine.restore_checkpoint_state(checkpoint_state)
+            await engine.resume_pending_conversations()
             _latest_snapshot = {"status": "initialized", "agents": {}}
         else:
-            print("[SimManager] no checkpoints found — starting fresh")
-            _clear_cache()
-            try:
-                print(f"[SimManager] starting simulation for {start_date}")
-                await engine.initialize()
-            except Exception as e:
-                _latest_snapshot = {"status": "error", "message": str(e)}
-                import traceback
-                traceback.print_exc()
-                return
-            _latest_snapshot = {"status": "initialized", "agents": {}}
-            _print_agent_plans(engine)
+            message = "No checkpoint exists. Start a fresh simulation with: python backend/server.py"
+            logger.error("[SimManager] %s", message)
+            _latest_snapshot = {"status": "error", "message": message}
+            return
     else:
-        # Fresh start (default)
-        _clear_cache()
+        # The normal command deliberately starts from no short-term memory or
+        # checkpoint data. Resuming is available only via the explicit flag.
+        _clear_runtime_state()
         try:
-            print(f"[SimManager] starting simulation for {start_date}")
+            logger.info("[SimManager] starting simulation for %s", start_date)
             await engine.initialize()
         except Exception as e:
             _latest_snapshot = {"status": "error", "message": str(e)}
@@ -155,7 +160,7 @@ async def _run_sim(checkpoint: bool = False):
 
             # Day transition — advance the simulation date by one day
             start_date = (datetime.strptime(start_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
-            print(f"[SimManager] day transition — advancing to {start_date}")
+            logger.info("[SimManager] day transition — advancing to %s", start_date)
 
             await _sim_broadcaster.broadcast({"type": "day_reset", "date": start_date})
             await asyncio.sleep(1)
@@ -187,11 +192,9 @@ async def _on_tick(snapshot: dict):
 @app.on_event("startup")
 async def _start_sim():
     global _sim_task
-    import argparse
-    _parser = argparse.ArgumentParser()
-    _parser.add_argument("-checkpoint", action="store_true", default=False)
-    _args, _ = _parser.parse_known_args()
-    _sim_task = asyncio.create_task(_run_sim(checkpoint=_args.checkpoint))
+    _sim_task = asyncio.create_task(
+        _run_sim(resume_checkpoint=_resume_checkpoint_requested())
+    )
 
 # Suppress FastAPI on_event deprecation warning — the lifespan equivalent is
 # fine, but on_event is simpler and works identically here. The warning is
@@ -220,7 +223,7 @@ async def reset_sim():
     _latest_snapshot = {"status": "resetting"}
     await _sim_broadcaster.broadcast({"type": "reset"})
 
-    _clear_cache()
+    _clear_runtime_state()
 
     _sim_task = asyncio.create_task(_run_sim())
     return {"status": "reset", "message": "Simulation reset — starting fresh"}
@@ -435,8 +438,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Valhalla simulation server")
     parser.add_argument(
-        "-checkpoint", action="store_true", default=False,
-        help="Resume from latest checkpoint instead of starting fresh",
+        "--resume-checkpoint", action="store_true", default=False,
+        help="Resume the latest checkpoint without clearing runtime data",
     )
     parser.add_argument(
         "--port", type=int, default=8000,
@@ -444,9 +447,9 @@ if __name__ == "__main__":
     )
     args, _ = parser.parse_known_args()
 
-    if args.checkpoint:
+    if args.resume_checkpoint:
         print(f"\n  Valhalla is live => http://127.0.0.1:{args.port}   (resuming from checkpoint)\n")
     else:
-        print(f"\n  Valhalla is live => http://127.0.0.1:{args.port}   (use this exact address)\n")
+        print(f"\n  Valhalla is live => http://127.0.0.1:{args.port}   (fresh simulation; runtime data will be cleared)\n")
 
     uvicorn.run("server:app", host="127.0.0.1", port=args.port, reload=False)

@@ -107,6 +107,85 @@ class WorldEngine:
         # Per-agent cached observations from the current tick's perceive phase,
         # so Phase 4 (LLM decide) can reuse them without recomputing.
         self._tick_observations: Dict[str, list] = {}
+        # Background LLM work is not serializable, but its deterministic input
+        # envelope is.  Keep that envelope so a restore can restart an
+        # in-flight conversation instead of silently losing it.
+        self._pending_conversations: Dict[str, Dict[str, Any]] = {}
+        self._conversation_tasks: Dict[str, asyncio.Task] = {}
+
+    @staticmethod
+    def _conversation_key(first_id: str, second_id: str) -> str:
+        return "|".join(sorted((first_id, second_id)))
+
+    def checkpoint_state(self) -> Dict[str, Any]:
+        """Serialize engine-owned state that is not held by WorldState."""
+        return {
+            "sim_start_date": self.sim_start_date,
+            "sim_start_hhmm": self.sim_start_hhmm,
+            "sim_end_hhmm": self.sim_end_hhmm,
+            "day_index": self._day_index,
+            "in_range": {
+                agent_id: sorted(subject_ids)
+                for agent_id, subject_ids in self._in_range.items()
+            },
+            # Novelty fingerprints affect whether an agent makes an LLM
+            # decision next tick, so they are behavioural state rather than a
+            # disposable UI cache.
+            "last_observations": {
+                agent_id: [list(item) for item in observations]
+                for agent_id, observations in self._last_obs.items()
+            },
+            "recent_conversations": list(self._recent_convs),
+            "relationship_matrix": self.relationship_matrix.snapshot(),
+            "pending_conversations": list(self._pending_conversations.values()),
+        }
+
+    def restore_checkpoint_state(self, state: Dict[str, Any]) -> None:
+        """Restore engine-owned state after the world and registry are loaded."""
+        if not state:
+            return
+        self.sim_start_date = state.get("sim_start_date", self.sim_start_date)
+        self.sim_start_hhmm = state.get("sim_start_hhmm", self.sim_start_hhmm)
+        self.sim_end_hhmm = state.get("sim_end_hhmm", self.sim_end_hhmm)
+        self._day_index = state.get("day_index", self._day_index)
+        self._in_range = {
+            agent_id: set(subject_ids)
+            for agent_id, subject_ids in state.get("in_range", {}).items()
+        }
+        self._last_obs = {
+            agent_id: frozenset(tuple(item) for item in observations)
+            for agent_id, observations in state.get("last_observations", {}).items()
+        }
+        self._recent_convs = deque(state.get("recent_conversations", []), maxlen=12)
+        relationship_state = state.get("relationship_matrix")
+        if relationship_state is not None:
+            self.relationship_matrix.restore(relationship_state)
+
+        self._pending_conversations = {}
+        for pending in state.get("pending_conversations", []):
+            first_id = pending.get("agent_a_id")
+            second_id = pending.get("agent_b_id")
+            if first_id and second_id:
+                self._pending_conversations[self._conversation_key(first_id, second_id)] = pending
+
+    async def resume_pending_conversations(self) -> None:
+        """Restart durable conversation requests after a checkpoint restore.
+
+        An API call already executing at save time cannot be serialized.  Its
+        request envelope is retained, so this resumes the same logical work
+        from the original participants, prompt inputs, and simulation time.
+        """
+        for key, pending in list(self._pending_conversations.items()):
+            try:
+                first = self.registry.get(pending["agent_a_id"])
+                second = self.registry.get(pending["agent_b_id"])
+            except KeyError:
+                self._pending_conversations.pop(key, None)
+                continue
+            if not first.paused or not second.paused:
+                self._pending_conversations.pop(key, None)
+                continue
+            self._start_conversation_task(first, second, pending)
 
     # ------------------------------------------------------------------ #
     # Persona discovery
@@ -186,103 +265,105 @@ class WorldEngine:
             logger.error("[WorldEngine] no personas found — aborting")
             return
 
-        # Phase 1a: Generate day plans for every persona
-        logger.info("[WorldEngine] generating day plans for %d agents ...", len(personas))
-        plan_t0 = _time.perf_counter()
+        from src.agents.day_planner import run as day_planner_run
 
+        # ── Phase 1a (sequential, fast): resolve positions, check saved plans ──
+        logger.info("[WorldEngine] preparing %d agents ...", len(personas))
+        agent_setups = []
         for persona in personas:
             try:
                 name = persona.get("Name", "unknown")
                 hostel = persona.get("Hostel", "")
                 agent_id = self._persona_name_to_id(name)
-                # Distinct spot inside the hostel footprint (never stacked on the door).
                 position = self.resolver.random_interior_point(hostel, occupied=self._spawn_points)
                 self._spawn_points.append((position.x, position.y))
-
-                # Register agent in WorldState
                 self.world.register_agent(agent_id, position)
-
-                # Generate full-day plan
-                from src.agents.day_planner import run as day_planner_run
-
-                # Reuse an existing saved plan for this (agent, date) if one exists —
-                # avoids burning ~4 LLM calls per agent (and a multi-minute startup
-                # freeze) every time the server restarts. Only plan fresh when there
-                # is no stored plan yet.
                 consolidate_to_single_day(name, self.sim_start_date)
-
                 existing_plan = load_day_plan(name, self.sim_start_date)
                 if existing_plan:
-                    # A day starts clean — keep the plan but reset run-time record.
                     reset_day_runtime(name, self.sim_start_date)
+                    logger.info(
+                        "[WorldEngine]   reusing saved day plan for '%s' (%d actions) — no LLM",
+                        name, len(existing_plan),
+                    )
                     day_plan = existing_plan
                     error = None
-                    logger.info(
-                        "[WorldEngine]   reusing saved day plan for '%s' (%d actions) — no LLM (clean start)",
-                        name, len(day_plan),
+                    manager = AgentActionManager(agent_id, day_plan, position, self.resolver)
+                    self.registry.register(
+                        AgentRuntimeState(
+                            agent_id=agent_id, persona=persona, persona_name=name,
+                            manager=manager, position=position, day_plan=day_plan,
+                            emotion_state=0.5, energy_level=1.0,
+                        )
                     )
+                    logger.info("[WorldEngine]   registered '%s' (hostel=%s) — %d plan actions (cached)",
+                                name, hostel, len(day_plan))
                 else:
-                    mem, yday = self._memory_context(name, persona, before_date=self.sim_start_date)
-                    agent_proxy = SimpleNamespace(
-                        persona=persona,
-                        relevant_memories=mem,
-                        yesterday_summary=yday,
-                    )
-                    _loop = asyncio.get_event_loop()
-                    plan_result = await _loop.run_in_executor(
-                        None,
-                        lambda: day_planner_run(
-                            agent_proxy,
-                            {
-                                "current_time": f"{self.sim_start_date} {self.sim_start_hhmm}",
-                                "places": None,
-                                "persona_name": name,
-                                "mode": "full_day",
-                                "current_location_id": hostel,
-                            },
-                        ),
-                    )
-                    day_plan = plan_result.get("day_plan", [])
-                    error = plan_result.get("error")
-                if error:
-                    logger.warning(
-                        "[WorldEngine] day plan for '%s' has issues: %s", name, error
-                    )
-
-                # Create agent action manager
-                manager = AgentActionManager(agent_id, day_plan, position, self.resolver)
-
-                # Store in registry
-                self.registry.register(
-                    AgentRuntimeState(
-                        agent_id=agent_id,
-                        persona=persona,
-                        persona_name=name,
-                        manager=manager,
-                        position=position,
-                        day_plan=day_plan,
-                        emotion_state=0.5,
-                        energy_level=1.0,
-                    )
-                )
-
-                logger.info(
-                    "[WorldEngine]   registered '%s' (hostel=%s) — %d plan actions",
-                    name, hostel, len(day_plan),
-                )
+                    agent_setups.append((name, hostel, agent_id, position, persona))
             except Exception as e:
-                logger.error(
-                    "[WorldEngine]   failed to initialize agent '%s': %s — skipping",
-                    persona.get("Name", "unknown"), e,
-                )
-                import traceback
-                traceback.print_exc()
+                logger.error("[WorldEngine]   failed to prepare agent '%s': %s — skipping",
+                             persona.get("Name", "unknown"), e)
+                import traceback; traceback.print_exc()
                 continue
 
+        # ── Phase 1b (parallel, slow): generate day plans for agents that need one ──
+        logger.info("[WorldEngine] generating day plans for %d agents (parallel) ...", len(agent_setups))
+        plan_t0 = _time.perf_counter()
+
+        async def _plan_one(name: str, hostel: str, agent_id: str,
+                            position, persona: dict) -> None:
+            logger.info("[WorldEngine]   starting day plan for '%s' ...", name)
+            mem, yday = self._memory_context(name, persona, before_date=self.sim_start_date)
+            proxy = SimpleNamespace(persona=persona, relevant_memories=mem, yesterday_summary=yday)
+            try:
+                _loop = asyncio.get_event_loop()
+                plan_result = await _loop.run_in_executor(
+                    None,
+                    lambda: day_planner_run(
+                        proxy,
+                        {
+                            "current_time": f"{self.sim_start_date} {self.sim_start_hhmm}",
+                            "places": None,
+                            "persona_name": name,
+                            "mode": "full_day",
+                            "current_location_id": hostel,
+                        },
+                    ),
+                )
+                day_plan = plan_result.get("day_plan", [])
+                error = plan_result.get("error")
+                if error:
+                    logger.warning("[WorldEngine]   day plan for '%s' has issues: %s", name, error)
+                manager = AgentActionManager(agent_id, day_plan, position, self.resolver)
+                self.registry.register(
+                    AgentRuntimeState(
+                        agent_id=agent_id, persona=persona, persona_name=name,
+                        manager=manager, position=position, day_plan=day_plan,
+                        emotion_state=0.5, energy_level=1.0,
+                    )
+                )
+                logger.info("[WorldEngine]   registered '%s' (hostel=%s) — %d plan actions",
+                            name, hostel, len(day_plan))
+            except Exception as e:
+                logger.error("[WorldEngine]   day plan failed for '%s': %s — skipping", name, e)
+                import traceback; traceback.print_exc()
+                # Register anyway with empty plan so the sim doesn't crash
+                manager = AgentActionManager(agent_id, [], position, self.resolver)
+                self.registry.register(
+                    AgentRuntimeState(
+                        agent_id=agent_id, persona=persona, persona_name=name,
+                        manager=manager, position=position, day_plan=[],
+                        emotion_state=0.5, energy_level=1.0,
+                    )
+                )
+                logger.info("[WorldEngine]   registered '%s' with empty plan (fallback)", name)
+
+        tasks = [_plan_one(n, h, a, p, pe) for n, h, a, p, pe in agent_setups]
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
         plan_elapsed = _time.perf_counter() - plan_t0
-        logger.info(
-            "[WorldEngine] all day plans generated in %.1fs", plan_elapsed
-        )
+        logger.info("[WorldEngine] all day plans generated in %.1fs", plan_elapsed)
 
         # Assign frontend colors
         _COLORS = [
@@ -407,7 +488,12 @@ class WorldEngine:
         self.world.advance_tick(minutes=SIM_MINUTES_PER_TICK)
 
         # ----- Save checkpoint -----
-        save_checkpoint(self.world, self.registry, self.world.tick)
+        save_checkpoint(
+            self.world,
+            self.registry,
+            self.world.tick,
+            engine_state=self.checkpoint_state(),
+        )
         prune_checkpoints(keep_last=10)
 
         # Build frontend snapshot
@@ -492,8 +578,14 @@ class WorldEngine:
             return "continue"
         brain = self._brain_for(state)
         observations = self._tick_observations.get(state.agent_id, [])
-        decision = brain.decide_tick(
-            tick=tick, hhmm=hhmm, observations=observations,
+        # Gemini is a synchronous SDK call.  Run it in the default worker
+        # pool so a slow response, rate-limit wait, or retry never prevents
+        # WebSocket broadcasts and the rest of the simulation from advancing.
+        decision = await asyncio.to_thread(
+            brain.decide_tick,
+            tick=tick,
+            hhmm=hhmm,
+            observations=observations,
             day_plan=state.day_plan,
             replan_count=state.replan_count,
             max_replans=_cfg.MAX_REPLANS_PER_AGENT_PER_DAY,
@@ -589,6 +681,7 @@ class WorldEngine:
                 try:
                     partner = self.registry.get(partner_id)
                     self._end_conversation(partner)
+                    self._discard_pending_conversation(state.agent_id, partner.agent_id)
                 except KeyError:
                     pass
 
@@ -740,6 +833,75 @@ class WorldEngine:
                 except Exception as e:
                     logger.debug("[WorldEngine] observation store failed: %s", e)
 
+    def _conversation_request(
+        self,
+        a: AgentRuntimeState,
+        b: AgentRuntimeState,
+        loc_id: str,
+        tick: int,
+        hhmm: str,
+    ) -> Dict[str, Any]:
+        """Capture the inputs needed to restart an in-flight LLM request."""
+        date_ctx = date_from_simulation_time(f"{self.sim_start_date} {hhmm}")
+        memories_a, _ = self._memory_context(
+            a.persona_name, a.persona, before_date=date_ctx,
+            query_hint=f"{b.persona_name} {loc_id}",
+        )
+        memories_b, _ = self._memory_context(
+            b.persona_name, b.persona, before_date=date_ctx,
+            query_hint=f"{a.persona_name} {loc_id}",
+        )
+        return {
+            "agent_a_id": a.agent_id,
+            "agent_b_id": b.agent_id,
+            "location_id": loc_id,
+            "start_tick": tick,
+            "hhmm": hhmm,
+            "action_a": a.manager.current_action.description if a.manager and a.manager.current_action else "unknown",
+            "action_b": b.manager.current_action.description if b.manager and b.manager.current_action else "unknown",
+            "relationship_a_to_b": self.relationship_matrix.get(a.agent_id, b.agent_id),
+            "relationship_b_to_a": self.relationship_matrix.get(b.agent_id, a.agent_id),
+            "memories_a": memories_a,
+            "memories_b": memories_b,
+            "energy_a": a.energy_level,
+            "emotion_a": a.emotion_state,
+            "energy_b": b.energy_level,
+            "emotion_b": b.emotion_state,
+        }
+
+    def _start_conversation_task(
+        self,
+        a: AgentRuntimeState,
+        b: AgentRuntimeState,
+        request: Dict[str, Any],
+    ) -> None:
+        """Run one durable conversation request and clear its bookkeeping."""
+        key = self._conversation_key(a.agent_id, b.agent_id)
+        if key in self._conversation_tasks:
+            return
+
+        async def _runner() -> None:
+            try:
+                await self._run_conversation_pipeline(a, b, request)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "[WorldEngine] conversation pipeline crashed for '%s' <-> '%s'",
+                    a.persona_name, b.persona_name,
+                )
+                self._end_conversation(a)
+                self._end_conversation(b)
+            finally:
+                self._pending_conversations.pop(key, None)
+                self._conversation_tasks.pop(key, None)
+
+        self._conversation_tasks[key] = asyncio.create_task(_runner())
+
+    def _discard_pending_conversation(self, first_id: str, second_id: str) -> None:
+        """Prevent a timed-out conversation from being restarted on restore."""
+        self._pending_conversations.pop(self._conversation_key(first_id, second_id), None)
+
     async def _check_conversations(self, tick: int, hhmm: str) -> None:
         """
         Detect pairs of agents whose 50px proximity circles overlap and fire a
@@ -820,9 +982,10 @@ class WorldEngine:
                 a.persona_name, b.persona_name, loc_id, radius,
             )
 
-            asyncio.create_task(
-                self._run_conversation_pipeline(a, b, loc_id, tick, hhmm)
-            )
+            # Capture the original request before replacing the actions with a
+            # visible conversation state.  This payload is checkpointed while
+            # the provider call is in flight.
+            request = self._conversation_request(a, b, loc_id, tick, hhmm)
 
             # Immediately set agents to conversation mode (frozen until bg task completes)
             if a.manager:
@@ -831,15 +994,31 @@ class WorldEngine:
                 a.conversation_count += 1
                 a.last_conversation_partner = b.agent_id
                 a.conversation_start_tick = tick
+                a.active_conversation = {
+                    "partner_name": b.persona_name,
+                    "partner_id": b.agent_id,
+                    "location_id": loc_id,
+                    "started_tick": tick,
+                    "status": "generating",
+                }
             if b.manager:
                 b.manager.set_conversation_action(a.persona_name)
                 b.paused = True
                 b.conversation_count += 1
                 b.last_conversation_partner = a.agent_id
                 b.conversation_start_tick = tick
+                b.active_conversation = {
+                    "partner_name": a.persona_name,
+                    "partner_id": a.agent_id,
+                    "location_id": loc_id,
+                    "started_tick": tick,
+                    "status": "generating",
+                }
 
             self.world.record_conversation(a.agent_id)
             self.world.record_conversation(b.agent_id)
+            self._pending_conversations[self._conversation_key(a.agent_id, b.agent_id)] = request
+            self._start_conversation_task(a, b, request)
             busy.add(a.agent_id)
             busy.add(b.agent_id)
 
@@ -852,9 +1031,7 @@ class WorldEngine:
         self,
         a: AgentRuntimeState,
         b: AgentRuntimeState,
-        loc_id: str,
-        tick: int,
-        hhmm: str,
+        request: Dict[str, Any],
     ) -> None:
         """
         Background task: generates the conversation via LLM, saves results,
@@ -863,28 +1040,21 @@ class WorldEngine:
         """
         loop = asyncio.get_event_loop()
 
+        loc_id = request["location_id"]
+        tick = request["start_tick"]
+        hhmm = request["hhmm"]
         a_action = CurrentAction(
-            description=a.manager.current_action.description if a.manager and a.manager.current_action else "unknown",
+            description=request["action_a"],
             start_tick=tick,
             end_tick=tick + 10,
             target_location_id=loc_id,
         )
         b_action = CurrentAction(
-            description=b.manager.current_action.description if b.manager and b.manager.current_action else "unknown",
+            description=request["action_b"],
             start_tick=tick,
             end_tick=tick + 10,
             target_location_id=loc_id,
         )
-        rel_a_to_b = self.relationship_matrix.get(a.agent_id, b.agent_id)
-        rel_b_to_a = self.relationship_matrix.get(b.agent_id, a.agent_id)
-
-        # Recall each agent's relevant memories for the conversation (0-LLM keyword backend).
-        date_ctx = date_from_simulation_time(f"{self.sim_start_date} {hhmm}")
-        mem_a, _ = self._memory_context(a.persona_name, a.persona, before_date=date_ctx,
-                                        query_hint=f"{b.persona_name} {loc_id}")
-        mem_b, _ = self._memory_context(b.persona_name, b.persona, before_date=date_ctx,
-                                        query_hint=f"{a.persona_name} {loc_id}")
-
         # Step 1: Generate conversation (blocking LLM call → thread pool)
         conv_result = await loop.run_in_executor(
             None,
@@ -893,11 +1063,11 @@ class WorldEngine:
                 a.persona, b.persona,
                 a.day_plan, b.day_plan,
                 a_action, b_action,
-                rel_a_to_b, rel_b_to_a,
+                request["relationship_a_to_b"], request["relationship_b_to_a"],
                 loc_id, hhmm,
-                mem_a, mem_b,
-                energy_a=a.energy_level, emotion_a=a.emotion_state,
-                energy_b=b.energy_level, emotion_b=b.emotion_state,
+                request["memories_a"], request["memories_b"],
+                energy_a=request["energy_a"], emotion_a=request["emotion_a"],
+                energy_b=request["energy_b"], emotion_b=request["emotion_b"],
             ),
         )
 
@@ -1243,9 +1413,13 @@ if __name__ == "__main__":
                         sim_start_date=args.start_date,
                         sim_start_hhmm=args.start_time,
                     )
-                    world, registry = load_checkpoint(resume_tick, engine.resolver)
+                    world, registry, checkpoint_state = load_checkpoint(
+                        resume_tick, engine.resolver, return_metadata=True,
+                    )
                     engine.world = world
                     engine.registry = registry
+                    engine.restore_checkpoint_state(checkpoint_state)
+                    await engine.resume_pending_conversations()
                     logger.info(
                         "[WorldEngine] resumed from tick %d — %d agents",
                         resume_tick, len(registry),
@@ -1263,9 +1437,13 @@ if __name__ == "__main__":
                     sim_start_date=args.start_date,
                     sim_start_hhmm=args.start_time,
                 )
-                world, registry = load_checkpoint(resume_tick, engine.resolver)
+                world, registry, checkpoint_state = load_checkpoint(
+                    resume_tick, engine.resolver, return_metadata=True,
+                )
                 engine.world = world
                 engine.registry = registry
+                engine.restore_checkpoint_state(checkpoint_state)
+                await engine.resume_pending_conversations()
                 logger.info(
                     "[WorldEngine] resumed from tick %d — %d agents",
                     resume_tick, len(registry),

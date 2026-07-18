@@ -14,6 +14,7 @@ Supports:
 from __future__ import annotations
 
 import json
+import random
 import time as _time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -29,6 +30,7 @@ logger = get_logger(__name__)
 CHECKPOINT_DIR = DATA_DIR / "checkpoints"
 HISTORY_DIR = DATA_DIR / "history"
 KEEP_LAST = 10
+SCHEMA_VERSION = 2
 
 
 def _tick_filename(tick: int) -> str:
@@ -48,16 +50,10 @@ def _manager_to_dict(manager: AgentActionManager) -> Dict[str, Any]:
     def _action_dict(a: Optional[ActionState]) -> Optional[Dict[str, Any]]:
         if a is None:
             return None
-        return {
-            "action_type": a.action_type.value,
-            "description": a.description,
-            "start_time": a.start_time,
-            "end_time": a.end_time,
-            "location_id": a.location_id,
-            "sub_area": a.sub_area,
-            "path": a.path,
-            "path_index": a.path_index,
-        }
+        # ActionState contains more than the display fields.  In particular,
+        # its resolved destination and energy/emotion deltas affect subsequent
+        # movement and behaviour, so preserve the entire serializable model.
+        return a.model_dump(mode="json")
 
     return {
         "day_plan": manager.day_plan,
@@ -82,7 +78,13 @@ def _agent_to_dict(state: AgentRuntimeState) -> Dict[str, Any]:
         "paused": state.paused,
         "day_plan": state.day_plan,
         "day_archived": state.day_archived,
+        "conversation_start_tick": state.conversation_start_tick,
         "conversation_count": state.conversation_count,
+        "replan_count": state.replan_count,
+        "last_conversation_partner": state.last_conversation_partner,
+        "active_conversation": state.active_conversation,
+        "emotion_state": state.emotion_state,
+        "energy_level": state.energy_level,
         "color": state.color,
         "manager": _manager_to_dict(state.manager) if state.manager else None,
     }
@@ -92,6 +94,7 @@ def save_checkpoint(
     world: WorldState,
     registry: AgentRegistry,
     tick: int,
+    engine_state: Optional[Dict[str, Any]] = None,
 ) -> Optional[Path]:
     """Save current simulation state to a checkpoint JSON file."""
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
@@ -99,13 +102,20 @@ def save_checkpoint(
 
     agents_data = [_agent_to_dict(s) for s in registry.all_states()]
 
+    # History is not needed to advance an action, but it is part of the
+    # observable world and is required for a faithful replay after restore.
     world_dict = json.loads(world.model_dump_json())
-    world_dict.pop("history", None)
 
     payload = {
+        "schema_version": SCHEMA_VERSION,
         "tick": tick,
         "world": world_dict,
         "agents": agents_data,
+        "engine": engine_state or {},
+        # The simulation uses Python's process-wide RNG for collision nudges
+        # and interior placement.  JSON converts tuples to lists, which are
+        # converted back on load before passing the state to random.setstate.
+        "random_state": random.getstate(),
         "saved_at": _time.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
@@ -138,16 +148,16 @@ def _action_from_dict(d: Optional[Dict[str, Any]]) -> Optional[ActionState]:
     """Reconstruct an ActionState from a saved dict."""
     if d is None:
         return None
-    return ActionState(
-        action_type=ActionType(d["action_type"]),
-        description=d["description"],
-        start_time=d["start_time"],
-        end_time=d["end_time"],
-        location_id=d.get("location_id", ""),
-        sub_area=d.get("sub_area"),
-        path=d.get("path"),
-        path_index=d.get("path_index", 0),
-    )
+    # model_validate also remains compatible with version-1 checkpoints,
+    # whose omitted ActionState fields have model defaults.
+    return ActionState.model_validate(d)
+
+
+def _lists_to_tuples(value: Any) -> Any:
+    """Restore the tuple structure required by random.setstate()."""
+    if isinstance(value, list):
+        return tuple(_lists_to_tuples(item) for item in value)
+    return value
 
 
 def _restore_manager(
@@ -180,13 +190,17 @@ def _restore_manager(
 def load_checkpoint(
     tick: int,
     resolver: LocationResolver,
-) -> Tuple[WorldState, AgentRegistry]:
+    return_metadata: bool = False,
+) -> Tuple[WorldState, AgentRegistry] | Tuple[WorldState, AgentRegistry, Dict[str, Any]]:
     """Load simulation state from a checkpoint file."""
     path = CHECKPOINT_DIR / _tick_filename(tick)
     if not path.exists():
         raise FileNotFoundError(f"No checkpoint for tick {tick} at {path}")
 
     raw = json.loads(path.read_text())
+
+    if raw.get("random_state") is not None:
+        random.setstate(_lists_to_tuples(raw["random_state"]))
 
     world = WorldState.model_validate(raw["world"])
     registry = AgentRegistry()
@@ -204,7 +218,13 @@ def load_checkpoint(
             paused=agent_data["paused"],
             day_plan=agent_data["day_plan"],
             day_archived=agent_data["day_archived"],
+            conversation_start_tick=agent_data.get("conversation_start_tick", 0),
             conversation_count=agent_data.get("conversation_count", 0),
+            replan_count=agent_data.get("replan_count", 0),
+            last_conversation_partner=agent_data.get("last_conversation_partner"),
+            active_conversation=agent_data.get("active_conversation"),
+            emotion_state=agent_data.get("emotion_state", 0.5),
+            energy_level=agent_data.get("energy_level", 1.0),
             color=agent_data.get("color", "#888888"),
         )
         state.current_action = (
@@ -217,6 +237,8 @@ def load_checkpoint(
         "[Checkpoint] loaded tick %d: %d agents, world.tick=%d",
         tick, len(registry), world.tick,
     )
+    if return_metadata:
+        return world, registry, raw.get("engine", {})
     return world, registry
 
 

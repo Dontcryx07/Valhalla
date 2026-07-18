@@ -153,8 +153,17 @@ python backend/server.py
 # then open http://127.0.0.1:8000
 ```
 
-This starts the simulation and the live map together. If a saved state exists,
-it resumes from it; otherwise it prepares fresh day plans and begins.
+This starts a fresh simulation and the live map together. It removes prior
+short-term memory and checkpoints before preparing new day plans.
+
+To continue from the latest checkpoint instead, run:
+
+```powershell
+python backend/server.py --resume-checkpoint
+```
+
+The resume command never clears runtime data. If no checkpoint exists, it
+reports the issue instead of silently starting a new simulation.
 
 ### 3. Build the browser interface (first time, or after UI changes)
 
