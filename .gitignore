@@ -5,10 +5,9 @@ venv
 .env
 opencode.json
 skills-lock.json
-echo "pytest.ini" >> .gitignore
-echo ".codex/environments/environment.toml" >> .gitignore
 
-
+.codex/environments/environment.toml
+pytest.ini
 .venv/
 .idea/
 temp.py
