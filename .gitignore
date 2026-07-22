@@ -12,7 +12,7 @@ temp.py
 *.log
 .debug/
 
-# Local test, coverage, and debug artifacts (not needed to run the simulator)
+
 /tests/
 /backend/tests/
 .pytest_cache/
@@ -36,12 +36,6 @@ playwright-report/
 /frontend/node_modules/
 /frontend/dist/
 
-# Session reports are local debugging artifacts
-/BUG.md
-/BUG_AUDIT_PROGRESS.md
-/DEBUG_AND_IMPROVEMENT_REPORT.md
-/DEBUG_SESSION_REPORT.md
-/QA_AUDIT_REPORT.md
 
 # Python bytecode and interpreter caches
 __pycache__/

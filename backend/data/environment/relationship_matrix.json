@@ -18,7 +18,7 @@
       "context": "Ankit and Anubhav compare circuit ideas and can talk through a confusing lab without making it competitive."
     },
     "ankit->ghanisht_kaushal": {
-      "score": 0.57,
+      "score": 0.59,
       "tags": [
         "respect",
         "technical"
@@ -26,7 +26,7 @@
       "context": "Ankit appreciates Ghanisht's structured reviews and brings a grounded hardware perspective to technical discussions."
     },
     "ankit->gurnoor_singh": {
-      "score": 0.6,
+      "score": 0.62,
       "tags": [
         "friendly",
         "projects"
@@ -34,7 +34,7 @@
       "context": "Gurnoor's initiative helps Ankit share embedded-project ideas beyond his immediate lab group."
     },
     "ankit->lavanya_sharma": {
-      "score": 0.66,
+      "score": 0.68,
       "tags": [
         "collaboration",
         "prototyping"
@@ -42,7 +42,7 @@
       "context": "Ankit and Lavanya have complementary instincts: he cares about reliable electronics and she makes prototypes usable."
     },
     "ankit->parv_singla": {
-      "score": 0.58,
+      "score": 0.6,
       "tags": [
         "friendly",
         "community"
@@ -58,7 +58,7 @@
       "context": "Ankit values Riya's calm clarity and is happy to help with the practical side of reading-circle events."
     },
     "ankit->saksham": {
-      "score": 0.65,
+      "score": 0.67,
       "tags": [
         "friendship",
         "hardware"
@@ -66,7 +66,7 @@
       "context": "Ankit trusts Saksham to stay patient when a software-and-sensors problem needs methodical debugging."
     },
     "ankit->tanishq": {
-      "score": 0.52,
+      "score": 0.54,
       "tags": [
         "acquaintance",
         "tech"
@@ -98,7 +98,7 @@
       "context": "Ansh relies on Ghanisht's frank technical feedback and tries to turn it into more rigorous project work."
     },
     "ansh_batra->gurnoor_singh": {
-      "score": 0.67,
+      "score": 0.7,
       "tags": [
         "friendship",
         "projects"
@@ -114,7 +114,7 @@
       "context": "Ansh values Lavanya's product instincts and wants his data projects to feel useful outside a notebook."
     },
     "ansh_batra->parv_singla": {
-      "score": 0.64,
+      "score": 0.67,
       "tags": [
         "friendship",
         "club-work"
@@ -122,7 +122,7 @@
       "context": "Parv helps Ansh connect people around a project, while Ansh brings structure to the next steps."
     },
     "ansh_batra->riya_murarka": {
-      "score": 0.61,
+      "score": 0.66,
       "tags": [
         "friendship",
         "community"
@@ -138,7 +138,7 @@
       "context": "Ansh trusts Saksham's careful questions to keep a fast-moving project realistic."
     },
     "ansh_batra->tanishq": {
-      "score": 0.53,
+      "score": 0.57,
       "tags": [
         "acquaintance",
         "coding"
@@ -218,7 +218,7 @@
       "context": "They have overlapping gaming interests but have not spent much time together yet."
     },
     "ghanisht_kaushal->ankit": {
-      "score": 0.56,
+      "score": 0.58,
       "tags": [
         "friendly",
         "practical"
@@ -242,7 +242,7 @@
       "context": "He encourages Anubhav's research curiosity and makes time to troubleshoot difficult concepts."
     },
     "ghanisht_kaushal->gurnoor_singh": {
-      "score": 0.74,
+      "score": 0.76,
       "tags": [
         "friendship",
         "competition",
@@ -251,7 +251,7 @@
       "context": "They are competitive coders who respect each other's follow-through and enjoy a difficult build challenge."
     },
     "ghanisht_kaushal->lavanya_sharma": {
-      "score": 0.57,
+      "score": 0.66,
       "tags": [
         "respect",
         "prototype"
@@ -259,7 +259,7 @@
       "context": "Lavanya's hands-on design perspective complements Ghanisht's software-first instincts."
     },
     "ghanisht_kaushal->parv_singla": {
-      "score": 0.62,
+      "score": 0.64,
       "tags": [
         "friendship",
         "club-work"
@@ -267,7 +267,7 @@
       "context": "Parv's social energy helps pull Ghanisht out of long coding sessions for constructive club meetings."
     },
     "ghanisht_kaushal->riya_murarka": {
-      "score": 0.57,
+      "score": 0.64,
       "tags": [
         "respect",
         "collaboration"
@@ -275,7 +275,7 @@
       "context": "Ghanisht respects Riya's organised facilitation and seeks her feedback on making technical work clearer."
     },
     "ghanisht_kaushal->saksham": {
-      "score": 0.68,
+      "score": 0.72,
       "tags": [
         "reliable",
         "technical"
@@ -283,7 +283,7 @@
       "context": "Ghanisht Kaushal sees Saksham as a measured, dependable collaborator."
     },
     "ghanisht_kaushal->tanishq": {
-      "score": 0.5,
+      "score": 0.52,
       "tags": [
         "peer",
         "encouragement"
@@ -291,7 +291,7 @@
       "context": "Ghanisht sees potential in Tanishq's technical work and expects him to communicate directly and respectfully."
     },
     "gurnoor_singh->ankit": {
-      "score": 0.59,
+      "score": 0.61,
       "tags": [
         "friendly",
         "practical"
@@ -299,7 +299,7 @@
       "context": "Gurnoor Singh sees Ankit as a practical and patient technical peer."
     },
     "gurnoor_singh->ansh_batra": {
-      "score": 0.68,
+      "score": 0.71,
       "tags": [
         "collaboration",
         "data"
@@ -315,7 +315,7 @@
       "context": "They trade useful tools and research links without much pressure to socialise."
     },
     "gurnoor_singh->ghanisht_kaushal": {
-      "score": 0.76,
+      "score": 0.78,
       "tags": [
         "friendship",
         "rivalry",
@@ -324,7 +324,7 @@
       "context": "Their friendly project rivalry produces good work; both know the other will show up when needed."
     },
     "gurnoor_singh->lavanya_sharma": {
-      "score": 0.6,
+      "score": 0.62,
       "tags": [
         "friendship",
         "creative"
@@ -332,7 +332,7 @@
       "context": "They enjoy testing visual ideas for Lavanya's prototype presentations and keeping each other grounded."
     },
     "gurnoor_singh->parv_singla": {
-      "score": 0.85,
+      "score": 0.95,
       "tags": [
         "close-friends",
         "collaboration"
@@ -349,7 +349,7 @@
       "context": "Gurnoor enjoys photographing Riya's events and appreciates that she gives clear, kind feedback."
     },
     "gurnoor_singh->saksham": {
-      "score": 0.57,
+      "score": 0.64,
       "tags": [
         "reliable",
         "technical"
@@ -357,7 +357,7 @@
       "context": "Gurnoor Singh sees Saksham as a measured, dependable collaborator."
     },
     "gurnoor_singh->tanishq": {
-      "score": 0.57,
+      "score": 0.62,
       "tags": [
         "friendly",
         "mentoring"
@@ -365,7 +365,7 @@
       "context": "Gurnoor invites Tanishq to project sessions and respects steady improvement over showmanship."
     },
     "lavanya_sharma->ankit": {
-      "score": 0.65,
+      "score": 0.67,
       "tags": [
         "friendly",
         "practical"
@@ -389,7 +389,7 @@
       "context": "Lavanya likes Anubhav's patient technical questions and wants to test her prototype with him."
     },
     "lavanya_sharma->ghanisht_kaushal": {
-      "score": 0.6,
+      "score": 0.69,
       "tags": [
         "respect",
         "friendly-rivalry"
@@ -397,7 +397,7 @@
       "context": "They disagree productively about whether a prototype needs more code or better physical design."
     },
     "lavanya_sharma->gurnoor_singh": {
-      "score": 0.61,
+      "score": 0.63,
       "tags": [
         "friendship",
         "creative"
@@ -405,7 +405,7 @@
       "context": "Gurnoor's visual storytelling makes Lavanya's projects more approachable, which she values."
     },
     "lavanya_sharma->parv_singla": {
-      "score": 0.56,
+      "score": 0.58,
       "tags": [
         "friendly",
         "club-work"
@@ -413,7 +413,7 @@
       "context": "Parv is fun in group settings, though Lavanya pushes back when enthusiasm becomes a vague promise."
     },
     "lavanya_sharma->riya_murarka": {
-      "score": 0.81,
+      "score": 0.83,
       "tags": [
         "close-friends",
         "trust",
@@ -422,7 +422,7 @@
       "context": "Riya is Lavanya's most trusted reality check; they make time for each other's wins and worries."
     },
     "lavanya_sharma->saksham": {
-      "score": 0.54,
+      "score": 0.63,
       "tags": [
         "reliable",
         "technical"
@@ -430,7 +430,7 @@
       "context": "Lavanya Sharma sees Saksham as a measured, dependable collaborator."
     },
     "lavanya_sharma->tanishq": {
-      "score": 0.46,
+      "score": 0.53,
       "tags": [
         "new-acquaintance",
         "boundaries"
@@ -438,7 +438,7 @@
       "context": "Lavanya is open to collaborating if Tanishq communicates clearly, shares the work, and respects boundaries."
     },
     "parv_singla->ankit": {
-      "score": 0.57,
+      "score": 0.59,
       "tags": [
         "friendly",
         "practical"
@@ -446,7 +446,7 @@
       "context": "Parv Singla sees Ankit as a practical and patient technical peer."
     },
     "parv_singla->ansh_batra": {
-      "score": 0.65,
+      "score": 0.68,
       "tags": [
         "collaboration",
         "data"
@@ -462,7 +462,7 @@
       "context": "Parv checks in on Anubhav and makes room for him in group plans when academic stress builds."
     },
     "parv_singla->ghanisht_kaushal": {
-      "score": 0.65,
+      "score": 0.67,
       "tags": [
         "friendship",
         "collaboration"
@@ -470,7 +470,7 @@
       "context": "They balance Parv's big-picture energy with Ghanisht's careful execution."
     },
     "parv_singla->gurnoor_singh": {
-      "score": 0.87,
+      "score": 0.97,
       "tags": [
         "close-friends",
         "collaboration",
@@ -479,7 +479,7 @@
       "context": "They frequently build and critique ambitious AI ideas together, with enough trust to disagree honestly."
     },
     "parv_singla->lavanya_sharma": {
-      "score": 0.58,
+      "score": 0.6,
       "tags": [
         "friendly",
         "admiration"
@@ -495,7 +495,7 @@
       "context": "Parv admires Riya's ability to make an event feel welcoming without losing its purpose."
     },
     "parv_singla->saksham": {
-      "score": 0.61,
+      "score": 0.63,
       "tags": [
         "reliable",
         "technical"
@@ -503,7 +503,7 @@
       "context": "Parv Singla sees Saksham as a measured, dependable collaborator."
     },
     "parv_singla->tanishq": {
-      "score": 0.55,
+      "score": 0.6,
       "tags": [
         "friendship",
         "encouragement"
@@ -519,7 +519,7 @@
       "context": "Riya Murarka sees Ankit as a practical and patient technical peer."
     },
     "riya_murarka->ansh_batra": {
-      "score": 0.62,
+      "score": 0.67,
       "tags": [
         "collaboration",
         "data"
@@ -535,7 +535,7 @@
       "context": "Riya appreciates Anubhav's patient listening and occasionally swaps article recommendations with him."
     },
     "riya_murarka->ghanisht_kaushal": {
-      "score": 0.55,
+      "score": 0.62,
       "tags": [
         "respectful",
         "collaboration"
@@ -551,7 +551,7 @@
       "context": "Gurnoor's photography helps Riya with reading-circle posters; she trusts his practical feedback."
     },
     "riya_murarka->lavanya_sharma": {
-      "score": 0.79,
+      "score": 0.81,
       "tags": [
         "close-friends",
         "trust",
@@ -568,7 +568,7 @@
       "context": "Parv is reliably welcoming at club events, though his packed calendar makes plans change often."
     },
     "riya_murarka->saksham": {
-      "score": 0.56,
+      "score": 0.58,
       "tags": [
         "reliable",
         "technical"
@@ -584,7 +584,7 @@
       "context": "Riya has seen Tanishq at the library and responds warmly when he is thoughtful and respectful."
     },
     "saksham->ankit": {
-      "score": 0.64,
+      "score": 0.66,
       "tags": [
         "friendship",
         "hardware"
@@ -608,7 +608,7 @@
       "context": "Saksham and Anubhav trade debugging notes and enjoy low-key strategy games after a difficult week."
     },
     "saksham->ghanisht_kaushal": {
-      "score": 0.69,
+      "score": 0.73,
       "tags": [
         "respect",
         "algorithms"
@@ -616,7 +616,7 @@
       "context": "Saksham values Ghanisht's disciplined problem-solving and enjoys comparing clean solutions after practice."
     },
     "saksham->gurnoor_singh": {
-      "score": 0.58,
+      "score": 0.65,
       "tags": [
         "friendly",
         "projects"
@@ -624,7 +624,7 @@
       "context": "Gurnoor's ambitious builds give Saksham useful real-world problems to think through."
     },
     "saksham->lavanya_sharma": {
-      "score": 0.55,
+      "score": 0.64,
       "tags": [
         "friendly",
         "design"
@@ -632,7 +632,7 @@
       "context": "Saksham likes Lavanya's direct design feedback and offers to test the software side of her prototypes."
     },
     "saksham->parv_singla": {
-      "score": 0.62,
+      "score": 0.64,
       "tags": [
         "friendship",
         "club-work"
@@ -640,7 +640,7 @@
       "context": "Parv pulls Saksham into collaborative plans without making the quieter pace feel like a problem."
     },
     "saksham->riya_murarka": {
-      "score": 0.57,
+      "score": 0.59,
       "tags": [
         "respect",
         "reading-circle"
@@ -648,7 +648,7 @@
       "context": "Saksham appreciates Riya's thoughtful facilitation and occasionally asks for a reading recommendation between library sessions."
     },
     "saksham->tanishq": {
-      "score": 0.54,
+      "score": 0.56,
       "tags": [
         "acquaintance",
         "games"
@@ -656,7 +656,7 @@
       "context": "They have an easy opening through games and technical forums, though neither rushes the friendship."
     },
     "tanishq->ankit": {
-      "score": 0.51,
+      "score": 0.53,
       "tags": [
         "friendly",
         "practical"
@@ -664,7 +664,7 @@
       "context": "Tanishq sees Ankit as a practical and patient technical peer."
     },
     "tanishq->ansh_batra": {
-      "score": 0.54,
+      "score": 0.58,
       "tags": [
         "collaboration",
         "data"
@@ -680,7 +680,7 @@
       "context": "Tanishq sees an easy opening for a friendship through games and technical side projects."
     },
     "tanishq->ghanisht_kaushal": {
-      "score": 0.53,
+      "score": 0.55,
       "tags": [
         "respect",
         "mentoring"
@@ -688,7 +688,7 @@
       "context": "Tanishq appreciates Ghanisht's direct code reviews and wants to earn trust through reliable work."
     },
     "tanishq->gurnoor_singh": {
-      "score": 0.59,
+      "score": 0.64,
       "tags": [
         "friendship",
         "mentoring"
@@ -696,7 +696,7 @@
       "context": "Gurnoor makes project spaces less intimidating, and Tanishq is grateful for the invitation."
     },
     "tanishq->lavanya_sharma": {
-      "score": 0.47,
+      "score": 0.54,
       "tags": [
         "new-acquaintance",
         "respect"
@@ -704,7 +704,7 @@
       "context": "Tanishq is interested in Lavanya's robotics work and understands that collaboration begins with clear boundaries and shared effort."
     },
     "tanishq->parv_singla": {
-      "score": 0.58,
+      "score": 0.63,
       "tags": [
         "friendship",
         "encouragement"
@@ -720,7 +720,7 @@
       "context": "Tanishq values Riya's book recommendations and is practising being a considerate, unhurried conversational partner."
     },
     "tanishq->saksham": {
-      "score": 0.53,
+      "score": 0.55,
       "tags": [
         "reliable",
         "technical"
