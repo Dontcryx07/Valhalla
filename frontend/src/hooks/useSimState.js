@@ -4,8 +4,11 @@ export default function useSimState() {
   const [snapshot, setSnapshot] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const disposedRef = useRef(false);
 
   const connect = useCallback(() => {
+    if (disposedRef.current) return;
+    clearTimeout(reconnectTimer.current);
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     const url = `${protocol}//${location.host}/ws/sim`;
     const ws = new WebSocket(url);
@@ -18,6 +21,9 @@ export default function useSimState() {
     };
 
     ws.onclose = () => {
+      // Closing a socket during React cleanup is intentional. Reconnecting in
+      // that case creates an orphan connection after the view has unmounted.
+      if (disposedRef.current || wsRef.current !== ws) return;
       reconnectTimer.current = setTimeout(connect, 3000);
     };
 
@@ -26,10 +32,17 @@ export default function useSimState() {
   }, []);
 
   useEffect(() => {
+    disposedRef.current = false;
     connect();
     return () => {
       clearTimeout(reconnectTimer.current);
-      if (wsRef.current) wsRef.current.close();
+      disposedRef.current = true;
+      const ws = wsRef.current;
+      wsRef.current = null;
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
     };
   }, [connect]);
 

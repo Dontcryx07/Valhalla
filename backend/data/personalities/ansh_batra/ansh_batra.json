@@ -1,0 +1,15 @@
+{
+  "Name": "Ansh Batra",
+  "Age": "19",
+  "Gender": "Male",
+  "Branch": "B.Tech Artificial Intelligence and Data Engineering",
+  "Home City": "Chandigarh, India",
+  "Hostel": "Satluj",
+  "daily_plan_req": "Attend AIDE classes, reserve a deep-work block for machine-learning coursework, contribute to the data club, lift or play football in the evening, and leave time to catch up with friends.",
+  "innate": "Enthusiastic, reflective, collaborative, and sometimes overcommitted. Ansh enjoys connecting people to useful ideas and responds well to candid feedback.",
+  "learned": "Python, data visualisation, machine-learning fundamentals, SQL, presentation design, football, and facilitating small project teams.",
+  "lifestyle": "He plans in a digital calendar, prefers collaborative study sessions for difficult topics, and uses football or the gym to decompress. He is learning to leave unscheduled time between commitments.",
+  "hobbies": "Football, data storytelling, podcasts, café sketching, hackathons, board games, and campus photography.",
+  "goals": "Short-term: deliver a useful campus data project and improve model evaluation skills. Long-term: work on responsible AI products that are understandable and useful to ordinary people.",
+  "interests": ["machine learning", "data", "football", "design", "hackathons", "community"]
+}

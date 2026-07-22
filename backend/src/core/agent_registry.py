@@ -36,6 +36,7 @@ class AgentRuntimeState(BaseModel):
     last_conversation_partner: Optional[str] = None  # agent_id of most recent chat partner
     active_conversation: Optional[dict] = None  # {"partner_name": str, "partner_id": str, "messages": list[dict]}
     emotion_state: float = 0.5   # [0, 1], starts neutral
+    emotion_baseline: float = 0.5  # personality-derived normal mood; used for gentle recovery
     energy_level: float = 1.0    # [0, 1], starts full
     color: str = "#888888"  # frontend color (set by server on init)
 

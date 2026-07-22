@@ -1,8 +1,8 @@
 """
 Checkpoint Manager — per-tick state save/load for crash recovery.
 
-Saves WorldState + AgentRegistry after every tick to
-``backend/data/checkpoints/tick_{00001}.json``.
+Saves WorldState + AgentRegistry after every tick to compressed
+``backend/data/checkpoints/tick_{00001}.json.gz`` files.
 
 Supports:
   - Save: full simulation state as JSON
@@ -14,6 +14,7 @@ Supports:
 from __future__ import annotations
 
 import json
+import gzip
 import random
 import time as _time
 from pathlib import Path
@@ -29,16 +30,45 @@ logger = get_logger(__name__)
 
 CHECKPOINT_DIR = DATA_DIR / "checkpoints"
 HISTORY_DIR = DATA_DIR / "history"
-KEEP_LAST = 10
+# One full simulated day of per-tick snapshots gives observers a complete
+# rewind window without retaining prior days indefinitely.
+KEEP_LAST = 1440
 SCHEMA_VERSION = 2
+CHECKPOINT_SUFFIX = ".json.gz"
+LEGACY_CHECKPOINT_SUFFIX = ".json"
 
 
 def _tick_filename(tick: int) -> str:
-    return f"tick_{tick:05d}.json"
+    return f"tick_{tick:05d}{CHECKPOINT_SUFFIX}"
+
+
+def _legacy_tick_filename(tick: int) -> str:
+    return f"tick_{tick:05d}{LEGACY_CHECKPOINT_SUFFIX}"
 
 
 def _parse_tick_from_name(name: str) -> int:
-    return int(name.replace("tick_", "").replace(".json", ""))
+    if name.endswith(CHECKPOINT_SUFFIX):
+        stem = name[: -len(CHECKPOINT_SUFFIX)]
+    elif name.endswith(LEGACY_CHECKPOINT_SUFFIX):
+        stem = name[: -len(LEGACY_CHECKPOINT_SUFFIX)]
+    else:
+        raise ValueError(f"not a checkpoint filename: {name}")
+    return int(stem.removeprefix("tick_"))
+
+
+def _checkpoint_path(tick: int) -> Path:
+    """Prefer compressed checkpoints while retaining read compatibility."""
+    compressed = CHECKPOINT_DIR / _tick_filename(tick)
+    if compressed.exists():
+        return compressed
+    return CHECKPOINT_DIR / _legacy_tick_filename(tick)
+
+
+def _checkpoint_paths(tick: int) -> tuple[Path, Path]:
+    return (
+        CHECKPOINT_DIR / _tick_filename(tick),
+        CHECKPOINT_DIR / _legacy_tick_filename(tick),
+    )
 
 
 # ------------------------------------------------------------------ #
@@ -60,8 +90,6 @@ def _manager_to_dict(manager: AgentActionManager) -> Dict[str, Any]:
         "last_action": _action_dict(manager.last_action),
         "current_action": _action_dict(manager.current_action),
         "next_action": _action_dict(manager.next_action),
-        "_plan_index": manager._plan_index,
-        "_initialized": manager._initialized,
         "_conversation_mode": manager._conversation_mode,
         "_pending_plan_action": _action_dict(manager._pending_plan_action),
         "_entered_last_action": manager._entered_last_action,
@@ -84,6 +112,7 @@ def _agent_to_dict(state: AgentRuntimeState) -> Dict[str, Any]:
         "last_conversation_partner": state.last_conversation_partner,
         "active_conversation": state.active_conversation,
         "emotion_state": state.emotion_state,
+        "emotion_baseline": state.emotion_baseline,
         "energy_level": state.energy_level,
         "color": state.color,
         "manager": _manager_to_dict(state.manager) if state.manager else None,
@@ -96,7 +125,7 @@ def save_checkpoint(
     tick: int,
     engine_state: Optional[Dict[str, Any]] = None,
 ) -> Optional[Path]:
-    """Save current simulation state to a checkpoint JSON file."""
+    """Save current simulation state as an atomically replaced gzip JSON file."""
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
     path = CHECKPOINT_DIR / _tick_filename(tick)
 
@@ -119,8 +148,9 @@ def save_checkpoint(
         "saved_at": _time.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, default=str))
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with gzip.open(tmp, "wt", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, separators=(",", ":"), default=str))
     tmp.replace(path)
 
     return path
@@ -178,8 +208,6 @@ def _restore_manager(
         manager.last_action = _action_from_dict(m.get("last_action"))
         manager.current_action = _action_from_dict(m.get("current_action"))
         manager.next_action = _action_from_dict(m.get("next_action"))
-        manager._plan_index = m.get("_plan_index", 0)
-        manager._initialized = m.get("_initialized", False)
         manager._conversation_mode = m.get("_conversation_mode", False)
         manager._pending_plan_action = _action_from_dict(m.get("_pending_plan_action"))
         manager._entered_last_action = m.get("_entered_last_action", False)
@@ -193,11 +221,15 @@ def load_checkpoint(
     return_metadata: bool = False,
 ) -> Tuple[WorldState, AgentRegistry] | Tuple[WorldState, AgentRegistry, Dict[str, Any]]:
     """Load simulation state from a checkpoint file."""
-    path = CHECKPOINT_DIR / _tick_filename(tick)
+    path = _checkpoint_path(tick)
     if not path.exists():
         raise FileNotFoundError(f"No checkpoint for tick {tick} at {path}")
 
-    raw = json.loads(path.read_text())
+    if path.suffix == ".gz":
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            raw = json.load(handle)
+    else:
+        raw = json.loads(path.read_text(encoding="utf-8"))
 
     if raw.get("random_state") is not None:
         random.setstate(_lists_to_tuples(raw["random_state"]))
@@ -224,6 +256,7 @@ def load_checkpoint(
             last_conversation_partner=agent_data.get("last_conversation_partner"),
             active_conversation=agent_data.get("active_conversation"),
             emotion_state=agent_data.get("emotion_state", 0.5),
+            emotion_baseline=agent_data.get("emotion_baseline", 0.5),
             energy_level=agent_data.get("energy_level", 1.0),
             color=agent_data.get("color", "#888888"),
         )
@@ -252,12 +285,14 @@ def list_checkpoints() -> List[int]:
         return []
     ticks = []
     for f in sorted(CHECKPOINT_DIR.iterdir()):
-        if f.is_file() and f.name.startswith("tick_") and f.suffix == ".json":
+        if f.is_file() and f.name.startswith("tick_") and (
+            f.name.endswith(CHECKPOINT_SUFFIX) or f.name.endswith(LEGACY_CHECKPOINT_SUFFIX)
+        ):
             try:
-                ticks.append(_parse_tick_from_name(f.stem))
+                ticks.append(_parse_tick_from_name(f.name))
             except (ValueError, IndexError):
                 continue
-    return sorted(ticks)
+    return sorted(set(ticks))
 
 
 def prune_checkpoints(keep_last: int = KEEP_LAST) -> int:
@@ -270,12 +305,14 @@ def prune_checkpoints(keep_last: int = KEEP_LAST) -> int:
     to_delete = ticks[:-keep_last]
     count = 0
     for t in to_delete:
-        path = CHECKPOINT_DIR / _tick_filename(t)
-        try:
-            path.unlink()
-            count += 1
-        except OSError as e:
-            logger.warning("[Checkpoint] failed to delete %s: %s", path, e)
+        for path in _checkpoint_paths(t):
+            if not path.exists():
+                continue
+            try:
+                path.unlink()
+                count += 1
+            except OSError as e:
+                logger.warning("[Checkpoint] failed to delete %s: %s", path, e)
 
     if count:
         logger.info("[Checkpoint] pruned %d old checkpoints, kept last %d", count, keep_last)

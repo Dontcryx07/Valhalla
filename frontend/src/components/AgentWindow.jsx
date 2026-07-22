@@ -8,42 +8,38 @@ function emotionLabel(value) {
   if (value == null) return "Neutral";
   if (value >= 0.9) return "Extremely Joyful";
   if (value >= 0.7) return "Very Happy";
-  if (value >= 0.5) return "Happy";
+  if (value > 0.5) return "Happy";
   if (value >= 0.3) return "Neutral";
   if (value >= 0.1) return "Sad";
   return "Extremely Sad";
 }
 
-export default function AgentWindow({ agentId, data, speed, defaultPosition, focused, onFocus }) {
+export default function AgentWindow({ agentId, data, speed, defaultPosition, expanded = false, expandedLayer = 0, onToggle }) {
   const nodeRef = useRef(null);
-  const [minimized, setMinimized] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [position, setPosition] = useState(defaultPosition);
   const [revealedCounts, setRevealedCounts] = useState({});
 
   const action = data.current_action;
   const conversation = data.conversation;
   const paused = data.paused;
-
-  // Accumulate conversation history
-  useEffect(() => {
-    if (!conversation) return;
-    setHistory((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && last.partner_name === conversation.partner_name) {
-        const lastMsg = last.messages[last.messages.length - 1];
-        const newMsg = conversation.messages[conversation.messages.length - 1];
-        if (lastMsg && newMsg && lastMsg.text === newMsg.text) return prev;
-      }
-      return [...prev, { ...conversation, timestamp: Date.now() }];
-    });
-  }, [conversation]);
+  const conversationId = conversation
+    ? `${conversation.partner_id || conversation.partner_name}_${conversation.started_tick ?? "pending"}`
+    : null;
+  // A transcript belongs to the live conversation state, not to the agent
+  // card's lifetime.  The backend clears this state when the simulated chat
+  // finishes; rendering only an active/generating conversation automatically
+  // collapses the chat panel as the agent starts their next task.
+  const showConversation = Boolean(
+    conversation?.messages?.length
+      && ["generating", "active"].includes(conversation.status)
+  );
 
   // Staged message reveal: when a new conversation arrives, reveal messages
   // one-by-one based on duration / message count.
   const realMsPerSimMinute = speed?.real_ms_per_sim_minute || 40000;
   useEffect(() => {
     if (!conversation?.messages?.length || !conversation.duration_minutes) return;
-    const key = `${conversation.partner_name}_${conversation.messages.length}_${Date.now()}`;
+    const key = conversationId;
     const msgs = conversation.messages.length;
     const totalMs = conversation.duration_minutes * realMsPerSimMinute;
     const delayPerMsg = totalMs / msgs;
@@ -61,29 +57,48 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, foc
     }, delayPerMsg);
 
     return () => clearInterval(timer);
-  }, [conversation?.messages?.length, conversation?.duration_minutes]);
+  }, [conversationId, conversation?.messages?.length, conversation?.duration_minutes]);
 
-  const locationLabel = data.position?.location_id || null;
+  const locationLabel = action?.action_type === "move"
+    ? `EN ROUTE → ${action.location_id || "destination"}`
+    : data.position?.location_id || null;
   const pos = data.position
     ? `(${Math.round(data.position.x)}, ${Math.round(data.position.y)})`
     : null;
 
+  // `react-draggable` bounds movement using the card's size when the drag
+  // starts. A compact card can therefore be placed near an edge and become
+  // partly off-screen when its details increase the size. Clamp the saved
+  // position after every expand/collapse transition as a second boundary.
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (!node) return;
+    const maxX = Math.max(0, window.innerWidth - node.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - node.offsetHeight);
+    setPosition((previous) => ({
+      x: Math.min(Math.max(0, previous.x), maxX),
+      y: Math.min(Math.max(0, previous.y), maxY),
+    }));
+  }, [expanded]);
+
   return (
     <Draggable
       nodeRef={nodeRef}
-      defaultPosition={defaultPosition}
-      handle=".window-handle"
+      position={position}
+      onDrag={(_event, dragData) => setPosition({ x: dragData.x, y: dragData.y })}
+      handle=".agent-window-drag-handle"
+      cancel=".agent-window-toggle, .agent-window-title"
       bounds="parent"
     >
       <div
         ref={nodeRef}
         style={{
           position: "absolute",
-          width: 260,
+          width: expanded ? 260 : 214,
           background: "rgba(10,10,10,0.88)",
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)",
-          border: focused
+          border: expanded
             ? `1px solid ${data.color}`
             : paused
             ? `1px solid ${data.color}40`
@@ -93,8 +108,8 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, foc
           color: "#d0d0da",
           fontFamily: "'Outfit', sans-serif",
           userSelect: "none",
-          zIndex: focused ? 200 : paused ? 100 : 10,
-          boxShadow: focused
+          zIndex: expanded ? 300 + expandedLayer : paused ? 100 : 10,
+          boxShadow: expanded
             ? `0 0 28px ${data.color}55, 0 4px 24px rgba(0,0,0,0.5)`
             : paused
             ? `0 0 24px ${data.color}25, 0 4px 24px rgba(0,0,0,0.5)`
@@ -102,34 +117,70 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, foc
           transition: "box-shadow 0.3s, border-color 0.3s",
         }}
       >
-        <div className="window-handle" style={{ cursor: "grab" }} onClick={onFocus}>
-          <WindowHeader
-            name={data.name}
-            color={data.color}
-            actionType={action?.action_type}
-          />
+        <div className="agent-window-drag-handle" style={{ display: "flex", alignItems: "flex-start", gap: 6, minHeight: 22, cursor: "grab" }}>
+          <span
+            className="agent-window-drag-grip"
+            aria-label={`Drag ${data.name}'s inspector`}
+            title="Drag inspector"
+            style={{ color: "#6b6b78", fontFamily: "'Space Mono', monospace", fontSize: 11, lineHeight: "20px" }}
+          >
+            ≡
+          </span>
           <button
-            onClick={() => setMinimized(!minimized)}
+            className="agent-window-title"
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            title={expanded ? "Collapse details" : "Show details"}
             style={{
-              position: "absolute",
-              top: 6,
-              right: 8,
-              background: "none",
-              border: "none",
-              color: "#6b6b78",
+              flex: 1, minWidth: 0, border: 0, padding: 0, margin: 0,
+              background: "transparent", textAlign: "left", cursor: "pointer", color: "inherit",
+            }}
+          >
+            <WindowHeader name={data.name} color={data.color} />
+          </button>
+          <button
+            className="agent-window-toggle"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggle();
+            }}
+            aria-label={expanded ? `Collapse ${data.name}'s details` : `Show ${data.name}'s details`}
+            aria-expanded={expanded}
+            title={expanded ? "Collapse details" : "Show details"}
+            style={{
+              flex: "0 0 auto",
+              marginTop: 0,
+              background: "rgba(212,160,74,0.06)",
+              border: "1px solid rgba(212,160,74,0.22)",
+              borderRadius: 3,
+              color: "#d4a04a",
               cursor: "pointer",
               fontSize: 13,
               fontFamily: "'Space Mono', monospace",
               transition: "color 0.2s",
+              width: 20,
+              height: 18,
+              lineHeight: 1,
             }}
-            onMouseEnter={(e) => e.target.style.color = "#d4a04a"}
-            onMouseLeave={(e) => e.target.style.color = "#6b6b78"}
           >
-            {minimized ? "+" : "–"}
+            {expanded ? "−" : "+"}
           </button>
         </div>
 
-        {!minimized && (
+        {!expanded ? (
+          <div style={{
+            color: "#9b9ba8", fontSize: 10, lineHeight: 1.35, paddingRight: 5,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }} title={`${data.position?.location_id || "Unknown"} — ${data.activity || "Idle"}`}>
+            <span style={{ color: "#6b6b78", fontFamily: "'Space Mono', monospace", fontSize: 8 }}>
+              {data.position?.location_id || "UNKNOWN"}
+            </span>
+            <span style={{ color: "#5a5a66", margin: "0 5px" }}>·</span>
+            {data.activity || "Idle"}
+          </div>
+        ) : (
           <>
             {/* Location */}
             <div style={{
@@ -143,6 +194,15 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, foc
             </div>
 
             <ActionDetail action={action} />
+
+            {action?.event_id && (
+              <div style={{
+                marginTop: 5, color: "#6f9fd1", fontSize: 8, letterSpacing: 0.7,
+                fontFamily: "'Space Mono', monospace", textTransform: "uppercase",
+              }}>
+                Campus event · {action.event_id}
+              </div>
+            )}
 
             {/* Energy bar */}
             <div style={{ marginBottom: 4 }}>
@@ -178,28 +238,15 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, foc
               </div>
             )}
 
-            {/* Conversation history with staged reveal */}
-            {history.map((conv, i) => {
-              const convKey = conv.timestamp || i;
-              const revealed = revealedCounts[convKey] ?? conv.messages?.length ?? 0;
-              return (
-                <div key={convKey}>
-                  {i > 0 && (
-                    <div style={{
-                      height: 1,
-                      background: "rgba(212,160,74,0.08)",
-                      margin: "8px 0",
-                    }} />
-                  )}
-                  <ChatPanel
-                    conversation={conv}
-                    selfId={data.name}
-                    color={data.color}
-                    revealedCount={revealed}
-                  />
-                </div>
-              );
-            })}
+            {/* The panel unmounts when the next non-chat action starts. */}
+            {showConversation && (
+              <ChatPanel
+                conversation={conversation}
+                selfId={data.name}
+                color={data.color}
+                revealedCount={revealedCounts[conversationId] ?? conversation.messages.length}
+              />
+            )}
           </>
         )}
       </div>

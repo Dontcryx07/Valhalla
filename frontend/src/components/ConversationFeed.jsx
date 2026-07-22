@@ -5,7 +5,7 @@ const SENTIMENT_COLOR = {
   negative: "#ff6b6b",
 };
 
-export default function ConversationFeed({ conversations }) {
+export default function ConversationFeed({ conversations, minimized = false, onToggleMinimized }) {
   if (!conversations || conversations.length === 0) return null;
 
   return (
@@ -14,8 +14,8 @@ export default function ConversationFeed({ conversations }) {
       top: 16,
       right: 16,
       width: 290,
-      maxHeight: "60vh",
-      overflowY: "auto",
+      maxHeight: minimized ? "none" : "60vh",
+      overflowY: minimized ? "hidden" : "auto",
       background: "rgba(0,0,0,0.82)",
       backdropFilter: "blur(10px)",
       border: "1px solid rgba(212,160,74,0.12)",
@@ -25,16 +25,27 @@ export default function ConversationFeed({ conversations }) {
       zIndex: 1000,
     }}>
       <div style={{
+        display: "flex",
+        alignItems: "center",
         fontSize: 8,
         letterSpacing: 1.2,
         textTransform: "uppercase",
         color: "#6b6b78",
-        marginBottom: 8,
+        marginBottom: minimized ? 0 : 8,
         fontFamily: "'Space Mono', monospace",
       }}>
-        Conversation Feed
+        <span>Conversation Feed</span>
+        <button
+          type="button"
+          onClick={onToggleMinimized}
+          aria-label={minimized ? "Maximize conversation feed" : "Minimize conversation feed"}
+          title={minimized ? "Maximize conversation feed" : "Minimize conversation feed"}
+          style={{ marginLeft: "auto", width: 20, height: 18, padding: 0, border: "1px solid rgba(212,160,74,0.22)", borderRadius: 3, background: "rgba(212,160,74,0.06)", color: "#d4a04a", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: 13, lineHeight: 1 }}
+        >
+          {minimized ? "+" : "−"}
+        </button>
       </div>
-      {conversations.map((c, i) => (
+      {!minimized && conversations.map((c, i) => (
         <div key={i} style={{
           marginBottom: 9,
           paddingBottom: 9,

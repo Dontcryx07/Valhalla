@@ -156,7 +156,10 @@ class WorldState(BaseModel):
         *different* agent -- resolver.py is expected to check this return
         value and arbitrate, not assume success.
         """
-        holder = self.occupancy.get(resource_id)
+        if resource_id not in self.occupancy:
+            logger.warning("Cannot occupy unregistered resource '%s'.", resource_id)
+            return False
+        holder = self.occupancy[resource_id]
         if holder is not None and holder != agent_id:
             return False
         self.occupancy[resource_id] = agent_id
@@ -176,6 +179,12 @@ class WorldState(BaseModel):
 
     def set_agent_action(self, agent_id: str, action: CurrentAction) -> None:
         agent = self.get_agent(agent_id)
+        # The engine mirrors its registry into WorldState twice per tick.  That
+        # mirror must be idempotent: unchanged actions are not new replay
+        # events, and logging each mirror makes checkpoint history grow with
+        # every tick rather than with meaningful action transitions.
+        if agent.status == AgentStatus.ACTING and agent.current_action == action:
+            return
         agent.current_action = action
         agent.status = AgentStatus.ACTING
         agent.last_updated_tick = self.tick
@@ -196,9 +205,9 @@ class WorldState(BaseModel):
 
     # Conversation cooldown
 
-    def record_conversation(self, agent_id: str) -> None:
-        """Record that an agent just finished a conversation."""
-        self.agent_last_conversation[agent_id] = self.tick
+    def record_conversation(self, agent_id: str, tick: Optional[int] = None) -> None:
+        """Record that an agent finished a conversation at ``tick``."""
+        self.agent_last_conversation[agent_id] = self.tick if tick is None else tick
 
     def can_converse(self, agent_id: str, other_id: str) -> bool:
         """
@@ -238,5 +247,7 @@ class WorldState(BaseModel):
     # Tick control, moving the ticks
 
     def advance_tick(self, minutes: int = 10) -> None:
+        if minutes <= 0:
+            raise ValueError("minutes must be a positive integer")
         self.tick += minutes
         logger.debug("World tick advanced to %d", self.tick)

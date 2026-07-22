@@ -12,8 +12,12 @@ Implements MemoryStreamProtocol (from tick_graph.py) for tick-graph integration.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import os
 import re
+import tempfile
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -27,6 +31,8 @@ logger = get_logger(__name__)
 
 # Directory for short-term memory files
 SHORT_TERM_DIR = DATA_DIR / "Short_term_db"
+_DAY_LOCKS_GUARD = threading.Lock()
+_DAY_LOCKS: dict[Path, threading.RLock] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +48,7 @@ class DayEvent(BaseModel):
     success: Optional[bool] = None
     location: Optional[str] = None
     with_agent: Optional[str] = None
+    participants: Optional[list[str]] = None
     topic: Optional[str] = None
     summary: Optional[str] = None
     messages: Optional[list[dict]] = None
@@ -94,6 +101,22 @@ def _day_file_path(persona_name: str, date_str: str) -> Path:
     return _persona_dir(persona_name) / f"{date_str}.json"
 
 
+def _day_lock(persona_name: str, date_str: str) -> threading.RLock:
+    path = _day_file_path(persona_name, date_str).resolve()
+    with _DAY_LOCKS_GUARD:
+        return _DAY_LOCKS.setdefault(path, threading.RLock())
+
+
+def _mutate_day_data(persona_name: str, date_str: str, mutate) -> None:
+    """Serialize a complete same-day read/modify/write transaction."""
+    with _day_lock(persona_name, date_str):
+        data = _load_day_data(persona_name, date_str)
+        if data is None:
+            data = ShortTermDayData(persona_name=persona_name, date=date_str)
+        mutate(data)
+        _save_day_data(persona_name, date_str, data)
+
+
 def date_from_simulation_time(time_str: str) -> str:
     """
     Extract simulation date from a time string like '2026-07-03 06:00'.
@@ -126,9 +149,22 @@ def _load_day_data(persona_name: str, date_str: str) -> Optional[ShortTermDayDat
 
 
 def _save_day_data(persona_name: str, date_str: str, data: ShortTermDayData) -> None:
-    """Save day data to JSON file."""
+    """Atomically replace a day file so a process crash cannot leave partial JSON."""
     path = _day_file_path(persona_name, date_str)
-    path.write_text(data.model_dump_json(indent=2), encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = data.model_dump_json(indent=2)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".tmp", dir=path.parent, text=True,
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as temporary:
+            temporary.write(payload)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(temporary_name, path)
+    finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
     logger.debug("Saved short-term data for %s on %s to %s", persona_name, date_str, path)
 
 
@@ -155,38 +191,9 @@ def add_memory(agent_id: str, content: str, importance: Optional[int] = None, da
 
 
 def retrieve_memories(agent_id: str, query: str, k: int = 5, date_str: Optional[str] = None) -> list[str]:
-    """
-    Retrieve relevant memories for an agent using keyword matching.
-    Searches the given date (or real today) and yesterday by default.
-    """
-    results: list[str] = []
-    query_lower = query.lower()
-    
-    if date_str is None:
-        today = datetime.now(timezone.utc).date()
-    else:
-        try:
-            today = datetime.fromisoformat(date_str).date()
-        except Exception:
-            today = datetime.now(timezone.utc).date()
-    
-    for days_back in range(2):
-        check_date = (today - timedelta(days=days_back)).isoformat()
-        data = _load_day_data(agent_id, check_date)
-        if data is None:
-            continue
-        # Search events
-        for event in data.events:
-            event_text = json.dumps(event.model_dump(), default=str).lower()
-            if query_lower in event_text:
-                results.append(f"[{event.timestamp}] {event.type}: {event.details or event.action or event.outcome or event.summary}")
-        # Search conversations
-        for conv in data.conversations:
-            conv_text = json.dumps(conv.model_dump(), default=str).lower()
-            if query_lower in conv_text:
-                results.append(f"[{conv.timestamp}] Conversation with {', '.join(conv.participants)}: {conv.summary}")
-    
-    return results[:k]
+    """Retrieve durable context through the Qdrant semantic-memory RAG layer."""
+    from src.agents.Long_term import get_retriever
+    return get_retriever().retrieve(agent_id, query, k)
 
 
 # ---------------------------------------------------------------------------
@@ -242,32 +249,37 @@ def list_day_files(persona_name: str) -> list[str]:
 
 
 def archive_copy_no_llm(persona_name: str, date_str: str) -> bool:
-    """Append a compressed record of a short-term day into the agent's single
-    long-term memory file (no LLM). Used when consolidating stray day files."""
+    """Index a completed operational day without making a summary LLM call.
+
+    This is used only to clean up stray short-term files.  It never writes a
+    local long-term JSON archive, and it retains the source file on failure.
+    """
     data = _load_day_data(persona_name, date_str)
     if data is None:
         return False
-    append_to_long_term(persona_name, _compress_day(data.model_dump()))
-    return True
+    try:
+        from src.agents.Long_term import get_retriever
+        return bool(get_retriever().index_archive(persona_name, data.model_dump()))
+    except Exception as exc:
+        logger.warning("[Short_term] unable to index stray day %s for %s: %s", date_str, persona_name, exc)
+        return False
 
 
 def consolidate_to_single_day(persona_name: str, keep_date: str) -> list[str]:
     """Ensure the agent keeps only ONE short-term file (for `keep_date`).
-    Any other day files are archived to Long_term_db (no LLM) and removed from
-    short-term. Returns the list of dates that were pushed to long-term.
+    Any other day files are indexed into Qdrant (no LLM) and removed only
+    after Qdrant confirms the write. Returns the dates safely removed.
     """
     moved: list[str] = []
-    # Migrate any legacy per-date long-term files into the single memory.json.
-    _load_longterm(persona_name)
     for date_str in list_day_files(persona_name):
         if date_str == keep_date:
             continue
-        archive_copy_no_llm(persona_name, date_str)
-        clear_short_term_data(persona_name, date_str)
-        moved.append(date_str)
+        if archive_copy_no_llm(persona_name, date_str):
+            clear_short_term_data(persona_name, date_str)
+            moved.append(date_str)
     if moved:
         logger.info(
-            "[Short_term] consolidated %s: archived %d stray day file(s) to long-term (%s)",
+            "[Short_term] consolidated %s: indexed %d stray day file(s) into Qdrant (%s)",
             persona_name, len(moved), ", ".join(moved),
         )
     return moved
@@ -278,16 +290,12 @@ def append_event(persona_name: str, date_str: str, event: dict) -> None:
     Append an event during the day.
     event dict should have: type, action, outcome, success, location, details, etc.
     """
-    data = _load_day_data(persona_name, date_str)
-    if data is None:
-        data = ShortTermDayData(persona_name=persona_name, date=date_str)
-    
-    # Add timestamp if not provided
-    if "timestamp" not in event:
-        event["timestamp"] = datetime.now(timezone.utc).isoformat()
-    
-    data.events.append(DayEvent(**event))
-    _save_day_data(persona_name, date_str, data)
+    entry = dict(event)
+    entry.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    _mutate_day_data(
+        persona_name, date_str,
+        lambda data: data.events.append(DayEvent(**entry)),
+    )
 
 
 def append_conversation(persona_name: str, date_str: str, conversation: dict) -> None:
@@ -295,15 +303,12 @@ def append_conversation(persona_name: str, date_str: str, conversation: dict) ->
     Append a conversation during the day.
     conversation dict: participants, messages, summary
     """
-    data = _load_day_data(persona_name, date_str)
-    if data is None:
-        data = ShortTermDayData(persona_name=persona_name, date=date_str)
-    
-    if "timestamp" not in conversation:
-        conversation["timestamp"] = datetime.now(timezone.utc).isoformat()
-    
-    data.conversations.append(ConversationEntry(**conversation))
-    _save_day_data(persona_name, date_str, data)
+    entry = dict(conversation)
+    entry.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    _mutate_day_data(
+        persona_name, date_str,
+        lambda data: data.conversations.append(ConversationEntry(**entry)),
+    )
 
 
 def append_world_snapshot(persona_name: str, date_str: str, snapshot: dict) -> None:
@@ -311,15 +316,12 @@ def append_world_snapshot(persona_name: str, date_str: str, snapshot: dict) -> N
     Append a world state snapshot during the day.
     snapshot dict: location, nearby_agents, weather, details
     """
-    data = _load_day_data(persona_name, date_str)
-    if data is None:
-        data = ShortTermDayData(persona_name=persona_name, date=date_str)
-    
-    if "timestamp" not in snapshot:
-        snapshot["timestamp"] = datetime.now(timezone.utc).isoformat()
-    
-    data.world_snapshots.append(WorldSnapshotEntry(**snapshot))
-    _save_day_data(persona_name, date_str, data)
+    entry = dict(snapshot)
+    entry.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    _mutate_day_data(
+        persona_name, date_str,
+        lambda data: data.world_snapshots.append(WorldSnapshotEntry(**entry)),
+    )
 
 
 def get_yesterday_data(persona_name: str, today_date: str) -> Optional[ShortTermDayData]:
@@ -343,57 +345,15 @@ def get_yesterday_summary(persona_name: str, today_date: str) -> Optional[str]:
     Get a text summary of yesterday for the day planner prompt.
     Returns None if no yesterday data exists.
     """
-    yesterday_data = get_yesterday_data(persona_name, today_date)
-    if yesterday_data is None:
-        return None
-    
-    if yesterday_data.daily_summary:
-        return yesterday_data.daily_summary
-    
-    # Fallback: generate a quick summary from events
-    if not yesterday_data.events:
-        return "No recorded events from yesterday."
-    
-    parts = [f"Yesterday ({yesterday_data.date}) summary for {yesterday_data.persona_name}:"]
-    
-    # Key events
-    action_events = [e for e in yesterday_data.events if e.type in ("action_started", "action_completed")]
-    for e in action_events[:5]:  # Limit
-        if e.type == "action_completed":
-            parts.append(f"  - Completed: {e.action} at {e.location} (outcome: {e.outcome}, success: {e.success})")
-        else:
-            parts.append(f"  - Started: {e.action} at {e.location}")
-    
-    # Conversations
-    for c in yesterday_data.conversations[:3]:
-        parts.append(f"  - Talked with {', '.join(c.participants)}: {c.summary}")
-    
-    return "\n".join(parts)
+    from src.agents.Long_term import get_retriever
+    return get_retriever().rolling_summary(persona_name, days=1, before_date=today_date)
 
 
 def get_relevant_memories(persona_name: str, today_date: str, query: str, k: int = 10) -> list[str]:
     """
-    Get relevant memories for the day planner prompt.
-    Loads yesterday + today's data and keyword-searches.
+    Get relevant long-term memories for model prompts through semantic search.
     """
-    results: list[str] = []
-    query_lower = query.lower()
-    
-    # Check today and yesterday
-    for date_str in [today_date]:
-        yesterday_data = get_yesterday_data(persona_name, today_date)
-        if yesterday_data:
-            # Yesterday's data
-            for event in yesterday_data.events:
-                event_text = json.dumps(event.model_dump(), default=str).lower()
-                if query_lower in event_text:
-                    results.append(f"[{event.timestamp}] {event.type}: {event.action or event.outcome or event.summary}")
-            for conv in yesterday_data.conversations:
-                conv_text = json.dumps(conv.model_dump(), default=str).lower()
-                if query_lower in conv_text:
-                    results.append(f"[{conv.timestamp}] Conversation: {conv.summary}")
-    
-    return results[:k]
+    return retrieve_memories(persona_name, query, k, date_str=today_date)
 
 
 # ---------------------------------------------------------------------------
@@ -493,91 +453,10 @@ async def finalize_day(persona_name: str, date_str: str) -> dict:
     }
 
 
-# Long-term archive directory
-LONG_TERM_DIR = DATA_DIR / "Long_term_db"
-
-
-# ---------------------------------------------------------------------------
-# Long-term memory = ONE compressed file per agent (Long_term_db/<agent>/memory.json)
-# ---------------------------------------------------------------------------
-
-def _safe(persona_name: str) -> str:
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", persona_name.strip()).strip("._-").lower() or "unknown"
-
-
-def _longterm_file(persona_name: str) -> Path:
-    return LONG_TERM_DIR / _safe(persona_name) / "memory.json"
-
-
-def _compress_day(data: dict, summary_text: Optional[str] = None) -> dict:
-    """Shrink a full short-term day into a compact long-term record."""
-    convs = data.get("conversations", []) or []
-    events = data.get("events", []) or []
-    return {
-        "date": data.get("date"),
-        "summary": summary_text or data.get("daily_summary") or "",
-        "conversations": [
-            {"participants": c.get("participants", []), "summary": c.get("summary", "")}
-            for c in convs
-        ],
-        "event_count": len(events),
-        "conversation_count": len(convs),
-    }
-
-
-def _load_longterm(persona_name: str) -> dict:
-    """Load the agent's single long-term file. Migrates any legacy per-date
-    files into it (and deletes them) the first time it's read."""
-    path = _longterm_file(persona_name)
-    if path.exists():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    mem = {"persona_name": persona_name, "days": []}
-    legacy_dir = LONG_TERM_DIR / _safe(persona_name)
-    migrated = False
-    if legacy_dir.is_dir():
-        for f in sorted(legacy_dir.glob("*.json")):
-            if f.name == "memory.json":
-                continue
-            try:
-                mem["days"].append(_compress_day(json.loads(f.read_text(encoding="utf-8"))))
-                migrated = True
-            except Exception:
-                pass
-            try:
-                f.unlink()  # remove the legacy per-date file
-            except Exception:
-                pass
-    if migrated:
-        mem["days"].sort(key=lambda d: d.get("date", ""))
-        _save_longterm(persona_name, mem)  # persist immediately so nothing is lost
-    return mem
-
-
-def _save_longterm(persona_name: str, mem: dict) -> None:
-    path = _longterm_file(persona_name)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(mem, indent=2), encoding="utf-8")
-
-
-def append_to_long_term(persona_name: str, day_entry: dict) -> None:
-    """Add (or replace) one compressed day record in the agent's single
-    long-term memory file, keeping entries sorted by date."""
-    mem = _load_longterm(persona_name)
-    days = [d for d in mem.get("days", []) if d.get("date") != day_entry.get("date")]
-    days.append(day_entry)
-    days.sort(key=lambda d: d.get("date", ""))
-    mem["days"] = days
-    mem["persona_name"] = persona_name
-    _save_longterm(persona_name, mem)
-
-
 async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
     """
-    End-of-day archival: generate a daily summary, compress the day, and append
-    it to the agent's single long-term memory file.
+    End-of-day archival: generate a daily summary and persist its durable
+    records directly to Qdrant.  No Long_term_db JSON file is created.
 
     Returns the archive payload dict with keys: summary, persona_name, date,
     event_count, conversation_count.
@@ -587,10 +466,37 @@ async def archive_to_long_term(persona_name: str, date_str: str) -> dict:
     if data is None:
         return {"summary": f"No data for {persona_name} on {date_str}"}
 
-    append_to_long_term(persona_name, _compress_day(data, summary_text=result.get("summary")))
+    # Offline/local runs intentionally disable the Qdrant-backed long-term
+    # store.  Treat this as an explicit, successful skip rather than trying a
+    # known-unavailable retriever and turning every midnight handoff into an
+    # archive failure.
+    from src import config as _cfg
+    if not _cfg.SEMANTIC_MEMORY_ENABLED:
+        logger.info("[Short_term] semantic archival disabled; skipped %s on %s", persona_name, date_str)
+        return {
+            "summary": result.get("summary", ""),
+            "persona_name": persona_name,
+            "date": date_str,
+            "event_count": len(data.get("events", [])),
+            "conversation_count": len(data.get("conversations", [])),
+            "skipped": True,
+        }
+
+    try:
+        from src.agents.Long_term import get_retriever
+        retriever = get_retriever()
+        indexed = await asyncio.to_thread(retriever.index_archive, persona_name, data)
+        if indexed <= 0 and data.get("daily_summary"):
+            raise RuntimeError("Qdrant did not acknowledge any durable memory records")
+    except Exception as exc:
+        # The short-term source remains in place so an operator can retry.  Do
+        # not silently claim archival success when Qdrant is the only durable
+        # long-term store.
+        logger.error("[Short_term] Qdrant archive failed for %s: %s", persona_name, exc)
+        raise
 
     logger.info(
-        "[Short_term] archived %s on %s into single long-term file (%d events, %d conversations)",
+        "[Short_term] archived %s on %s into Qdrant (%d events, %d conversations)",
         persona_name, date_str,
         len(data.get("events", [])), len(data.get("conversations", [])),
     )

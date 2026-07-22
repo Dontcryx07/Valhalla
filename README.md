@@ -1,251 +1,319 @@
-# Valhalla — A Living Simulation of IIT Ropar
+# Valhalla
 
-Valhalla is a small, living model of campus life. A handful of AI students —
-each with their own personality, hostel, hobbies, and goals — wake up on a
-pixel map of IIT Ropar, plan their day, walk around, notice the people near
-them, stop to talk, remember what happened, and carry those memories into the
-next day. You watch it all unfold on a map in your browser.
+Valhalla is a multi-agent simulation of IIT Ropar. AI student personas plan
+their day, move around a campus map, talk when they meet, and retain memories
+across simulation days. The backend is a FastAPI service; the browser client
+shows the live campus state.
 
-This document explains, in plain language, how the whole thing works and how
-to run it — no prior knowledge of the code required.
+## What the simulation does
 
----
+- Each persona has a profile, hostel, goals, interests, energy, and emotion.
+- The simulation clock advances in configurable simulated-minute steps.
+- Students follow AI-generated day plans and use grid pathfinding to move.
+- When two eligible students are close enough, a Gemini-generated conversation
+  is stored for both of them and can affect later memories.
+- At a day boundary, the running simulation keeps the same students and action
+  state. It allows active conversation work a bounded time to finish, archives
+  the completed day, then installs continuity-aware plans for the next day.
+- Checkpoints preserve the world, agent action state, pending conversations,
+  relationships, and random state for recovery.
 
-## The Big Picture
+## Requirements
 
-Think of each student as having two parts, like a person:
+- Python 3.11 or later
+- A Google Gemini API key
+- Node.js and npm only when building or developing the frontend
+- Optional: a Cloud Qdrant cluster for semantic long-term memory
 
-- **A brain** that senses the world, remembers, and decides.
-- **A body** that actually walks around and does things.
+## Start from scratch
 
-The brain never moves the student directly. It *decides* ("keep studying",
-"go to the mess", "say hi to a friend") and then tells the body to carry it
-out. This mirrors how people work, and it keeps the thinking cleanly separated
-from the doing.
+Run all commands below from the repository root in PowerShell.
 
-A central clock ("the world") advances by a configurable number of simulated
-minutes on each tick. All students act together, then the world checks who is
-near whom. The wall-clock length of a simulated day is:
-
-```text
-1440 × real-seconds-per-simulated-minute ÷ speed multiplier
-```
-
-The code default is 4 seconds per simulated minute, but `.env` and command-line
-overrides take precedence. Check the status bar or run the settings command
-below for the active duration.
-
----
-
-## What Happens On Every Tick
-
-1. **The body moves.** Each student advances along their plan — a step down a
-   path, finishing an activity, or starting the next one. This is pure
-   movement; it costs nothing and never calls the AI.
-
-2. **They perceive.** Each student looks around a configurable circle (50
-   pixels by default) and notices nearby students and their activities. This
-   spatial check is simple geometry and does not itself call the AI.
-
-3. **They may talk.** If two students' circles overlap and the moment is right
-   (they're both awake and free, they haven't just spoken, and it's a clean
-   one‑on‑one — not a crowd), they strike up a conversation. The conversation
-   is written once by the AI, in a single request, and both students remember
-   it afterwards.
-
-4. **They decide when something changes.** A new nearby situation can prompt a
-   student to either continue their plan or request a remaining-day replan.
-   Energy, emotion, the daily replan limit, and the shared AI budget can all
-   suppress that request.
-
-5. **The day is archived and turns over.** Reaching the final planned activity
-   starts that student's archive early. At midnight, the running simulation
-   lets active conversations finish for a bounded time, performs a final
-   archive so late conversations are included, and installs the next-day plans
-   without replacing the students or their physical state.
-
-6. **A checkpoint is saved and broadcast.** The world writes recovery state and
-   sends the latest state to the browser so the map stays live.
-
----
-
-## Memory — How Students Remember
-
-Students have two layers of memory, like short‑term and long‑term recall:
-
-- **The day so far** — everything that happened today: the plan, the things
-  they did, who they saw, and every conversation.
-- **The past** — at the end of each day, that day is summarized and archived.
-  Those archives build up over time into a personal history.
-
-When a student plans their day or sits down to talk, they don't start from a
-blank slate. They **recall** the most relevant bits of their past — matched by
-topic and weighted toward what happened recently — plus a short summary of the
-last couple of days. That recall is fed into their planning and their
-conversations, so the simulation has genuine continuity: a project discussed
-yesterday can carry into today.
-
-There are two ways memory recall can work, and you choose which:
-
-- **Keyword recall (default).** Fast, fully offline, no extra setup. It matches
-  memories by shared words and recency. This is what the demo uses.
-- **Meaning‑based recall (optional).** A smarter mode that understands the
-  *meaning* of a query, so it can surface a related memory even when the exact
-  words differ. It uses Qdrant and Gemini embeddings, consumes budget, and is
-  off unless selected. If it is unavailable, the system falls back to keyword
-  recall without stopping the simulation.
-
----
-
-## Being Careful With the AI Budget
-
-The AI runs on a small pool of free‑tier keys that are easily exhausted, so the
-simulation is designed to spend as little as possible.
-
-- **Movement and spatial checks cost nothing.** AI is used for initial plans,
-  conversations, and eligible decisions after a novel observation.
-- **Conversation is a single request.** After a chat, the current build resumes
-  the existing plan; it does not automatically generate a replacement plan.
-- **A budget watchdog** keeps a running count of AI usage. If you set a limit
-  and it's reached, the extra thinking is skipped and the simulation keeps
-  running on its free path — it never crashes for lack of budget.
-- **A slower clock helps too.** Increasing the configured wall-clock duration
-  spreads the same requests over more real time, which helps avoid per-minute
-  rate limits.
-
-The result: on a quiet stretch, the whole campus makes **zero** AI requests.
-
----
-
-## What You See In the Browser
-
-- **The campus map** with each student as a coloured dot that glides between
-  places. The map gently shifts from night to day and back as the clock moves.
-- **Name labels** on every student, and — when you focus one — a live line of
-  what they're doing right now.
-- **Click any student** (on the map, in the legend, or on their window) to
-  focus them: the view smoothly centres on them and they're highlighted.
-- **A legend** listing everyone by colour, with a marker when someone's
-  chatting.
-- **A conversation feed** on the right that fills in with each new chat — who
-  spoke, a one‑line summary, and where.
-- **Draggable student windows** showing each person's current activity and
-  their conversation history.
-- **A status bar** with the clock, day, pace, and how many students are active
-  or chatting.
-
----
-
-## How To Run It
-
-### 1. One‑time setup
+### 1. Create and activate a Python environment
 
 ```powershell
-# From the project root
 python -m venv venv
-.\venv\Scripts\activate
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Then open the `.env` file and add your Google Gemini API keys (`GEMINI_API_KEY_1`,
-`GEMINI_API_KEY_2`, …). At least one is required; more keys mean better
-resilience against rate limits.
+`requirements.txt` includes the Qdrant client. It is harmless when semantic
+memory is disabled.
 
-### 2. Run the web experience (recommended for the demo)
+### 2. Create `.env`
 
-```powershell
-python backend/server.py
-# then open http://127.0.0.1:8000
+Create a file named `.env` in the repository root. At minimum it needs a
+working Gemini key:
+
+```text
+GEMINI_API_KEY=your-google-gemini-api-key
 ```
 
-This starts a fresh simulation and the live map together. It removes prior
-short-term memory and checkpoints before preparing new day plans.
+Multiple keys can be supplied for rate-limit resilience:
 
-To continue from the latest checkpoint instead, run:
-
-```powershell
-python backend/server.py --resume-checkpoint
+```text
+GEMINI_API_KEYS=key-one,key-two,key-three
 ```
 
-The resume command never clears runtime data. If no checkpoint exists, it
-reports the issue instead of silently starting a new simulation.
+Alternatively, use `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on. Do not
+commit `.env` or any API key.
 
-### 3. Build the browser interface (first time, or after UI changes)
+### 3. Build the frontend
+
+The server can serve an existing frontend build. For a clean setup, create it:
 
 ```powershell
 cd frontend
 npm install
 npm run build
+cd ..
 ```
 
-For live UI development you can instead run `npm run dev`.
+For frontend development, use `npm run dev` from `frontend` instead.
 
-### 4. Run the simulation on its own (no browser)
+### 4. Start a fresh simulation
 
 ```powershell
-# One full day
+python backend/Odin.py
+```
+
+Open <http://127.0.0.1:8000>.
+
+This is intentionally a **fresh** start: it clears short-term runtime memory
+and checkpoints before it initializes a new simulation. Long-term archives are
+not cleared.
+
+### 5. Resume a saved simulation
+
+```powershell
+python backend/Odin.py --resume-checkpoint
+```
+
+This command preserves runtime data and restores the newest checkpoint. It
+fails instead of silently starting a new simulation when no checkpoint exists
+or when the checkpoint roster differs from the configured personas. Start a
+fresh simulation after adding, removing, or renaming personas.
+
+Use a different port when needed:
+
+```powershell
+python backend/Odin.py --port 8080
+```
+
+## Running without the browser
+
+```powershell
+# Run one simulated day.
 $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --days 1
 
-# Resume from where a previous run left off
+# Run several consecutive days while retaining the same agents and positions.
+$env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --days 3
+
+# Resume from a checkpoint.
 $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --resume
-```
 
-### 5. See the current settings at a glance
-
-```powershell
+# Print the active configuration.
 $env:PYTHONPATH="backend"; python backend/src/config.py
 ```
 
----
+## Runtime model
 
-## Settings You Can Change
+Each tick advances all agents, checks proximity, updates the live state, and
+writes checkpoints. The wall-clock duration of a full simulated day is:
 
-Every setting has a sensible default. You can change it in the `.env` file, or
-override it for a single run with a command‑line flag. A flag always wins over
-`.env`, which wins over the built‑in default.
-
-| What it controls | `.env` setting | Command‑line flag | Default |
-|---|---|---|---|
-| Overall speed multiplier | `SIM_TICK_SPEED` | `--tick-speed` | 1.0 |
-| Real seconds per simulated minute | `SIM_REAL_SECONDS_PER_SIM_MINUTE` | `--real-seconds-per-sim-minute` | 4.0 code default; use the formula above for day length |
-| How close counts as "near" (pixels) | `SIM_PERCEPTION_RADIUS_PX` | `--perception-radius-px` | 50 |
-| Memory recall mode | `SIM_MEMORY_BACKEND` | `--memory-backend` | keyword |
-| Max conversations per student per day | `SIM_MAX_CONVERSATIONS_PER_AGENT` | `--max-conversations` | 5 |
-| Max mid‑day replans per student | `SIM_MAX_REPLANS_PER_AGENT_PER_DAY` | `--max-replans` | 3 |
-| Conversation wait at day handoff | `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` | `--day-handoff-conversation-timeout` | 45 seconds |
-| AI requests allowed per real hour (0 = no limit) | `SIM_LLM_HOURLY_CEILING` | `--llm-hourly-ceiling` | 0 |
-
-Examples:
-
-```powershell
-# Faster day, tighter budget
-$env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --tick-speed 4 --llm-hourly-ceiling 30
-
-# Turn on meaning-based memory
-$env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --memory-backend vector
+```text
+1440 × SIM_REAL_SECONDS_PER_SIM_MINUTE ÷ SIM_TICK_SPEED
 ```
 
----
+The code defaults are one simulated minute per tick, four real seconds per
+simulated minute, and a speed multiplier of one. `.env` values can be
+overridden by the corresponding engine command-line flags.
 
-## Where Things Live
+At midnight, the same simulation instance continues into the next day. It waits
+up to `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` for active conversations,
+cancels any that exceed the limit, archives the finished day, and generates
+next-day plans with each student's ending location and wellbeing as context.
 
-| Folder | What's inside |
+## Runtime safeguards
+
+- Agents only start conversations after both have finished travelling and are
+  settled at the same location; close passes on unrelated routes do not pause
+  them for a chat.
+- Gemini decisions run in the background, so provider latency does not freeze
+  simulation ticks or WebSocket updates. Any unfinished decision is discarded
+  at day handoff and cannot replan the next day from stale context.
+- The planner validates time ranges, known locations, and unsafe activity text.
+  If retries are exhausted, its deterministic fallback replaces rejected
+  activities with neutral downtime while preserving a complete schedule.
+- The frontend shows a clear error state when a protected resume is rejected,
+  instead of rendering an empty campus.
+
+## Live UI and observability
+
+- Every agent card and the conversation feed have minimize/maximize controls.
+  A completed conversation is automatically minimized when either participant
+  starts their next task.
+- The feed retains recent completed conversations with their simulated time,
+  venue, participants, and summary. Active conversations stay visible for their
+  generated simulated duration rather than disappearing when the model call
+  completes.
+- The `DEBUG` control exposes bounded health telemetry: tick/time, moving and
+  paused agents, active conversations, background task counts, and detected
+  state anomalies.
+- Scheduled campus events are included in the live snapshot. Eligible agents
+  can add them to their plans, and the events panel shows upcoming and active
+  entries.
+
+## Memory
+
+Short-term runtime records live in `backend/data/Short_term_db/` only while a
+simulation day is active. Qdrant is the sole long-term database: each persona
+has an isolated collection. At day handoff, the system stores the daily
+summary, planned actions, completed actions, conversation summaries, and
+explicit durable events. It does not embed raw conversation transcripts or
+periodic world snapshots. After Qdrant acknowledges the archive, the completed
+short-term JSON is removed; no `Long_term_db/<persona>/memory.json` is written.
+
+### Qdrant semantic memory and RAG
+
+RAG is enabled by default. Before each model-facing planning, replan, decision,
+or conversation call, the application embeds a context-specific query,
+semantically retrieves candidate memories from that persona's Qdrant
+collection, ranks them by 65% semantic similarity, 20% importance, and 15%
+recency, then adds the highest-relevance, diverse results to the prompt.
+
+Qdrant must therefore be configured before running a persistent simulation:
+
+Add the following to `.env`:
+
+```text
+SIM_SEMANTIC_MEMORY_ENABLED=true
+QDRANT_URL=https://your-cluster.cloud.qdrant.io
+QDRANT_API_KEY=your-qdrant-api-key
+SIM_MEMORY_EMBEDDING_MODEL=gemini-embedding-001
+SIM_MEMORY_VECTOR_DIMENSIONS=768
+SIM_MEMORY_COLLECTION_VERSION=v1
+```
+
+If Qdrant or Gemini embeddings are unavailable, a model call receives no
+long-term context. A failed archival write retains the short-term source file
+and is reported as an archive failure; it is never replaced by keyword recall.
+
+### Cloud storage retention
+
+The application estimates its vector and payload footprint across all persona
+collections against a 4 GiB budget by default. When that estimate reaches 90%
+of the budget, it prunes Cloud Qdrant points until it reaches 85%.
+
+Pruning uses a persistent retention score: memory importance, how recently it
+was created or recalled, and how often semantic recall selected it. Low-value,
+old, and rarely recalled memories are removed first. Because Qdrant is the only
+long-term store, pruning is permanent; choose a larger budget/threshold if
+retaining every memory matters.
+
+Qdrant Cloud's dashboard remains the authoritative source for billed storage
+usage. Adjust the application guard if your Cloud plan differs from 4 GiB:
+
+```text
+SIM_MEMORY_MAX_STORAGE_GB=4
+SIM_MEMORY_STORAGE_PRUNE_THRESHOLD=0.90
+SIM_MEMORY_STORAGE_PRUNE_TARGET=0.85
+```
+
+To migrate old JSON archives once, verify the reported counts and then delete
+the legacy files explicitly:
+
+```powershell
+$env:PYTHONPATH="backend"; python -m src.agents.memory_index migrate-json --delete-source
+```
+
+Inspect a Qdrant collection:
+
+```powershell
+$env:PYTHONPATH="backend"; python -m src.agents.memory_index status --agent "Parv Singla"
+```
+
+### Clear all long-term memory
+
+This permanently deletes only non-empty Qdrant collections identified as
+Valhalla memory. It does **not** clear the current simulation, short-term
+runtime data, checkpoints, plans, personas, or environment files.
+
+```powershell
+$env:PYTHONPATH="backend"; python -m src.agents.memory_index clear --yes
+```
+
+The command does not stop a running simulator. If another process archives a
+completed day while or after the command runs, it can create new long-term
+memory again. The operation intentionally does not delete unrelated collections
+in a shared Qdrant cluster.
+
+If the embedding model or vector dimensions change, set a new collection
+version before storing new data. Do not mix embeddings from different models or
+dimensions in one collection.
+
+## Configuration reference
+
+| Purpose | Environment variable | Default |
+|---|---|---|
+| Initial simulation date | `SIM_START_DATE` | `2026-07-03` |
+| Initial simulation time | `SIM_START_TIME` | `00:00` |
+| Simulated minutes per tick | `SIM_MINUTES_PER_TICK` | `1` |
+| Real seconds per simulated minute | `SIM_REAL_SECONDS_PER_SIM_MINUTE` | `4.0` |
+| Simulation speed multiplier | `SIM_TICK_SPEED` | `1.0` |
+| Per-Gemini request deadline | `SIM_LLM_REQUEST_TIMEOUT_MS` | `10000` |
+| Entire Gemini fallback deadline | `SIM_LLM_CALL_DEADLINE_SECONDS` | `30` |
+| Retryable-key cooldown | `SIM_LLM_TRANSIENT_KEY_COOLDOWN_SECONDS` | `15` |
+| Maximum wait for a rate-spaced key | `SIM_LLM_KEY_ACQUIRE_WAIT_SECONDS` | `2` |
+| Perception radius | `SIM_PERCEPTION_RADIUS_PX` | `50` |
+| Conversation radius | `SIM_CONVERSATION_RADIUS_PX` | `20` |
+| Memory backend | `SIM_MEMORY_BACKEND` | Qdrant-only (fixed) |
+| Enable Cloud Qdrant memory | `SIM_SEMANTIC_MEMORY_ENABLED` | `true` |
+| Semantic-memory storage budget | `SIM_MEMORY_MAX_STORAGE_GB` | `4.0` |
+| Start pruning at this fraction of budget | `SIM_MEMORY_STORAGE_PRUNE_THRESHOLD` | `0.90` |
+| Prune down to this fraction of budget | `SIM_MEMORY_STORAGE_PRUNE_TARGET` | `0.85` |
+| Maximum conversations per agent/day | `SIM_MAX_CONVERSATIONS_PER_AGENT` | `5` |
+| Maximum replans per agent/day | `SIM_MAX_REPLANS_PER_AGENT_PER_DAY` | `3` |
+| LLM calls per real hour (`0` = unlimited) | `SIM_LLM_HOURLY_CEILING` | `0` |
+| Conversation handoff wait | `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` | `45` |
+
+Useful engine overrides:
+
+```powershell
+$env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --days 1 --tick-speed 4
+```
+
+## Data locations
+
+| Path | Contents |
 |---|---|
-| `backend/` | The simulation and the web server |
-| `backend/data/personalities/` | The student profiles |
-| `backend/data/Short_term_db/` | Each student's active-day plan and runtime history |
-| `backend/data/Long_term_db/` | The archived history each student builds up |
-| `backend/data/checkpoints/` | Save files for crash recovery |
-| `backend/data/environment/` | The campus places, entry points, and relationships |
-| `frontend/` | The browser map and panels |
-| `changes.md` | A detailed log of everything added in this project |
+| `backend/data/personalities/` | Persona profiles and initial hostels |
+| `backend/data/environment/` | Campus locations, entry points, and relationships |
+| `backend/data/Short_term_db/` | Active day plans, events, and conversations |
+| Qdrant Cloud persona collections | Durable semantic long-term memory |
+| `backend/data/checkpoints/` | Recovery checkpoints |
+| `backend/output/logs/` | Application logs |
 
----
+Short-term records, checkpoints, logs, frontend build output, and local test
+artifacts are generated runtime files and are gitignored. Persona profiles,
+environment definitions, relationships, and scheduled-event definitions are
+source data and should remain under version control.
 
-## A Note On Cost
+## Tests
 
-The number of AI requests in a simulated day depends on how many students there
-are and how often they meet — not on how fast the clock runs. Slowing the clock
-doesn't reduce the total; it just spreads it out so you stay under the free‑tier
-rate limits. For an accurate estimate of charges, use Google's own pricing
-tools for the Gemini API.
+```powershell
+$env:PYTHONPATH="backend"; python -m unittest backend.tests.test_vector_memory -v
+$env:PYTHONPATH="backend"; python -m unittest discover -s backend/tests -p "test_*.py" -v
+```
+
+The Cloud Qdrant integration test is intentionally guarded. Run it only with a
+dedicated disposable Cloud Qdrant test cluster:
+
+```powershell
+$env:RUN_QDRANT_INTEGRATION="1"
+$env:PYTHONPATH="backend"
+python -m unittest backend.tests.test_vector_memory -v
+```
+
+The test creates and removes its dedicated test collection.

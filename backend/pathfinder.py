@@ -1,10 +1,11 @@
 """
-Core pathfinding module — imported by server.py and pixel_pathfinder.py.
+Core pathfinding module — imported by Odin.py and pixel_pathfinder.py.
 Loads path.png into a set of walkable (white) pixels and provides
 BFS shortest_path(), stats(), and is_walkable() helpers.
 """
 
 import os
+import threading
 from collections import deque
 from PIL import Image
 
@@ -13,33 +14,40 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _path_img = None
 _white_pixels = None
 _W = _H = 0
+_load_lock = threading.Lock()
 
 
 def _load():
     global _path_img, _white_pixels, _W, _H
     if _white_pixels is not None:
         return
-    # path.png may live under frontend/, frontend/public/ (source) or
-    # frontend/dist/ (after a build). Use whichever exists.
-    candidates = [
-        os.path.join(ROOT, "frontend", "public", "path.png"),
-        os.path.join(ROOT, "frontend", "path.png"),
-        os.path.join(ROOT, "frontend", "dist", "path.png"),
-    ]
-    path_file = next((p for p in candidates if os.path.exists(p)), None)
-    if path_file is None:
-        raise FileNotFoundError(
-            "path.png not found in frontend/public, frontend, or frontend/dist"
-        )
-    _path_img = Image.open(path_file).convert("RGB")
-    _W, _H = _path_img.size
-    pix = _path_img.load()
-    _white_pixels = set()
-    for y in range(_H):
-        for x in range(_W):
-            r, g, b = pix[x, y]
-            if r == 255:
-                _white_pixels.add((x, y))
+    with _load_lock:
+        if _white_pixels is not None:
+            return
+        # path.png may live under frontend/, frontend/public/ (source) or
+        # frontend/dist/ (after a build). Use whichever exists.
+        candidates = [
+            os.path.join(ROOT, "frontend", "public", "path.png"),
+            os.path.join(ROOT, "frontend", "path.png"),
+            os.path.join(ROOT, "frontend", "dist", "path.png"),
+        ]
+        path_file = next((p for p in candidates if os.path.exists(p)), None)
+        if path_file is None:
+            raise FileNotFoundError(
+                "path.png not found in frontend/public, frontend, or frontend/dist"
+            )
+        # Copy decoded pixels while the image handle is open, then release the
+        # handle immediately so the source image is not locked on Windows.
+        with Image.open(path_file) as image:
+            rgb = image.convert("RGB")
+            _W, _H = rgb.size
+            pix = rgb.load()
+            _white_pixels = {
+                (x, y)
+                for y in range(_H)
+                for x in range(_W)
+                if pix[x, y] == (255, 255, 255)
+            }
 
 
 def _nearest_walkable(pt, max_r=60):
@@ -88,14 +96,19 @@ def shortest_path(start, end):
     end = _nearest_walkable(tuple(end))
     if start is None or end is None:
         return None
-    q = deque([(start, [start])])
-    seen = {start}
+    q = deque([start])
+    parents = {start: None}
     while q:
-        cur, path = q.popleft()
+        cur = q.popleft()
         if cur == end:
+            path = []
+            while cur is not None:
+                path.append(cur)
+                cur = parents[cur]
+            path.reverse()
             return path
         for nb in neighbors(*cur):
-            if nb not in seen and nb in _white_pixels:
-                seen.add(nb)
-                q.append((nb, path + [nb]))
+            if nb not in parents and nb in _white_pixels:
+                parents[nb] = cur
+                q.append(nb)
     return None

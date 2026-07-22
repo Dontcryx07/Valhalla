@@ -16,6 +16,9 @@ export default function ActionDetail({ action }) {
   const timeRange = action.start_time && action.end_time
     ? `${action.start_time} – ${action.end_time}`
     : null;
+  const routeProgress = action.action_type === "move" && action.path?.length > 1
+    ? Math.round(((action.path_index || 0) / (action.path.length - 1)) * 100)
+    : null;
 
   return (
     <div>
@@ -36,6 +39,11 @@ export default function ActionDetail({ action }) {
           marginTop: 2,
         }}>
           {timeRange}
+        </div>
+      )}
+      {routeProgress != null && (
+        <div style={{ fontSize: 8, color: "#5b9bd5", fontFamily: "'Space Mono', monospace", marginTop: 3 }}>
+          ROUTE {Math.max(0, Math.min(100, routeProgress))}%
         </div>
       )}
     </div>

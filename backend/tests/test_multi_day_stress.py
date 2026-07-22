@@ -183,9 +183,10 @@ async def test_plan_not_corrupted_after_transition():
         t1 = mgr._hhmm_to_minutes(mgr.day_plan[i].get("start", "99:99"))
         t2 = mgr._hhmm_to_minutes(mgr.day_plan[i + 1].get("start", "99:99"))
         assert t1 <= t2, f"Plan actions out of order at index {i}"
-    # _entered_last_action should be cleared after transition
-    assert not mgr._entered_last_action, \
-        "_entered_last_action should be reset after transition"
+    # The marker is expected while the agent is still executing the final
+    # activity. The engine must instead use the archival guard to prevent
+    # duplicate archival until the calendar-day handoff occurs.
+    assert engine.registry.get("a1").day_archived
 
 
 # ── Runner ──

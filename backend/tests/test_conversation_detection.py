@@ -17,7 +17,7 @@ if str(BACKEND_ROOT) not in sys.path:
 from src.core.world_engine import WorldEngine
 from src.core.agent_registry import AgentRuntimeState
 from src.core.world_state import Position
-from src.agents.Actions import AgentActionManager, LocationResolver
+from src.agents.Actions import ActionState, ActionType, AgentActionManager, LocationResolver
 from src import config as _cfg
 
 THROWAWAY_DATE = "2099-06-01"
@@ -96,6 +96,38 @@ async def test_far_agents_no_conversation():
     assert not engine.registry.get("a2").paused
 
 
+async def test_transit_or_different_venues_cannot_start_a_conversation():
+    """Proximity is meaningful only after both agents have arrived together."""
+    engine = WorldEngine(sim_start_date=THROWAWAY_DATE)
+    a = _register(engine, "a1", "Agent A", Position(x=100, y=100, location_id="mess"))
+    b = _register(engine, "a2", "Agent B", Position(x=106, y=100, location_id="library"))
+    b.manager.current_action = ActionState(
+        action_type=ActionType.MOVE,
+        description="Walk to mess",
+        start_time="08:00",
+        end_time="08:10",
+        location_id="mess",
+        position=Position(x=100, y=100, location_id="mess"),
+        path=[(106, 100), (100, 100)],
+    )
+    await _trigger_and_detect(engine)
+    assert not a.paused
+    assert not b.paused
+
+    # Even stationary agents do not chat across different semantic venues.
+    b.manager.current_action = ActionState(
+        action_type=ActionType.MISC,
+        description="Studying",
+        start_time="08:00",
+        end_time="09:00",
+        location_id="library",
+        position=b.position,
+    )
+    await _trigger_and_detect(engine)
+    assert not a.paused
+    assert not b.paused
+
+
 async def test_cooldown_respected():
     engine = WorldEngine(sim_start_date=THROWAWAY_DATE)
     _register(engine, "a1", "Agent A", SAME_SPOT)
@@ -150,6 +182,7 @@ async def main() -> int:
         ("pair_detected", test_pair_detected),
         ("crowd_skipped", test_crowd_skipped),
         ("far_agents", test_far_agents_no_conversation),
+        ("transit_or_different_venues", test_transit_or_different_venues_cannot_start_a_conversation),
         ("cooldown", test_cooldown_respected),
         ("blocked_action", test_blocked_action_skipped),
         ("max_cap", test_max_conversations_cap),

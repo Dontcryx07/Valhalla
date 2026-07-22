@@ -143,10 +143,10 @@ async def test_archive_error_isolation():
     ok_state = engine.registry.get("a_ok")
     fail_state = engine.registry.get("a_fail")
     assert ok_state.day_archived, "OK agent should be archived"
-    assert fail_state.day_archived, "Fail agent should still have day_archived set"
+    assert not fail_state.day_archived, "Failed archive must remain retryable at handoff"
     assert len(call_log) == 2, "archive should be called for both agents"
-    assert ok_state.manager.day_plan == NEXT_DAY_PLAN, \
-        "OK agent should have next-day plan loaded"
+    assert ok_state.manager.day_plan == END_OF_DAY_PLAN, \
+        "Next-day planning belongs to the day handoff, not early archival"
 
 
 async def test_replace_day_plan_mid_stream():

@@ -207,7 +207,13 @@ export default function SimCanvas({ snapshot, focusedId, onFocus }) {
       for (const id of Object.keys(agentsRef.current)) {
         const a = agentsRef.current[id];
         const d = Math.hypot(a.x - mx, a.y - my);
-        if (d < bestD) { bestD = d; best = id; }
+        // Names are rendered above the marker, so make the visible name area
+        // clickable too. This keeps the map as the sole, uncluttered roster.
+        const nameHalfWidth = Math.max(22, (a.name || id).length * 3.6) / scale;
+        const inName = Math.abs(a.x - mx) <= nameHalfWidth
+          && my >= a.y - 24 / scale
+          && my <= a.y - 2 / scale;
+        if (inName || d < bestD) { bestD = d; best = id; }
       }
       if (onFocus) {
         if (best) { camRef.current.userPan = false; onFocus(best); }

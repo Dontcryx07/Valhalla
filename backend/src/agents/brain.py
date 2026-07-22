@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from src.core.log import get_logger
+from src.config import TEMPERATURE
 from src.llm.gemini_client import call_gemini
 
 logger = get_logger(__name__)
@@ -57,7 +58,8 @@ class Brain:
     def decide_tick(self, tick: int, hhmm: str, observations: List,
                     day_plan: List, replan_count: int = 0,
                     max_replans: int = 3,
-                    energy_level: float = 0.5, emotion_state: float = 0.5) -> TickDecision:
+                    energy_level: float = 0.5, emotion_state: float = 0.5,
+                    relevant_memories: Optional[List[str]] = None) -> TickDecision:
         """LLM-based decision: continue or replan?
 
         Called only when the perceive phase detected novel observations.
@@ -78,6 +80,7 @@ class Brain:
 
         plan_summary = self._plan_summary(day_plan, hhmm)
         obs_text = self._observations_text(observations)
+        memory_text = "\n".join(f"- {memory}" for memory in (relevant_memories or [])[:4]) or "(nothing relevant recalled)"
 
         user_prompt = (
             f"You are {self.persona_name} at IIT Ropar.\n"
@@ -88,6 +91,7 @@ class Brain:
             f"Time: {hhmm}\n\n"
             f"Remaining plan:\n{plan_summary}\n\n"
             f"Nearby people:\n{obs_text}\n\n"
+            f"Relevant long-term memories:\n{memory_text}\n\n"
             f"Energy level: {energy_level:.2f}/1.0\n"
             f"Emotion state: {emotion_state:.2f}/1.0\n"
             'Return {"decision": "continue"} to stay on the current plan, or '
@@ -101,7 +105,7 @@ class Brain:
                 user_prompt=user_prompt,
                 schema=TickDecision,
                 complexity="default",
-                temperature=0.3,
+                temperature=TEMPERATURE,
             )
             logger.info(
                 "[Brain] '%s' decide_tick: decision=%s (%s)",
@@ -141,6 +145,15 @@ class Brain:
             return "  (no one nearby)"
         lines = []
         for obs in observations:
+            if hasattr(obs, "model_dump"):
+                obs = obs.model_dump()
+            if not isinstance(obs, dict):
+                lines.append(f"  - {obs}")
+                continue
+            if "description" in obs and "current_action" not in obs:
+                location = obs.get("location_id", "?")
+                lines.append(f"  - {obs['description']} at {location}")
+                continue
             name = obs.get("name", obs.get("agent_id", "?"))
             action = obs.get("current_action", "?")
             pos = obs.get("position", {})

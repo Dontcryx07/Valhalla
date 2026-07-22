@@ -154,9 +154,27 @@ REFLEX_LLM_ENABLED = _env_bool("SIM_REFLEX_LLM", False)
 # At most one reflex LLM escalation per agent per this many sim-minutes.
 REFLEX_RATE_LIMIT_MINUTES = _env_int("SIM_REFLEX_RATE_LIMIT_MINUTES", 30)
 
-# Long-term memory backend: "keyword" (offline, default) or "vector" (Qdrant +
-# Gemini embeddings; falls back to keyword automatically if unavailable).
-MEMORY_BACKEND = _env_str("SIM_MEMORY_BACKEND", "keyword")
+# Long-term memory is Qdrant-only. Short-term JSON is active-day operational
+# state, never a long-term keyword-search fallback.
+MEMORY_BACKEND = "vector"
+
+# Cloud Qdrant long-term-memory settings. Credentials are deliberately read
+# only from the environment. When unavailable, recall is empty and archival
+# keeps its short-term source rather than creating a local long-term archive.
+SEMANTIC_MEMORY_ENABLED = _env_bool("SIM_SEMANTIC_MEMORY_ENABLED", True)
+QDRANT_URL = _env_str("QDRANT_URL", "")
+QDRANT_API_KEY = _env_str("QDRANT_API_KEY", "")
+MEMORY_EMBEDDING_MODEL = _env_str("SIM_MEMORY_EMBEDDING_MODEL", "gemini-embedding-001")
+MEMORY_VECTOR_DIMENSIONS = _env_int("SIM_MEMORY_VECTOR_DIMENSIONS", 768)
+MEMORY_COLLECTION_VERSION = _env_str("SIM_MEMORY_COLLECTION_VERSION", "v1")
+MEMORY_RETRIEVAL_CANDIDATE_MULTIPLIER = max(1, _env_int("SIM_MEMORY_RETRIEVAL_CANDIDATE_MULTIPLIER", 4))
+MEMORY_RECENCY_DECAY_DAYS = max(1.0, _env_float("SIM_MEMORY_RECENCY_DECAY_DAYS", 30.0))
+# Application-side quota guard for Cloud Qdrant. Qdrant Cloud reports actual
+# plan usage in its dashboard; this estimate keeps the index below the chosen
+# local budget before that dashboard limit is approached.
+MEMORY_MAX_STORAGE_GB = max(0.1, _env_float("SIM_MEMORY_MAX_STORAGE_GB", 4.0))
+MEMORY_STORAGE_PRUNE_THRESHOLD = min(1.0, max(0.1, _env_float("SIM_MEMORY_STORAGE_PRUNE_THRESHOLD", 0.90)))
+MEMORY_STORAGE_PRUNE_TARGET = min(MEMORY_STORAGE_PRUNE_THRESHOLD, max(0.05, _env_float("SIM_MEMORY_STORAGE_PRUNE_TARGET", 0.85)))
 
 # Cap on full day-plan regenerations triggered mid-day per agent (budget guard).
 MAX_REPLANS_PER_AGENT_PER_DAY = _env_int("SIM_MAX_REPLANS_PER_AGENT_PER_DAY", 3)
@@ -176,12 +194,25 @@ CONVERSATION_MIN_EMOTION = _env_float("SIM_CONVERSATION_MIN_EMOTION", 0.05)
 TEMPERATURE = 0.7           # Creativity the model is allowed
 # Per-key RPM limit for Gemini API calls. Google free tier: 5 RPM.
 API_RPM_LIMIT = _env_int("SIM_API_RPM_LIMIT", 20)
+# Every individual Gemini HTTP request has a short deadline, and the complete
+# fallback cascade has its own cap.  These prevent one unavailable model from
+# holding a planner/conversation worker indefinitely.
+# Gemini rejects manually configured deadlines below 10 seconds.  Keep the
+# outer deadline long enough for a bounded primary/key fallback sequence.
+LLM_REQUEST_TIMEOUT_MS = max(10_000, _env_int("SIM_LLM_REQUEST_TIMEOUT_MS", 10_000))
+LLM_CALL_DEADLINE_SECONDS = max(10.0, _env_float("SIM_LLM_CALL_DEADLINE_SECONDS", 30.0))
+LLM_TRANSIENT_KEY_COOLDOWN_SECONDS = max(
+    1.0, _env_float("SIM_LLM_TRANSIENT_KEY_COOLDOWN_SECONDS", 15.0)
+)
+LLM_KEY_ACQUIRE_WAIT_SECONDS = max(
+    0.0, _env_float("SIM_LLM_KEY_ACQUIRE_WAIT_SECONDS", 2.0)
+)
 
 # Model fallback chain. Order = preference order.
 # All calls use the single "default" tier: primary gemini-3.1-flash-lite, with fallbacks.
 # Multiple API keys provide rate-limit resilience (see API_KEYS below).
 MODEL_TIERS: dict[str, list[str]] = {
-    "default": ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash"],
+    "default": ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3-flash-preview"],
 }
 
 # Support multiple API keys (comma-separated in env var).
@@ -245,7 +276,6 @@ _OVERRIDE_MAP = {
     "sim_minutes_per_tick": "SIM_MINUTES_PER_TICK",
     "perception_radius_px": "PERCEPTION_RADIUS_PX",
     "perception_enabled": "PERCEPTION_ENABLED",
-    "memory_backend": "MEMORY_BACKEND",
     "max_conversations_per_agent": "MAX_CONVERSATIONS_PER_AGENT",
     "max_replans_per_agent_per_day": "MAX_REPLANS_PER_AGENT_PER_DAY",
     "llm_hourly_ceiling": "LLM_HOURLY_CEILING",
@@ -287,9 +317,6 @@ def add_cli_arguments(parser) -> None:
                    default=None, help="Proximity circle radius in pixels (default 50)")
     g.add_argument("--perception", dest="perception_enabled", type=_str2bool, default=None,
                    help="Run the perception step each tick (default: on)")
-    g.add_argument("--memory-backend", dest="memory_backend",
-                   choices=["keyword", "vector"], default=None,
-                   help="Long-term memory backend (default: keyword)")
     g.add_argument("--max-conversations", dest="max_conversations_per_agent", type=int,
                    default=None, help="Max conversations per agent per day (default 5)")
     g.add_argument("--max-replans", dest="max_replans_per_agent_per_day", type=int,
@@ -327,6 +354,7 @@ def describe_settings() -> str:
         f"  API RPM limit per key        : {API_RPM_LIMIT}\n"
         f"  Model tiers                  : default={MODEL_TIERS['default']}\n"
         f"  Memory backend               : {MEMORY_BACKEND}\n"
+        f"  Semantic memory              : {'ON' if SEMANTIC_MEMORY_ENABLED else 'OFF'}\n"
         f"  Perception                   : {'ON' if PERCEPTION_ENABLED else 'OFF'} (radius {PERCEPTION_RADIUS_PX}px)\n"
         f"  Sim clock                    : {SIM_MINUTES_PER_TICK} sim-min/tick, "
         f"{REAL_SECONDS_PER_SIM_MINUTE}s/sim-min, speed x{TICK_SPEED}\n"

@@ -43,9 +43,10 @@ if str(BACKEND_ROOT) not in sys.path:
 import json
 import os
 import threading
+import time
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.core.log import get_logger
 from src.core.world_state import CurrentAction
@@ -60,6 +61,14 @@ logger = get_logger(__name__)
 # an atomic replacement so unrelated pairs cannot overwrite one another.
 _MATRIX_LOCK_GUARD = threading.Lock()
 _MATRIX_LOCKS: Dict[Path, threading.RLock] = {}
+
+# Persona IDs are derived from display names. These aliases preserve saved
+# relationship scores when the two seed personas were renamed, while ensuring
+# a checkpoint restore cannot recreate obsolete matrix keys on disk.
+_LEGACY_AGENT_IDS = {
+    "aditi_menon": "riya_murarka",
+    "meher_bansal": "lavanya_sharma",
+}
 
 
 def _matrix_lock(path: Path) -> threading.RLock:
@@ -83,17 +92,17 @@ COOLDOWN_TICKS = 30
 
 class Message(BaseModel):
     """One line of dialogue in a conversation."""
-    speaker: str
-    text: str
+    speaker: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=240)
 
 
 class ConversationResult(BaseModel):
     """Full output of a single conversation generation call."""
-    messages: List[Message]
-    summary: str
-    duration_minutes: int
+    messages: List[Message] = Field(min_length=4, max_length=12)
+    summary: str = Field(min_length=1, max_length=360)
+    duration_minutes: int = Field(ge=6, le=20)
     sentiment: Literal["positive", "neutral", "negative"]
-    relationship_delta: float
+    relationship_delta: float = Field(ge=-0.15, le=0.15)
     # Folded-in replan decision: avoids a separate 4-call day-plan regeneration
     # per agent after every conversation. True only when the conversation
     # genuinely changes an agent's immediate intentions.
@@ -102,8 +111,16 @@ class ConversationResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Relationship matrix -- maps agent_a->agent_b relationship scores
+# Relationship matrix -- directional, expressive social context
 # ---------------------------------------------------------------------------
+
+
+class RelationshipRecord(BaseModel):
+    """One student's grounded point of view toward another student."""
+
+    score: float = Field(default=0.5, ge=-1.0, le=1.0)
+    tags: List[str] = Field(default_factory=list, max_length=12)
+    context: str = Field(default="", max_length=500)
 
 
 class RelationshipMatrix:
@@ -122,7 +139,7 @@ class RelationshipMatrix:
         from src.config import ENVIRONMENT_DIR
 
         self.path: Path = path or ENVIRONMENT_DIR / "relationship_matrix.json"
-        self._matrix: Dict[str, float] = {}
+        self._matrix: Dict[str, RelationshipRecord] = {}
         self._pending_deltas: List[tuple[str, float]] = []
         self.load()
 
@@ -138,17 +155,61 @@ class RelationshipMatrix:
         else:
             logger.warning("[RelationshipMatrix] %s not found -- starting empty", self.path)
 
-    def _read_disk(self) -> Dict[str, float]:
+    @staticmethod
+    def _normalise(raw: Dict[str, Any]) -> Dict[str, RelationshipRecord]:
+        """Accept the legacy flat score map and the structured v1 document."""
+        pairs = raw.get("relationships", raw)
+        if not isinstance(pairs, dict):
+            raise ValueError("relationship entries must be a JSON object")
+        result: Dict[str, RelationshipRecord] = {}
+        for key, value in pairs.items():
+            if "->" not in key:
+                continue
+            source, target = key.split("->", 1)
+            canonical_key = f"{_LEGACY_AGENT_IDS.get(source, source)}->{_LEGACY_AGENT_IDS.get(target, target)}"
+            # Prefer a current seed record over its legacy alias when both are
+            # present in a migrated file. Legacy-only checkpoint data still
+            # maps to the current key and therefore preserves its score.
+            if canonical_key != key and canonical_key in result:
+                continue
+            result[canonical_key] = RelationshipRecord.model_validate(
+                {"score": value} if isinstance(value, (int, float)) else value
+            )
+        return result
+
+    def _read_disk(self) -> Dict[str, RelationshipRecord]:
         if not self.path.exists():
             return {}
-        raw = json.loads(self.path.read_text(encoding="utf-8"))
-        return {key: float(value) for key, value in raw.items()}
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise ValueError("relationship matrix must be a JSON object")
+            return self._normalise(raw)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            logger.warning(
+                "[RelationshipMatrix] unreadable %s; starting empty: %s",
+                self.path.name, exc,
+            )
+            return {}
 
-    def _write_atomic(self, matrix: Dict[str, float]) -> None:
+    def _write_atomic(self, matrix: Dict[str, RelationshipRecord]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        temporary.write_text(json.dumps(matrix, indent=2), encoding="utf-8")
-        os.replace(temporary, self.path)
+        document = {
+            "schema_version": 1,
+            "relationships": {
+                key: value.model_dump() for key, value in sorted(matrix.items())
+            },
+        }
+        temporary.write_text(json.dumps(document, indent=2), encoding="utf-8")
+        for attempt in range(3):
+            try:
+                os.replace(temporary, self.path)
+                return
+            except PermissionError:
+                if attempt == 2:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
 
     def save(self) -> None:
         # Reload while holding the file's lock, then replay only this
@@ -157,8 +218,9 @@ class RelationshipMatrix:
         with _matrix_lock(self.path):
             merged = self._read_disk()
             for key, delta in self._pending_deltas:
-                current = merged.get(key, 0.5)
-                merged[key] = round(max(-1.0, min(1.0, current + delta)), 4)
+                record = merged.get(key, RelationshipRecord())
+                record.score = round(max(-1.0, min(1.0, record.score + delta)), 4)
+                merged[key] = record
             self._write_atomic(merged)
             self._matrix = merged
             self._pending_deltas.clear()
@@ -166,25 +228,45 @@ class RelationshipMatrix:
 
     def get(self, a: str, b: str) -> float:
         """Relationship of agent `a` toward agent `b`. Defaults to 0.5 (neutral)."""
-        return self._matrix.get(self._pair_key(a, b), 0.5)
+        return self._matrix.get(self._pair_key(a, b), RelationshipRecord()).score
+
+    def context(self, a: str, b: str) -> RelationshipRecord:
+        """Return a copy of the expressive directed relationship record."""
+        return self._matrix.get(self._pair_key(a, b), RelationshipRecord()).model_copy(deep=True)
 
     def update(self, a: str, b: str, delta: float) -> None:
         """Adjust relationship of `a` toward `b` by `delta`, clamped to [-1, 1]."""
         key = self._pair_key(a, b)
         current = self.get(a, b)
         new_val = max(-1.0, min(1.0, current + delta))
-        self._matrix[key] = round(new_val, 4)
+        record = self._matrix.get(key, RelationshipRecord())
+        record.score = round(new_val, 4)
+        self._matrix[key] = record
         self._pending_deltas.append((key, delta))
         logger.info("[RelationshipMatrix] %s: %.2f -> %.2f (delta=%.2f)", key, current, new_val, delta)
 
-    def snapshot(self) -> Dict[str, float]:
+    def snapshot(self) -> Dict[str, Any]:
         """Return a JSON-safe copy for the simulation checkpoint."""
-        return dict(self._matrix)
+        return {"schema_version": 1, "relationships": {
+            key: value.model_dump() for key, value in self._matrix.items()
+        }}
 
-    def restore(self, matrix: Dict[str, float]) -> None:
-        """Make a checkpoint's relationship state authoritative again."""
+    def restore(self, matrix: Dict[str, Any]) -> None:
+        """Restore scores from a checkpoint while retaining base social context.
+
+        Older checkpoints only contain a numeric matrix. Their scores are
+        authoritative runtime state, but they must not erase the structured
+        tags/context seeded in the current relationship data file.
+        """
         with _matrix_lock(self.path):
-            self._matrix = {key: float(value) for key, value in matrix.items()}
+            base = self._read_disk()
+            checkpoint = self._normalise(matrix)
+            for key, record in checkpoint.items():
+                if key in base:
+                    base[key].score = record.score
+                else:
+                    base[key] = record
+            self._matrix = base
             self._pending_deltas.clear()
             self._write_atomic(self._matrix)
 
@@ -218,7 +300,8 @@ Generate a short, natural conversation between them based on:
 
 Rules:
 - Start naturally from the current situation and surroundings
-- Keep duration realistic (5-30 minutes typical)
+- Write 4-12 alternating dialogue lines, each 4-25 words
+- Choose a duration of 6-20 simulated minutes that fits the dialogue
 - Match tone to personality (friendly, awkward, casual, competitive, etc.)
 - Each message must have a "speaker" (the agent's full name) and "text" (what they say)
 - The conversation must have a natural ending
@@ -238,14 +321,38 @@ def _personality_summary(persona: Dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
-def _plan_summary(plan: List[Dict[str, Any]], current_hhmm: str) -> str:
-    """Format the day plan as a readable timeline, highlighting what's happening now."""
+def _deprecated_plan_summary(plan: List[Dict[str, Any]], current_hhmm: str) -> str:
+    """Deprecated compatibility helper; retained only for external callers."""
     if not plan:
         return "  (no plan)"
 
     lines = []
     for entry in sorted(plan, key=lambda e: e.get("start", "00:00")):
         marker = " ⇐ NOW" if entry.get("start") == current_hhmm else ""
+        lines.append(
+            f"  {entry.get('start', '??')}-{entry.get('end', '??')}  "
+            f"{entry.get('action', '?')} at {entry.get('location_id', '?')}{marker}"
+        )
+    return "\n".join(lines)
+
+
+def _plan_summary(plan: List[Dict[str, Any]], current_hhmm: str) -> str:
+    """Render a plan and identify the entry that covers the current time."""
+    if not plan:
+        return "  (no plan)"
+
+    def minutes(value: str) -> int:
+        hour, minute = value.split(":")
+        return int(hour) * 60 + int(minute)
+
+    now = minutes(current_hhmm)
+    lines = []
+    for entry in sorted(plan, key=lambda item: item.get("start", "00:00")):
+        try:
+            active = minutes(entry.get("start", "00:00")) <= now < minutes(entry.get("end", "24:00"))
+        except (TypeError, ValueError):
+            active = False
+        marker = " [NOW]" if active else ""
         lines.append(
             f"  {entry.get('start', '??')}-{entry.get('end', '??')}  "
             f"{entry.get('action', '?')} at {entry.get('location_id', '?')}{marker}"
@@ -270,6 +377,8 @@ def _build_prompts(
     memories_b: Optional[List[str]] = None,
     energy_a: float = 0.5, emotion_a: float = 0.5,
     energy_b: float = 0.5, emotion_b: float = 0.5,
+    relationship_context_a: str = "",
+    relationship_context_b: str = "",
 ) -> Tuple[str, str]:
     """Build system and user prompts for the conversation LLM call."""
 
@@ -312,7 +421,7 @@ def _build_prompts(
     def _emotion_label(v: float) -> str:
         if v >= 0.9: return "Extremely Joyful"
         if v >= 0.7: return "Very Happy"
-        if v >= 0.5: return "Happy"
+        if v > 0.5: return "Happy"
         if v >= 0.3: return "Neutral"
         if v >= 0.1: return "Sad"
         return "Extremely Sad"
@@ -336,6 +445,7 @@ Energy: {energy_b:.2f}/1.0 | Emotion: {emotion_b:.2f}/1.0 ({_emotion_label(emoti
 ── CONTEXT ──────────────────────
 Location: {location_id}
 Current time: {current_hhmm} ({time_desc})
+Relationship notes: A sees B as {relationship_context_a or 'an acquaintance'}; B sees A as {relationship_context_b or 'an acquaintance'}.
 {persona_a.get('Name', agent_a_id)}'s relationship toward {persona_b.get('Name', agent_b_id)}: {rel_a_to_b} ({_rel_label(rel_a_to_b)})
 {persona_b.get('Name', agent_b_id)}'s relationship toward {persona_a.get('Name', agent_a_id)}: {rel_b_to_a} ({_rel_label(rel_b_to_a)})
 
@@ -346,11 +456,11 @@ What {persona_b.get('Name', agent_b_id)} remembers about {persona_a.get('Name', 
 
 ── OUTPUT ───────────────────────
 Return a JSON object with:
-- "messages": list of {{"speaker": "<full name>", "text": "<dialogue line>"}} (each message has exactly these two string fields)
+- "messages": 4-12 alternating entries using exactly "{persona_a.get('Name', agent_a_id)}" and "{persona_b.get('Name', agent_b_id)}" as speakers; each line is 4-25 words
 - "summary": one-sentence summary of what they talked about
-- "duration_minutes": int (how many minutes the conversation lasts)
+- "duration_minutes": integer from 6 to 20 that matches the amount of dialogue
 - "sentiment": "positive" | "neutral" | "negative"
-- "relationship_delta": float between -1.0 and 1.0 (how this conversation changes their relationship)
+- "relationship_delta": float between -0.15 and 0.15 (how this conversation changes their relationship)
 - "should_replan": boolean — true ONLY if this conversation genuinely changes what one of them intends to do next (e.g. they agree to meet, go somewhere together, or drop a task). Default false; most casual chats do NOT require replanning.
 - "plan_change": short string describing the change if should_replan is true, else null"""
 
@@ -379,6 +489,8 @@ def generate_conversation(
     memories_b: Optional[List[str]] = None,
     energy_a: float = 0.5, emotion_a: float = 0.5,
     energy_b: float = 0.5, emotion_b: float = 0.5,
+    relationship_context_a: str = "",
+    relationship_context_b: str = "",
 ) -> Optional[ConversationResult]:
     """
     Generate a conversation between two agents via a single Gemini call.
@@ -396,6 +508,8 @@ def generate_conversation(
         memories_a, memories_b,
         energy_a=energy_a, emotion_a=emotion_a,
         energy_b=energy_b, emotion_b=emotion_b,
+        relationship_context_a=relationship_context_a,
+        relationship_context_b=relationship_context_b,
     )
 
     logger.info(

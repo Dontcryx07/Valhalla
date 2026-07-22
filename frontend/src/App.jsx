@@ -1,67 +1,152 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import useSimState from "./hooks/useSimState";
 import SimCanvas from "./components/SimCanvas";
 import AgentWindow from "./components/AgentWindow";
 import InfoBar from "./components/InfoBar";
-import Legend from "./components/Legend";
 import ConversationFeed from "./components/ConversationFeed";
+import EventsPanel from "./components/EventsPanel";
+import DebugPanel from "./components/DebugPanel";
 import "./App.css";
 
-function computeScatter(index, total) {
-  const cols = 2;
-  const col = index % cols;
-  const row = Math.floor(index / cols);
-  const x = 20 + col * 280;
-  const y = 60 + row * 240;
-  return { x, y };
+function compactTabPosition(index) {
+  const side = index % 2;
+  const row = Math.floor(index / 2);
+  return {
+    // Reserve the full inspector width even while this card is compact. A
+    // right-hand card can then expand without its controls leaving the view.
+    x: side ? Math.max(16, window.innerWidth - 276) : 16,
+    y: 66 + row * 92,
+  };
 }
 
 export default function App() {
   const snapshot = useSimState();
   const [agentMap, setAgentMap] = useState(null);
-  const [placed, setPlaced] = useState({});
-  const [day, setDay] = useState(0);
   const [focusedId, setFocusedId] = useState(null);
+  const [expandedAgentIds, setExpandedAgentIds] = useState(() => new Set());
+  const [showDebug, setShowDebug] = useState(false);
+  const [conversationFeedMinimized, setConversationFeedMinimized] = useState(false);
+  const [controlError, setControlError] = useState(null);
+  const [simulationRunning, setSimulationRunning] = useState(true);
 
   useEffect(() => {
     if (!snapshot) return;
-    if (snapshot.type === "day_reset" || snapshot.type === "reset" || snapshot.type === "day_handoff") {
+    // A handoff packet is a transient status message without `agents`.
+    // Preserve the latest cards until the next full state arrives.
+    if (snapshot.type === "day_reset" || snapshot.type === "reset") {
       setAgentMap(null);
-      setPlaced({});
+      setFocusedId(null);
+      setExpandedAgentIds(new Set());
       return;
     }
     if (snapshot.agents) {
       setAgentMap(snapshot.agents);
-      if (snapshot.day !== undefined) setDay(snapshot.day);
+    }
+    if (typeof snapshot.simulation?.running === "boolean") {
+      setSimulationRunning(snapshot.simulation.running);
     }
   }, [snapshot]);
 
+  const simulationError = snapshot?.status === "error" ? snapshot.message : null;
   const agentIds = agentMap ? Object.keys(agentMap) : [];
+
+  function toggleAgentInspector(agentId) {
+    const isExpanded = expandedAgentIds.has(agentId);
+    setExpandedAgentIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
+    if (isExpanded && focusedId === agentId) setFocusedId(null);
+    else if (!isExpanded) setFocusedId(agentId);
+  }
+
+  const focusFromMap = useCallback((agentId) => {
+    setFocusedId(agentId);
+    if (agentId) {
+      setExpandedAgentIds((previous) => {
+        if (previous.has(agentId)) return previous;
+        const next = new Set(previous);
+        next.add(agentId);
+        return next;
+      });
+    }
+  }, []);
+
+  async function sendControl(path, body) {
+    try {
+      setControlError(null);
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Simulation control failed.");
+      return data;
+    } catch (error) {
+      setControlError(error.message);
+      return null;
+    }
+  }
 
   return (
     <div className="app-root">
-      <SimCanvas snapshot={snapshot} focusedId={focusedId} onFocus={setFocusedId} />
+      <SimCanvas snapshot={snapshot} focusedId={focusedId} onFocus={focusFromMap} />
 
-      <Legend agents={agentMap} focusedId={focusedId} onFocus={setFocusedId} />
-      <ConversationFeed conversations={snapshot?.recent_conversations} />
+      {simulationError && (
+        <section className="simulation-error" role="alert" aria-live="assertive">
+          <span className="simulation-error__eyebrow">Simulation unavailable</span>
+          <p>{simulationError}</p>
+          <small>Runtime data was left unchanged. Start a fresh simulation when you are ready.</small>
+        </section>
+      )}
+      {controlError && (
+        <section className="simulation-error simulation-error--control" role="status">
+          <span className="simulation-error__eyebrow">Timeline control</span>
+          <p>{controlError}</p>
+        </section>
+      )}
 
-      {agentIds.map((id, i) => {
-        const data = agentMap[id];
-        const pos = placed[id] || computeScatter(i, agentIds.length);
+      <ConversationFeed
+        conversations={snapshot?.recent_conversations}
+        minimized={conversationFeedMinimized}
+        onToggleMinimized={() => setConversationFeedMinimized((value) => !value)}
+      />
+      <EventsPanel events={snapshot?.events} />
+      {showDebug && <DebugPanel health={snapshot?.health} />}
+
+      {agentIds.map((id, index) => {
+        const expanded = expandedAgentIds.has(id);
+        const expandedLayer = [...expandedAgentIds].indexOf(id);
         return (
           <AgentWindow
-            key={`${id}-${day}`}
+            key={id}
             agentId={id}
-            data={data}
+            data={agentMap[id]}
             speed={snapshot?.speed}
-            defaultPosition={{ x: pos.x, y: pos.y }}
-            focused={id === focusedId}
-            onFocus={() => setFocusedId(id === focusedId ? null : id)}
+            defaultPosition={compactTabPosition(index)}
+            expanded={expanded}
+            expandedLayer={expandedLayer}
+            onToggle={() => toggleAgentInspector(id)}
           />
         );
       })}
 
-      <InfoBar snapshot={snapshot} />
+      <InfoBar
+        snapshot={snapshot}
+        showDebug={showDebug}
+        onToggleDebug={() => setShowDebug((value) => !value)}
+        onFastForward={() => sendControl("/api/sim/fast-forward")}
+        onSlowDown={() => sendControl("/api/sim/slow-down")}
+        onRewind={(rewind) => sendControl("/api/sim/rewind", rewind)}
+        simulationRunning={simulationRunning}
+        onToggleSimulation={async () => {
+          const result = await sendControl(simulationRunning ? "/api/sim/stop" : "/api/sim/start");
+          if (result && typeof result.running === "boolean") setSimulationRunning(result.running);
+        }}
+      />
     </div>
   );
 }

@@ -31,6 +31,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 import json
+import math
 import random
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -38,7 +39,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 from src.core.log import get_logger
-from src.core.world_state import WorldState, Position, CurrentAction, AgentStatus
+from src.core.world_state import Position
 
 logger = get_logger(__name__)
 
@@ -81,6 +82,8 @@ class ActionState(BaseModel):
     path_index: int = 0       # current position along path
     energy_change: float = 0.0      # total change over entire action
     emotion_change: float = 0.0     # total change over entire action
+    is_final_plan_action: bool = False
+    event_id: Optional[str] = None  # data-driven world event, when applicable
 
 
 # ---------------------------------------------------------------------------
@@ -289,9 +292,6 @@ class AgentActionManager:
         self.current_action: Optional[ActionState] = None
         self.next_action: Optional[ActionState] = None
 
-        self._plan_index = 0
-        self._initialized = False
-
         # Conversation support
         self._conversation_mode: bool = False
         self._pending_plan_action: Optional[ActionState] = None
@@ -304,18 +304,15 @@ class AgentActionManager:
         """True if the current action is the final entry in the day plan.
         Uses description match only — start_time may differ when rescheduled
         after a conversation or a long move that shifted the timeline."""
-        if not self.day_plan or not self.current_action:
-            return False
-        last = self.day_plan[-1]
-        return self.current_action.description == last.get("action", "")
+        return bool(self.current_action and self.current_action.is_final_plan_action)
 
     @property
-    def is_plan_exhausted(self) -> bool:
+    def is_idle(self) -> bool:
         """
         True when the day plan is fully consumed — no action covers the
         current time and there are no more plan entries.
         """
-        return self.current_action is None and self._plan_index >= len(self.day_plan)
+        return self.current_action is None
 
     def _hhmm_to_minutes(self, hhmm: str) -> int:
         """Convert 'HH:MM' to minutes since midnight."""
@@ -352,6 +349,8 @@ class AgentActionManager:
             position=position,
             energy_change=plan_action.get("energy_change", 0.0),
             emotion_change=plan_action.get("emotion_change", 0.0),
+            is_final_plan_action=bool(self.day_plan and plan_action is self.day_plan[-1]),
+            event_id=plan_action.get("world_event_id"),
         )
 
     def _create_move_action(
@@ -442,28 +441,26 @@ class AgentActionManager:
             # Schedule-aware speed: arrive by the plan's end time.
             plan_end_min = self._hhmm_to_minutes(plan_action.get("end", "24:00"))
             start_minute = self._hhmm_to_minutes(current_hhmm)
-            allocated_minutes = max(1, plan_end_min - start_minute)
-            _PIXELS_PER_MIN_MAX = 50
-            speed_needed = path_len / allocated_minutes
-            effective_speed = min(_PIXELS_PER_MIN_MAX, speed_needed)
-            travel_minutes = max(5, int(path_len / max(0.1, effective_speed)))
+            activity_minutes = max(1, plan_end_min - start_minute)
+            min_on_site_minutes = min(10, max(1, activity_minutes // 2))
+            max_travel_minutes = max(1, activity_minutes - min_on_site_minutes)
+            natural_travel_minutes = max(1, math.ceil(path_len / 50))
+            # Transit must leave time for the scheduled on-site activity.
+            travel_minutes = min(natural_travel_minutes, max_travel_minutes)
             end_minute = start_minute + travel_minutes
             self.current_action.end_time = self._minutes_to_hhmm(min(end_minute, 24 * 60))
             # The actual activity becomes the next action
             self.next_action = self._create_action_state(plan_action)
 
-        self._initialized = True
-
-    def set_conversation_action(self, other_agent_id: str) -> ActionState:
+    def set_conversation_action(self, other_agent_id: str, world_tick: Optional[int] = None) -> ActionState:
         """
         Override the current action with a conversation (no pre-set duration).
         Agent stays in conversation mode until resume_from_conversation() is
         called by the background LLM task.
         """
-        hhmm = self._minutes_to_hhmm(0)
+        hhmm = self._minutes_to_hhmm((world_tick or 0) % (24 * 60))
         if self.current_action:
             self._pending_plan_action = self.current_action
-            hhmm = self.current_action.start_time
 
         conv_action = ActionState(
             action_type=ActionType.CONVERSATION,
@@ -475,21 +472,53 @@ class AgentActionManager:
         )
         self.current_action = conv_action
         self._conversation_mode = True
-        self._initialized = True
         return conv_action
 
-    def resume_from_conversation(self, new_day_plan: List[Dict[str, Any]]) -> None:
+    def resume_from_conversation(
+        self,
+        new_day_plan: Optional[List[Dict[str, Any]]] = None,
+        world_tick: Optional[int] = None,
+    ) -> None:
         """
-        Called after conversation LLM task completes.
-        Loads the remaining-day plan and clears conversation mode.
+        Leave conversation mode and resume the interrupted action when the
+        plan has not changed. A paused route resumes from its actual point.
         """
-        self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        if new_day_plan is not None:
+            self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        pending = self._pending_plan_action
         self._conversation_mode = False
         self._pending_plan_action = None
-        self.current_action = None
-        self.next_action = None
         self._entered_last_action = False
-        self._plan_index = 0
+        if pending is None or new_day_plan is not None:
+            self.current_action = None
+            self.next_action = None
+            return
+
+        if pending.action_type == ActionType.MOVE and pending.path:
+            old_path = pending.path
+            old_index = min(pending.path_index, len(old_path) - 1)
+            fraction_done = old_index / max(1, len(old_path) - 1)
+            pending.path = [(self.position.x, self.position.y)] + old_path[old_index + 1:]
+            pending.path_index = 0
+            if world_tick is not None:
+                duration = max(1, self._hhmm_to_minutes(pending.end_time) - self._hhmm_to_minutes(pending.start_time))
+                remaining = max(1, math.ceil(duration * (1.0 - fraction_done)))
+                now = world_tick % (24 * 60)
+                pending.start_time = self._minutes_to_hhmm(now)
+                pending.end_time = self._minutes_to_hhmm(min(24 * 60, now + remaining))
+            if len(pending.path) < 2:
+                # The conversation happened at the final waypoint.  Do not
+                # leave a one-point MOVE that cannot interpolate; commit the
+                # arrival and continue its queued on-site activity instead.
+                if pending.location_id:
+                    self.position = self.resolver.random_interior_point(pending.location_id)
+                if self.next_action is not None:
+                    self.current_action = self.next_action
+                    self.next_action = None
+                else:
+                    self.current_action = None
+                return
+        self.current_action = pending
 
     def replace_day_plan(self, new_day_plan: List[Dict[str, Any]]) -> None:
         """
@@ -497,8 +526,8 @@ class AgentActionManager:
         Keeps the current action if it's still valid, otherwise advances.
         """
         self.day_plan = sorted(new_day_plan, key=lambda a: a.get("start", "00:00"))
+        self._pending_plan_action = None
         self._entered_last_action = False
-        self._plan_index = 0
 
     def begin_new_day(self, new_day_plan: List[Dict[str, Any]]) -> None:
         """Install a new calendar day's plan without moving the agent.
@@ -515,8 +544,6 @@ class AgentActionManager:
         self._pending_plan_action = None
         self._conversation_mode = False
         self._entered_last_action = False
-        self._plan_index = 0
-        self._initialized = False
 
     def tick(self, world_tick: int, snapshot: Any = None) -> Optional[ActionState]:
         """
@@ -541,7 +568,14 @@ class AgentActionManager:
         current_end = self._hhmm_to_minutes(self.current_action.end_time)
         current_minute = self._hhmm_to_minutes(hhmm)
 
-        if current_minute >= current_end:
+        # Let a MOVE render its terminal path coordinate for one tick before
+        # committing the arrival and changing its action label.
+        is_finished = (
+            current_minute > current_end
+            if self.current_action.action_type == ActionType.MOVE
+            else current_minute >= current_end
+        )
+        if is_finished:
             # Action finished — advance
             was_last = self.is_last_action
             self.last_action = self.current_action
@@ -607,10 +641,11 @@ class AgentActionManager:
                     (ax, ay), (bx, by) = path[i], path[i + 1]
                     nx = round(ax + (bx - ax) * frac)
                     ny = round(ay + (by - ay) * frac)
-                self.position = Position(
-                    x=nx, y=ny,
-                    location_id=self.current_action.location_id,
-                )
+                # A route has a destination, but the agent is not semantically
+                # *at* that destination until arrival.  Retaining the current
+                # location prevents UI, replanning, and conversations from
+                # treating an in-transit agent as already there.
+                self.position = Position(x=nx, y=ny, location_id=self.position.location_id)
                 self.current_action.path_index = i
 
         return self.current_action

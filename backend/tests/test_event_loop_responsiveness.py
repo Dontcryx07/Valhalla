@@ -55,7 +55,7 @@ class GeminiAttemptTests(unittest.TestCase):
     def test_fast_fail_mode_still_attempts_the_selected_model(self):
         expected = TickDecision(decision="continue", reason="test")
         with patch.object(gemini_client, "API_KEYS", ["test-key"]), \
-                patch.object(gemini_client, "_wait_until_key_available", return_value="test-key"), \
+                patch.object(gemini_client, "_reserve_key_with_brief_wait", return_value="test-key"), \
                 patch.object(gemini_client, "_mark_used"), \
                 patch.object(gemini_client, "_single_attempt", return_value=expected) as attempt:
             result = gemini_client.call_gemini(
@@ -64,6 +64,28 @@ class GeminiAttemptTests(unittest.TestCase):
 
         self.assertIs(result, expected)
         self.assertEqual(attempt.call_count, 1)
+
+    def test_transport_timeout_rotates_to_another_key_before_fallback_model(self):
+        expected = TickDecision(decision="continue", reason="recovered")
+        model_tiers = {"default": ["primary", "fallback"]}
+        with patch.object(gemini_client, "API_KEYS", ["key-one", "key-two"]), \
+                patch.object(gemini_client, "MODEL_TIERS", model_tiers), \
+                patch.object(gemini_client, "_reserve_key_with_brief_wait", side_effect=["key-one", "key-two"]), \
+                patch.object(gemini_client, "_mark_cooldown") as cooldown, \
+                patch.object(gemini_client, "_mark_used"), \
+                patch.object(gemini_client, "_single_attempt", side_effect=[TimeoutError("stalled"), expected]) as attempt:
+            result = gemini_client.call_gemini(
+                "system", "user", TickDecision, complexity="default"
+            )
+
+        self.assertIs(result, expected)
+        self.assertEqual(
+            [call.args[:2] for call in attempt.call_args_list],
+            [("key-one", "primary"), ("key-two", "primary")],
+        )
+        cooldown.assert_called_once_with(
+            "key-one", duration=gemini_client.TRANSIENT_KEY_COOLDOWN_SECONDS
+        )
 
 
 if __name__ == "__main__":

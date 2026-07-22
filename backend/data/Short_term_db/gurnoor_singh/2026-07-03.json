@@ -3,210 +3,224 @@
   "date": "2026-07-03",
   "day_plan": [
     {
-      "action": "Sleep",
+      "action": "Sleeping in hostel room",
       "start": "00:00",
       "end": "07:00",
-      "parent_activity": "Sleep",
+      "parent_activity": "Sleeping in hostel room",
       "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms"
+      "sub_area": "rooms",
+      "energy_change": 0.5,
+      "emotion_change": -0.05
     },
     {
-      "action": "Shower and morning grooming",
+      "action": "Shower and personal grooming",
       "start": "07:00",
       "end": "07:30",
-      "parent_activity": "Morning routine: shower, breakfast, and campus walk",
+      "parent_activity": "Morning routine and quiet reflection",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms",
-      "energy_change": 0.1,
-      "emotion_change": 0.1
+      "energy_change": 0.03,
+      "emotion_change": -0.01
     },
     {
-      "action": "Dress and organize study materials",
+      "action": "Organizing study desk and room maintenance",
       "start": "07:30",
       "end": "08:00",
-      "parent_activity": "Morning routine: shower, breakfast, and campus walk",
+      "parent_activity": "Morning routine and quiet reflection",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "rooms",
-      "energy_change": 0.0,
+      "energy_change": 0.02,
       "emotion_change": 0.0
     },
     {
-      "action": "Breakfast at the mess",
+      "action": "Journaling about current emotional state",
       "start": "08:00",
       "end": "08:30",
-      "parent_activity": "Morning routine: shower, breakfast, and campus walk",
-      "location_id": "mess",
-      "sub_area": null,
-      "energy_change": 0.1,
-      "emotion_change": 0.1
+      "parent_activity": "Morning routine and quiet reflection",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms",
+      "energy_change": 0.03,
+      "emotion_change": -0.02
     },
     {
-      "action": "Refreshing campus walk",
+      "action": "Mindful meditation and quiet reflection",
       "start": "08:30",
       "end": "09:00",
-      "parent_activity": "Morning routine: shower, breakfast, and campus walk",
-      "location_id": "central_lawn",
-      "sub_area": null,
-      "energy_change": 0.1,
-      "emotion_change": 0.1
+      "parent_activity": "Morning routine and quiet reflection",
+      "location_id": "Brahmaputra_Boys 1",
+      "sub_area": "rooms",
+      "energy_change": 0.02,
+      "emotion_change": 0.01
     },
     {
-      "action": "Attend academic classes",
+      "action": "Attending computer science lectures and labs",
       "start": "09:00",
       "end": "13:00",
-      "parent_activity": "Attend academic classes",
+      "parent_activity": "Attending computer science lectures and labs",
       "location_id": "SAB",
-      "sub_area": "lecture_halls"
+      "sub_area": "lecture_halls",
+      "energy_change": -0.02,
+      "emotion_change": -0.02
     },
     {
-      "action": "Lunch at the mess",
+      "action": "Eating lunch at the mess",
       "start": "13:00",
-      "end": "13:40",
-      "parent_activity": "Lunch and networking with peers",
+      "end": "13:30",
+      "parent_activity": "Lunch and catching up with friends",
       "location_id": "mess",
       "sub_area": null,
-      "energy_change": 0.1,
-      "emotion_change": 0.2
+      "energy_change": 0.03,
+      "emotion_change": 0.01
     },
     {
-      "action": "Networking and discussing tech with peers",
-      "start": "13:40",
+      "action": "Casual conversation with friends during lunch",
+      "start": "13:30",
       "end": "14:00",
-      "parent_activity": "Lunch and networking with peers",
+      "parent_activity": "Lunch and catching up with friends",
       "location_id": "mess",
       "sub_area": null,
-      "energy_change": 0.0,
-      "emotion_change": 0.1
+      "energy_change": 0.02,
+      "emotion_change": 0.01
     },
     {
-      "action": "Walk to library and setup development environment",
+      "action": "Engaging in meaningful dialogue with peers",
       "start": "14:00",
       "end": "14:30",
-      "parent_activity": "Deep work on AI and full-stack projects",
-      "location_id": "library",
-      "sub_area": "e_resource_lab",
-      "energy_change": -0.05,
-      "emotion_change": 0.0
-    },
-    {
-      "action": "Project planning and task delegation",
-      "start": "14:30",
-      "end": "15:00",
-      "parent_activity": "Deep work on AI and full-stack projects",
-      "location_id": "library",
-      "sub_area": "e_resource_lab",
-      "energy_change": -0.05,
-      "emotion_change": 0.1
-    },
-    {
-      "action": "Core coding: implementing AI model logic",
-      "start": "15:00",
-      "end": "16:00",
-      "parent_activity": "Deep work on AI and full-stack projects",
-      "location_id": "library",
-      "sub_area": "e_resource_lab",
-      "energy_change": -0.1,
-      "emotion_change": 0.1
-    },
-    {
-      "action": "Debugging project code",
-      "start": "16:00",
-      "end": "16:30",
-      "parent_activity": "Deep work on AI and full-stack projects",
-      "location_id": "library",
-      "sub_area": "e_resource_lab",
-      "energy_change": -0.1,
-      "emotion_change": 0.0
-    },
-    {
-      "action": "Documentation of project progress",
-      "start": "16:30",
-      "end": "17:00",
-      "parent_activity": "Deep work on AI and full-stack projects",
-      "location_id": "library",
-      "sub_area": "e_resource_lab",
-      "energy_change": 0.0,
-      "emotion_change": 0.1
-    },
-    {
-      "action": "Gym session",
-      "start": "17:00",
-      "end": "17:50",
-      "parent_activity": "Gym session and student club initiatives",
-      "location_id": "sports_complex",
-      "sub_area": "gymnasium",
-      "energy_change": -0.3,
-      "emotion_change": 0.1
-    },
-    {
-      "action": "Walk to SAC and transition for club work",
-      "start": "17:50",
-      "end": "18:00",
-      "parent_activity": "Gym session and student club initiatives",
-      "location_id": "sac_utility_block",
-      "sub_area": "club_room_alankar",
-      "energy_change": 0.0,
-      "emotion_change": 0.0
-    },
-    {
-      "action": "Student club team coordination",
-      "start": "18:00",
-      "end": "19:00",
-      "parent_activity": "Gym session and student club initiatives",
-      "location_id": "sac_utility_block",
-      "sub_area": "club_room_alankar",
-      "energy_change": -0.1,
-      "emotion_change": 0.1
-    },
-    {
-      "action": "Dinner at the hostel mess",
-      "start": "19:00",
-      "end": "19:45",
-      "parent_activity": "Dinner and social time with friends",
+      "parent_activity": "Lunch and catching up with friends",
       "location_id": "mess",
       "sub_area": null,
-      "energy_change": 0.1,
-      "emotion_change": 0.1
+      "energy_change": 0.05,
+      "emotion_change": 0.03
     },
     {
-      "action": "Walk back to hostel",
-      "start": "19:45",
-      "end": "20:00",
-      "parent_activity": "Dinner and social time with friends",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "common_room",
-      "energy_change": 0.0,
+      "action": "Coding computer vision model logic",
+      "start": "14:30",
+      "end": "15:15",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.05,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Debugging model pipeline and integration",
+      "start": "15:15",
+      "end": "16:00",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.05,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Reading latest AI research papers",
+      "start": "16:00",
+      "end": "16:30",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.02,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Exploring new AI tool documentation",
+      "start": "16:30",
+      "end": "17:00",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.03,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Documenting progress and pushing code to GitHub",
+      "start": "17:00",
+      "end": "17:30",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.02,
       "emotion_change": 0.0
     },
     {
-      "action": "Socializing with friends in common room",
+      "action": "Planning next project milestones",
+      "start": "17:30",
+      "end": "18:00",
+      "parent_activity": "Deep work on AI and computer vision projects",
+      "location_id": "library",
+      "sub_area": "e_resource_lab",
+      "energy_change": -0.03,
+      "emotion_change": 0.01
+    },
+    {
+      "start": "18:00",
+      "end": "19:00",
+      "action": "Attend Aadvitya Open-Mic & Project Showcase",
+      "location_id": "central_lawn",
+      "sub_area": null,
+      "energy_change": -0.04,
+      "emotion_change": 0.12,
+      "world_event_id": "aadvitya_open_mic"
+    },
+    {
+      "action": "Cardio session on treadmill",
+      "start": "19:00",
+      "end": "19:30",
+      "parent_activity": "Gym session and physical training",
+      "location_id": "sports_complex",
+      "sub_area": "gymnasium",
+      "energy_change": -0.06,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Stretching and mobility work",
+      "start": "19:30",
+      "end": "20:00",
+      "parent_activity": "Gym session and physical training",
+      "location_id": "sports_complex",
+      "sub_area": "gymnasium",
+      "energy_change": -0.04,
+      "emotion_change": 0.02
+    },
+    {
+      "action": "Eating dinner at the mess",
       "start": "20:00",
-      "end": "21:30",
-      "parent_activity": "Dinner and social time with friends",
+      "end": "20:40",
+      "parent_activity": "Dinner and social interaction at the hostel",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.05,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Casual chatter and unwinding at the mess",
+      "start": "20:40",
+      "end": "21:00",
+      "parent_activity": "Dinner and social interaction at the hostel",
+      "location_id": "mess",
+      "sub_area": null,
+      "energy_change": 0.0,
+      "emotion_change": 0.01
+    },
+    {
+      "action": "Meaningful social interaction with hostel mates",
+      "start": "21:00",
+      "end": "22:00",
+      "parent_activity": "Dinner and social interaction at the hostel",
       "location_id": "Brahmaputra_Boys 1",
       "sub_area": "common_room",
-      "energy_change": 0.0,
-      "emotion_change": 0.1
+      "energy_change": 0.05,
+      "emotion_change": 0.03
     },
     {
-      "action": "Focused late-night coding",
-      "start": "21:30",
-      "end": "23:00",
-      "parent_activity": "Late night coding and planning for tomorrow",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms",
-      "energy_change": -0.1,
-      "emotion_change": 0.2
-    },
-    {
-      "action": "Review progress and plan for tomorrow",
-      "start": "23:00",
+      "action": "Night sky observation and stargazing",
+      "start": "22:00",
       "end": "24:00",
-      "parent_activity": "Late night coding and planning for tomorrow",
-      "location_id": "Brahmaputra_Boys 1",
-      "sub_area": "rooms",
-      "energy_change": -0.1,
-      "emotion_change": 0.1
+      "parent_activity": "Night sky observation and stargazing",
+      "location_id": "central_lawn",
+      "sub_area": null,
+      "energy_change": -0.02,
+      "emotion_change": 0.04
     }
   ],
   "events": [],

@@ -30,7 +30,7 @@
       "id": "SAB",
       "name": "Super Academic Block",
       "type": "academic",
-      "sub_areas": ["Block A", "Block A", "Block C", "lecture_halls", "seminar_rooms", "department_labs", "faculty_offices"],
+      "sub_areas": ["Block A", "Block C", "lecture_halls", "seminar_rooms", "department_labs", "faculty_offices"],
       "open_hours": {"weekdays": "08:00-18:00", "weekends": "closed_except_labs"},
       "capacity": "high",
       "typical_activities": ["attending class", "lab work", "studying", "meeting professor", "tutorial"],
