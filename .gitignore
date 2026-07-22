@@ -5,6 +5,8 @@ venv
 .env
 opencode.json
 skills-lock.json
+.codex
+pytest.ini
 
 .venv/
 .idea/
