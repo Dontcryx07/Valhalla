@@ -51,6 +51,23 @@ class RuntimeHealthMonitor:
                 continue
             if manager and manager.position != state.position:
                 anomalies.append({"agent_id": state.agent_id, "kind": "manager_registry_position_desync"})
+            # ``run_tick`` publishes its frame after advancing the world clock.
+            # A normal non-move action therefore must have been replaced by
+            # then.  This catches stale BodyController/manager references after
+            # a rewind before the UI can silently show an agent sleeping past
+            # their scheduled wake-up time.
+            try:
+                start_minute = manager._hhmm_to_minutes(action.start_time)
+                end_minute = manager._hhmm_to_minutes(action.end_time)
+                day_start_tick = tick - (tick % (24 * 60))
+                end_tick = day_start_tick + end_minute
+                if end_minute <= start_minute:
+                    end_tick += 24 * 60
+                terminal_frame_allowance = 1 if action.action_type == ActionType.MOVE else 0
+                if tick > end_tick + terminal_frame_allowance:
+                    anomalies.append({"agent_id": state.agent_id, "kind": "action_overdue"})
+            except (AttributeError, TypeError, ValueError):
+                anomalies.append({"agent_id": state.agent_id, "kind": "invalid_action_time"})
             if action.action_type == ActionType.MOVE:
                 moving += 1
                 current = (state.position.x, state.position.y)
@@ -71,12 +88,18 @@ class RuntimeHealthMonitor:
         for stale_id in list(self._travel):
             if stale_id not in agent_ids:
                 self._travel.pop(stale_id, None)
+        try:
+            event_loop_tasks = len(asyncio.all_tasks())
+        except RuntimeError:
+            # Unit tests and offline diagnostics can invoke health checks
+            # without an active asyncio loop.
+            event_loop_tasks = 0
         report = {
             "tick": tick, "time": hhmm, "agents": len(agent_ids), "moving": moving,
             "paused": paused, "conversations": conversations,
             "background_tasks": len(engine._conversation_tasks) + len(engine._decision_tasks),
             "background_decisions": len(engine._decision_tasks),
-            "event_loop_tasks": len(asyncio.all_tasks()),
+            "event_loop_tasks": event_loop_tasks,
             "anomalies": anomalies,
             "healthy": not anomalies,
         }

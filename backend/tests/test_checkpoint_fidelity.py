@@ -17,11 +17,21 @@ from src.agents.Actions import ActionState, ActionType, AgentActionManager, Loca
 from src.agents.conversation import RelationshipMatrix
 from src.core.agent_registry import AgentRegistry, AgentRuntimeState
 from src.core.checkpoint_manager import KEEP_LAST, list_checkpoints, load_checkpoint, prune_checkpoints, save_checkpoint
+from src.core.runtime_health import RuntimeHealthMonitor
 from src.core.world_engine import WorldEngine
 from src.core.world_state import CurrentAction, Position, WorldState
 
 
 class CheckpointFidelityTests(unittest.TestCase):
+    def test_checkpoint_preserves_decision_cooldown(self) -> None:
+        engine = WorldEngine(sim_start_date="2099-01-01")
+        engine._last_decision_tick = {"alice": 120}
+
+        restored = WorldEngine(sim_start_date="2099-01-01")
+        restored.restore_checkpoint_state(engine.checkpoint_state())
+
+        self.assertEqual(restored._last_decision_tick, {"alice": 120})
+
     def test_default_checkpoint_retention_keeps_one_full_day(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch(
             "src.core.checkpoint_manager.CHECKPOINT_DIR", Path(directory),
@@ -130,6 +140,54 @@ class CheckpointFidelityTests(unittest.TestCase):
             self.assertEqual(random.random(), expected_next_random)
         finally:
             random.setstate(original_rng_state)
+
+    def test_checkpoint_restore_discards_brains_bound_to_replaced_managers(self) -> None:
+        resolver = LocationResolver()
+        position = resolver.random_interior_point("mess")
+        plan = [
+            {"action": "Sleep", "start": "00:00", "end": "07:00", "location_id": "mess"},
+            {"action": "Wake up", "start": "07:00", "end": "08:00", "location_id": "mess"},
+        ]
+
+        def registry_with(manager: AgentActionManager) -> AgentRegistry:
+            registry = AgentRegistry()
+            registry.register(AgentRuntimeState(
+                agent_id="alice", persona={"Name": "Alice"}, persona_name="Alice",
+                manager=manager, position=position, day_plan=plan,
+            ))
+            return registry
+
+        engine = WorldEngine()
+        stale_manager = AgentActionManager("alice", plan, position, resolver)
+        engine.registry = registry_with(stale_manager)
+        stale_brain = engine._brain_for(engine.registry.get("alice"))
+
+        restored_manager = AgentActionManager("alice", plan, position, resolver)
+        engine.registry = registry_with(restored_manager)
+        engine.restore_checkpoint_state({"day_index": 0})
+
+        restored_brain = engine._brain_for(engine.registry.get("alice"))
+        self.assertIsNot(restored_brain, stale_brain)
+        self.assertIs(restored_brain.body.manager, restored_manager)
+        self.assertEqual(restored_brain.act(420).description, "Wake up")
+
+    def test_health_monitor_reports_an_overdue_action(self) -> None:
+        resolver = LocationResolver()
+        position = resolver.random_interior_point("mess")
+        manager = AgentActionManager("alice", [], position, resolver)
+        manager.current_action = ActionState(
+            action_type=ActionType.MISC, description="Sleep", start_time="00:00",
+            end_time="07:00", location_id="mess", position=position,
+        )
+        engine = WorldEngine()
+        engine.registry.register(AgentRuntimeState(
+            agent_id="alice", persona={"Name": "Alice"}, persona_name="Alice",
+            manager=manager, position=position,
+        ))
+        engine.world.register_agent("alice", position)
+
+        report = RuntimeHealthMonitor().observe(engine, tick=446, hhmm="07:26")
+        self.assertIn({"agent_id": "alice", "kind": "action_overdue"}, report["anomalies"])
 
 
 class RelationshipMatrixWriteTests(unittest.TestCase):

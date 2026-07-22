@@ -242,6 +242,13 @@ def _parse_retry_after(msg: str) -> float:
     m = _re.search(r"retry in\s+([\d.]+)\s*s", msg, _re.IGNORECASE)
     if m:
         return float(m.group(1))
+    # RESOURCE_EXHAUSTED without a retry hint is commonly the free-tier
+    # per-minute quota.  Retrying after the normal two-request spacing (24 s
+    # at 5 RPM) repeatedly hammers an already-exhausted key pool when several
+    # agents decide at once.  Hold that credential for a complete RPM window;
+    # callers immediately continue their deterministic plan in the meantime.
+    if "resource_exhausted" in msg.lower() or "resource has been exhausted" in msg.lower():
+        return max(60.0, MIN_INTERVAL_S * RPM_LIMIT)
     return MIN_INTERVAL_S * 2
 
 

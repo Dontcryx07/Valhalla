@@ -113,6 +113,9 @@ class WorldEngine:
         # Per-agent cached observations from the current tick's perceive phase,
         # so Phase 4 (LLM decide) can reuse them without recomputing.
         self._tick_observations: Dict[str, list] = {}
+        # Last tick at which each agent started an advisory LLM decision.  A
+        # changing proximity observation must not generate an API call per tick.
+        self._last_decision_tick: Dict[str, int] = {}
         # Background LLM work is not serializable, but its deterministic input
         # envelope is.  Keep that envelope so a restore can restart an
         # in-flight conversation instead of silently losing it.
@@ -144,6 +147,7 @@ class WorldEngine:
                 agent_id: [list(item) for item in observations]
                 for agent_id, observations in self._last_obs.items()
             },
+            "last_decision_tick": dict(self._last_decision_tick),
             "recent_conversations": list(self._recent_convs),
             "relationship_matrix": self.relationship_matrix.snapshot(),
             "event_attendance": self.event_manager.attendance_snapshot(),
@@ -152,7 +156,16 @@ class WorldEngine:
         }
 
     def restore_checkpoint_state(self, state: Dict[str, Any]) -> None:
-        """Restore engine-owned state after the world and registry are loaded."""
+        """Restore engine-owned state after the world and registry are loaded.
+
+        The caller replaces ``self.registry`` with newly deserialized manager
+        instances before this method runs.  Brains own BodyControllers, which
+        retain a manager reference, so cached brains must never survive that
+        replacement.  Otherwise the clock advances an old manager while the
+        restored registry (and therefore the UI) remains frozen on its old
+        action.
+        """
+        self._brains.clear()
         if not state:
             return
         self.sim_start_date = state.get("sim_start_date", self.sim_start_date)
@@ -166,6 +179,10 @@ class WorldEngine:
         self._last_obs = {
             agent_id: frozenset(tuple(item) for item in observations)
             for agent_id, observations in state.get("last_observations", {}).items()
+        }
+        self._last_decision_tick = {
+            agent_id: int(tick)
+            for agent_id, tick in state.get("last_decision_tick", {}).items()
         }
         self._recent_convs = deque(state.get("recent_conversations", []), maxlen=12)
         relationship_state = state.get("relationship_matrix")
@@ -593,11 +610,15 @@ class WorldEngine:
             if not s.paused and novelty_flags.get(s.agent_id, False)
             and s.energy_level >= _cfg.DECIDE_MIN_ENERGY
             and s.emotion_state >= _cfg.DECIDE_MIN_EMOTION
+            and current_tick - self._last_decision_tick.get(
+                s.agent_id, -_cfg.DECIDE_COOLDOWN_TICKS
+            ) >= _cfg.DECIDE_COOLDOWN_TICKS
         ]
         if decide_agents:
             for state in decide_agents:
                 if state.agent_id in self._decision_tasks:
                     continue
+                self._last_decision_tick[state.agent_id] = current_tick
                 self._decision_tasks[state.agent_id] = asyncio.create_task(
                     self._phase_llm_decide(state, current_tick, hhmm),
                     name=f"decide:{state.agent_id}:{current_tick}",
@@ -1711,6 +1732,7 @@ class WorldEngine:
         self._day_index += 1
         self._recent_convs.clear()
         self._in_range.clear()
+        self._last_decision_tick.clear()
         self._last_obs.clear()
         self._tick_observations.clear()
         self._applied_event_effects.clear()

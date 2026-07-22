@@ -187,13 +187,25 @@ LLM_HOURLY_CEILING = _env_int("SIM_LLM_HOURLY_CEILING", 0)
 # Energy and emotion thresholds for LLM calls
 DECIDE_MIN_ENERGY = _env_float("SIM_DECIDE_MIN_ENERGY", 0.1)
 DECIDE_MIN_EMOTION = _env_float("SIM_DECIDE_MIN_EMOTION", 0.1)
+# An observation may change every tick while agents travel together.  Limit
+# each agent's advisory LLM reflex to avoid turning normal movement into an
+# unbounded API stream; their action state machines still run every tick.
+DECIDE_COOLDOWN_TICKS = _env_int("SIM_DECIDE_COOLDOWN_TICKS", 30)
 CONVERSATION_MIN_ENERGY = _env_float("SIM_CONVERSATION_MIN_ENERGY", 0.05)
 CONVERSATION_MIN_EMOTION = _env_float("SIM_CONVERSATION_MIN_EMOTION", 0.05)
 
 # LLM Configuration
 TEMPERATURE = 0.7           # Creativity the model is allowed
 # Per-key RPM limit for Gemini API calls. Google free tier: 5 RPM.
-API_RPM_LIMIT = _env_int("SIM_API_RPM_LIMIT", 20)
+# Gemini's free tier is five requests/minute/key.  An inherited .env value
+# above that limit silently defeats the limiter, so require an explicit paid
+# tier opt-in before accepting it.
+_requested_api_rpm_limit = max(1, _env_int("SIM_API_RPM_LIMIT", 5))
+API_RPM_LIMIT = (
+    _requested_api_rpm_limit
+    if _env_bool("SIM_ALLOW_HIGHER_API_RPM", False)
+    else min(_requested_api_rpm_limit, 5)
+)
 # Every individual Gemini HTTP request has a short deadline, and the complete
 # fallback cascade has its own cap.  These prevent one unavailable model from
 # holding a planner/conversation worker indefinitely.
@@ -281,6 +293,7 @@ _OVERRIDE_MAP = {
     "llm_hourly_ceiling": "LLM_HOURLY_CEILING",
     "decide_min_energy": "DECIDE_MIN_ENERGY",
     "decide_min_emotion": "DECIDE_MIN_EMOTION",
+    "decide_cooldown_ticks": "DECIDE_COOLDOWN_TICKS",
     "conversation_min_energy": "CONVERSATION_MIN_ENERGY",
     "conversation_min_emotion": "CONVERSATION_MIN_EMOTION",
     "day_handoff_conversation_timeout_seconds": "DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS",

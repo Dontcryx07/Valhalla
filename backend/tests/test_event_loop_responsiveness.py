@@ -52,6 +52,13 @@ class EventLoopResponsivenessTests(unittest.IsolatedAsyncioTestCase):
 
 
 class GeminiAttemptTests(unittest.TestCase):
+    def test_resource_exhaustion_without_retry_hint_cools_for_a_full_rpm_window(self):
+        duration = gemini_client._parse_retry_after(
+            "429 RESOURCE_EXHAUSTED: Resource has been exhausted (e.g. check quota)."
+        )
+
+        self.assertGreaterEqual(duration, 60.0)
+
     def test_fast_fail_mode_still_attempts_the_selected_model(self):
         expected = TickDecision(decision="continue", reason="test")
         with patch.object(gemini_client, "API_KEYS", ["test-key"]), \
