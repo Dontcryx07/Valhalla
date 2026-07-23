@@ -50,6 +50,13 @@ class AgentRegistry:
     def register(self, state: AgentRuntimeState) -> None:
         self._agents[state.agent_id] = state
 
+    def remove(self, agent_id: str) -> AgentRuntimeState:
+        """Remove and return a runtime record for a roster edit while stopped."""
+        state = self._agents.pop(agent_id, None)
+        if state is None:
+            raise KeyError(f"Unknown agent '{agent_id}'")
+        return state
+
     def get(self, agent_id: str) -> AgentRuntimeState:
         state = self._agents.get(agent_id)
         if state is None:

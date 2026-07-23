@@ -12,13 +12,13 @@ Exports:
 Usage as a library (for the multi-agent orchestrator):
   graph = create_agent_graph()
   result = graph.invoke({
-      "persona_name": "parv",
+      "persona_name": "parv_singla",
       "persona": {...},
       "current_time": "2026-07-03 06:00",
   })
 
 Usage from CLI:
-  python Single_agent.py parv
+  python Single_agent.py parv_singla
 """
 
 from __future__ import annotations

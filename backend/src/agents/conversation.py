@@ -17,12 +17,12 @@ Usage:
     result = generate_conversation(
         agent_a_id="parv_singla",
         agent_b_id="tanishq",
-        persona_a=parv_persona,
-        persona_b=tanishq_persona,
-        plan_a=parv_plan,
-        plan_b=tanishq_plan,
-        action_a=parv_current_action,
-        action_b=tanishq_current_action,
+        persona_a=gray_wilder_persona,
+        persona_b=jules_persona,
+        plan_a=gray_wilder_plan,
+        plan_b=jules_plan,
+        action_a=gray_wilder_current_action,
+        action_b=jules_current_action,
         rel_a_to_b=matrix.get("parv_singla", "tanishq"),
         rel_b_to_a=matrix.get("tanishq", "parv_singla"),
         location_id="mess",
@@ -50,7 +50,7 @@ from pydantic import BaseModel, Field
 
 from src.core.log import get_logger
 from src.core.world_state import CurrentAction
-from src.llm.gemini_client import call_gemini, AllModelsFailedError
+from src.llm.gemini_client import call_gemini, AllModelsFailedError, ProviderFailureError
 
 logger = get_logger(__name__)
 
@@ -148,7 +148,13 @@ class RelationshipMatrix:
 
     def load(self) -> None:
         with _matrix_lock(self.path):
-            self._matrix = self._read_disk()
+            raw = {}
+            try:
+                raw = json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else {}
+            except (OSError, ValueError, json.JSONDecodeError):
+                raw = {}
+            self._schema_version = int(raw.get("schema_version", 1)) if isinstance(raw, dict) else 1
+            self._matrix = self._normalise(raw) if raw else {}
             self._pending_deltas.clear()
         if self._matrix:
             logger.info("[RelationshipMatrix] loaded %d pairs from %s", len(self._matrix), self.path.name)
@@ -196,7 +202,7 @@ class RelationshipMatrix:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
         document = {
-            "schema_version": 1,
+            "schema_version": 2,
             "relationships": {
                 key: value.model_dump() for key, value in sorted(matrix.items())
             },
@@ -230,6 +236,96 @@ class RelationshipMatrix:
         """Relationship of agent `a` toward agent `b`. Defaults to 0.5 (neutral)."""
         return self._matrix.get(self._pair_key(a, b), RelationshipRecord()).score
 
+    def remove_agent(self, agent_id: str) -> None:
+        """Drop every directional relationship involving one retired agent."""
+        self._matrix = {
+            key: record for key, record in self._matrix.items()
+            if agent_id not in key.split("->", 1)
+        }
+        self._pending_deltas.clear()
+        with _matrix_lock(self.path):
+            self._write_atomic(self._matrix)
+
+    def seed(self, source: str, target: str, record: RelationshipRecord) -> None:
+        """Set a relationship baseline during a stopped roster operation."""
+        self._matrix[self._pair_key(source, target)] = record
+        with _matrix_lock(self.path):
+            self._write_atomic(self._matrix)
+
+    def replace_display_name(self, old_name: str, new_name: str) -> None:
+        """Update display-name references without changing stable agent IDs."""
+        for record in self._matrix.values():
+            record.context = record.context.replace(old_name, new_name)
+        with _matrix_lock(self.path):
+            self._write_atomic(self._matrix)
+
+    def ensure_grounded_seed(self, agents: List[Dict[str, Any]]) -> None:
+        """Upgrade the original uniform v1 matrix to a directional social baseline.
+
+        Kept here rather than in prompts so the relationships remain data the
+        conversation engine can inspect and checkpoint deterministically.
+        """
+        names = {str(item["agent_id"]): str(item.get("persona_name") or item["agent_id"]) for item in agents}
+        expected_keys = {
+            self._pair_key(source, target)
+            for source in names
+            for target in names
+            if source != target
+        }
+        # A roster can be replaced outside a running world.  Version 2 means
+        # the record format is current, not that its agent IDs are necessarily
+        # current.  Preserve valid directional context, prune retired IDs and
+        # seed only missing pairs.
+        if getattr(self, "_schema_version", 1) >= 2 and set(self._matrix) == expected_keys:
+            return
+        profiles = {
+            "ankit": ("table tennis and hardware tinkering", "patient practical advice"),
+            "ansh_batra": ("football and visual storytelling", "enthusiastic plans"),
+            "anubhav_prasad": ("co-op games and late-night chai", "calm listening"),
+            "ghanisht_kaushal": ("badminton and blunt movie opinions", "reliable follow-through"),
+            "gurnoor_singh": ("photography and road-trip playlists", "big social energy"),
+            "lavanya_sharma": ("basketball and debate", "direct feedback"),
+            "parv_singla": ("running and music", "impulsive invitations"),
+            "riya_murarka": ("reading circles and long runs", "clear boundaries"),
+            "saksham": ("badminton and strategy games", "dry humour"),
+            "tanishq": ("strategy games and playlists", "quiet, improving confidence"),
+        }
+        special = {
+            ("gurnoor_singh", "parv_singla"): (0.86, ["close-friends", "project-chaos"], "They are close friends, but Gurnoor sometimes has to make Parv slow down before a fun idea becomes three commitments."),
+            ("parv_singla", "gurnoor_singh"): (0.84, ["close-friends", "adventure"], "Parv trusts Gurnoor to show up; he also enjoys trying to pull him into a spontaneous outing after a productive day."),
+            ("lavanya_sharma", "ghanisht_kaushal"): (0.28, ["friendly-rivalry", "different-work-styles"], "Lavanya respects Ghanisht but thinks he can treat a prototype like a spreadsheet. Their friction is usually productive after a cooling-off break."),
+            ("ghanisht_kaushal", "lavanya_sharma"): (0.36, ["friendly-rivalry", "respect"], "Ghanisht finds Lavanya's directness intimidating on tired days, yet trusts her to identify the practical flaw everyone else missed."),
+            ("riya_murarka", "tanishq"): (0.18, ["careful-acquaintance", "boundaries"], "Riya is friendly but keeps the connection measured; Tanishq has been making an effort to be considerate and let trust develop at her pace."),
+            ("tanishq", "riya_murarka"): (0.30, ["admiration", "respectful-distance"], "Tanishq values Riya's book recommendations and is practising being a considerate, unhurried conversational partner without reading extra meaning into it."),
+            ("ansh_batra", "saksham"): (0.47, ["project-partners", "missed-deadline"], "Ansh still feels mildly guilty about an overambitious project timeline; Saksham is warming back up after Ansh started communicating earlier."),
+            ("saksham", "ansh_batra"): (0.34, ["project-partners", "rebuilding-trust"], "Saksham likes Ansh's imagination but remembers the missed handoff. He appreciates concrete plans more than enthusiastic promises."),
+        }
+        rebuilt: Dict[str, RelationshipRecord] = {}
+        ids = sorted(names)
+        for source in ids:
+            for target in ids:
+                if source == target:
+                    continue
+                existing = self._matrix.get(self._pair_key(source, target))
+                override = special.get((source, target))
+                if existing is not None:
+                    rebuilt[self._pair_key(source, target)] = existing
+                    continue
+                if override:
+                    score, tags, context = override
+                else:
+                    source_interest = profiles.get(source, ("campus routines", "steady conversation"))[0]
+                    target_style = profiles.get(target, ("campus routines", "steady conversation"))[1]
+                    score = 0.30 + ((sum(map(ord, source + target)) % 33) / 100)
+                    tags = ["campus-acquaintance", "low-pressure"]
+                    context = f"{names[source]} and {names[target]} know each other through {source_interest}. {names[source]} appreciates {target}'s {target_style}, but the friendship is still finding its rhythm."
+                rebuilt[self._pair_key(source, target)] = RelationshipRecord(score=score, tags=tags, context=context)
+        with _matrix_lock(self.path):
+            self._matrix = rebuilt
+            self._pending_deltas.clear()
+            self._schema_version = 2
+            self._write_atomic(rebuilt)
+
     def context(self, a: str, b: str) -> RelationshipRecord:
         """Return a copy of the expressive directed relationship record."""
         return self._matrix.get(self._pair_key(a, b), RelationshipRecord()).model_copy(deep=True)
@@ -247,7 +343,7 @@ class RelationshipMatrix:
 
     def snapshot(self) -> Dict[str, Any]:
         """Return a JSON-safe copy for the simulation checkpoint."""
-        return {"schema_version": 1, "relationships": {
+        return {"schema_version": 2, "relationships": {
             key: value.model_dump() for key, value in self._matrix.items()
         }}
 
@@ -532,6 +628,8 @@ def generate_conversation(
         )
         return result
 
+    except ProviderFailureError:
+        raise
     except Exception:
         logger.exception(
             "[Conversation] LLM call failed for '%s' <-> '%s' -- skipping conversation",
@@ -556,7 +654,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Conversation module self-test -- generate a conversation between two personas"
     )
-    parser.add_argument("persona_a", nargs="?", default="parv", help="First persona name")
+    parser.add_argument("persona_a", nargs="?", default="parv_singla", help="First persona name")
     parser.add_argument("persona_b", nargs="?", default="tanishq", help="Second persona name")
     parser.add_argument(
         "--current-time", default="2026-07-03 08:00",

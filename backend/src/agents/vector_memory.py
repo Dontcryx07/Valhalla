@@ -16,8 +16,8 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, List, Optional
 
 from src import config as _cfg
-from src.config import API_KEYS
 from src.core.log import get_logger
+from src.llm.gemini_client import ProviderFailureError, embed_content
 
 logger = get_logger(__name__)
 
@@ -137,11 +137,6 @@ class VectorMemoryRetriever:
             if self._qmodels is None:
                 from qdrant_client.http import models as qmodels
                 self._qmodels = qmodels
-            if self._embedder is None:
-                if not API_KEYS:
-                    raise RuntimeError("no Gemini API key available for embeddings")
-                from google import genai
-                self._embedder = genai.Client(api_key=API_KEYS[0])
             self._ok = True
             logger.info("[vector_memory] Cloud Qdrant semantic memory enabled")
         except Exception as exc:
@@ -170,18 +165,15 @@ class VectorMemoryRetriever:
             from src.core.budget import GOVERNOR
             if not GOVERNOR.can_afford("embedding", cost=1):
                 return None
-            from google.genai import types
-            result = self._embedder.models.embed_content(
-                model=_cfg.MEMORY_EMBEDDING_MODEL,
-                contents=text,
-                config=types.EmbedContentConfig(task_type=task_type,
-                                                output_dimensionality=_cfg.MEMORY_VECTOR_DIMENSIONS),
-            )
-            vector = list(result.embeddings[0].values)
+            vector = embed_content(text, task_type, _cfg.MEMORY_VECTOR_DIMENSIONS)
             if len(vector) != _cfg.MEMORY_VECTOR_DIMENSIONS:
                 raise ValueError(f"embedding dimension {len(vector)} does not match configured dimension")
             GOVERNOR.record("embedding", _cfg.MEMORY_EMBEDDING_MODEL)
             return vector
+        except ProviderFailureError:
+            # This is terminal for the live simulation, not a recoverable
+            # single-record indexing failure.  WorldEngine/Odin surface it.
+            raise
         except Exception as exc:
             logger.warning("[vector_memory] embedding failed (%s)", exc)
             return None
@@ -381,6 +373,19 @@ class VectorMemoryRetriever:
             "deleted_collections": deleted,
             "failed_collections": failed,
         }
+
+    def delete_agent_memory(self, agent_id: str) -> bool:
+        """Remove one agent's Qdrant collection without touching other agents."""
+        name = collection_name(agent_id)
+        if not self._ok:
+            return False
+        try:
+            if self._client.collection_exists(name):
+                self._client.delete_collection(name)
+            return True
+        except Exception as exc:
+            logger.warning("[vector_memory] could not remove %s (%s)", name, exc)
+            return False
 
     @staticmethod
     def _days_ago(date: str) -> int:

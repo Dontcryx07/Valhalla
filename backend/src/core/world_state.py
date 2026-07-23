@@ -129,6 +129,13 @@ class WorldState(BaseModel):
             agent_id, position.x, position.y, self.tick,
         )
 
+    def remove_agent(self, agent_id: str) -> None:
+        """Remove an agent and all live references during a stopped roster edit."""
+        self.release_all_for_agent(agent_id)
+        self.agents.pop(agent_id, None)
+        self.agent_last_conversation.pop(agent_id, None)
+        self.history = [entry for entry in self.history if entry.agent_id != agent_id]
+
     def get_agent(self, agent_id: str) -> AgentState:
         if agent_id not in self.agents:
             raise KeyError(f"Unknown agent_id '{agent_id}'")

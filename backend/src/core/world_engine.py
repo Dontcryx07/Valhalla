@@ -70,6 +70,7 @@ from src.core.snapshot import take_snapshot, WorldSnapshot
 from src.core.world_state import WorldState, Position, CurrentAction, AgentStatus
 from src.core.world_events import WorldEventManager
 from src.core.runtime_health import RuntimeHealthMonitor
+from src.llm.gemini_client import ProviderFailureError
 from src import config as _cfg
 
 logger = get_logger(__name__)
@@ -316,16 +317,6 @@ class WorldEngine:
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", name.strip()).strip("._-").lower()
         return safe or "unknown"
 
-    def assert_checkpoint_roster_matches_seed(self, registry: AgentRegistry) -> None:
-        """Reject a resume that would silently discard newly configured agents."""
-        seed_ids = {self._persona_name_to_id(persona["Name"]) for persona in self._discover_personas()}
-        checkpoint_ids = set(registry.all_ids())
-        if seed_ids != checkpoint_ids:
-            raise ValueError(
-                "Checkpoint roster differs from the current persona roster; start a fresh simulation "
-                "instead of resuming this checkpoint."
-            )
-
     @staticmethod
     def _emotion_baseline(persona: Dict[str, Any]) -> float:
         """Derive a stable, modest mood baseline from stated personality traits.
@@ -414,6 +405,10 @@ class WorldEngine:
         if not personas:
             logger.error("[WorldEngine] no personas found — aborting")
             return
+        self.relationship_matrix.ensure_grounded_seed([
+            {"agent_id": self._persona_name_to_id(persona["Name"]), "persona_name": persona["Name"]}
+            for persona in personas
+        ])
 
         from src.agents.day_planner import run as day_planner_run
 
@@ -458,7 +453,9 @@ class WorldEngine:
                 continue
 
         # ── Phase 1b (parallel, slow): generate day plans for agents that need one ──
-        logger.info("[WorldEngine] generating day plans for %d agents (parallel) ...", len(agent_setups))
+        # A full plan makes several provider calls. Serialize startup planning
+        # to prevent concurrent agents from stampeding the shared key ring.
+        logger.info("[WorldEngine] generating day plans for %d agents (sequential) ...", len(agent_setups))
         plan_t0 = _time.perf_counter()
 
         async def _plan_one(name: str, hostel: str, agent_id: str,
@@ -498,6 +495,10 @@ class WorldEngine:
                 self.world.register_agent(agent_id, position)
                 logger.info("[WorldEngine]   registered '%s' (hostel=%s) — %d plan actions",
                             name, hostel, len(day_plan))
+            except ProviderFailureError:
+                # Never continue startup with an empty-plan agent after every
+                # available key rejects a request. Odin reports this cleanly.
+                raise
             except Exception as e:
                 logger.error("[WorldEngine]   day plan failed for '%s': %s — skipping", name, e)
                 import traceback; traceback.print_exc()
@@ -514,9 +515,8 @@ class WorldEngine:
                 self.world.register_agent(agent_id, position)
                 logger.info("[WorldEngine]   registered '%s' with empty plan (fallback)", name)
 
-        tasks = [_plan_one(n, h, a, p, pe) for n, h, a, p, pe in agent_setups]
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+        for name, hostel, agent_id, position, persona in agent_setups:
+            await _plan_one(name, hostel, agent_id, position, persona)
 
         self._apply_event_opportunities(self.sim_start_date)
 
@@ -541,6 +541,10 @@ class WorldEngine:
         # Start the clock at the configured time of day (e.g. 08:00) so the day
         # begins with real activity instead of everyone asleep at midnight.
         self.world.tick = self._hhmm_to_minutes(self.sim_start_hhmm)
+        # Persist the assembled roster before the first driver tick. This lets
+        # an observer use stopped-only roster controls even when an API quota
+        # failure prevents the very first tick from running.
+        save_checkpoint(self.world, self.registry, self.world.tick, self.checkpoint_state())
         logger.info(
             "[WorldEngine] initialized %d agents in %.1fs — starting simulation at %s",
             len(self.registry), elapsed, self.sim_start_hhmm,
@@ -564,6 +568,10 @@ class WorldEngine:
 
         Returns a dict snapshot for frontend use.
         """
+        from src.llm.gemini_client import provider_failure
+        failure = provider_failure()
+        if failure:
+            raise failure
         current_tick = self.world.tick
         hhmm = self._minutes_to_hhmm(current_tick % (24 * 60))
 
@@ -738,6 +746,9 @@ class WorldEngine:
             except asyncio.CancelledError:
                 continue
             except Exception as exc:
+                from src.llm.gemini_client import ProviderFailureError
+                if isinstance(exc, ProviderFailureError):
+                    raise
                 logger.error("[WorldEngine] agent '%s' LLM decide failed: %s", agent_id, exc)
                 completed[agent_id] = "continue"
         return completed
@@ -824,6 +835,14 @@ class WorldEngine:
                 ),
             )
             new_plan = plan_result.get("day_plan", [])
+            if plan_result.get("replan_rejected"):
+                logger.warning(
+                    "[WorldEngine] replan rejected for '%s'; retaining prior %d-action plan: %s",
+                    state.persona_name,
+                    len(state.day_plan),
+                    plan_result.get("error", "validation retries exhausted"),
+                )
+                return
             if new_plan and state.manager:
                 state.day_plan = new_plan
                 state.manager.replace_day_plan(new_plan)

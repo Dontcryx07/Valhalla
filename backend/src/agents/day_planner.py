@@ -47,7 +47,7 @@ import re
 import threading
 from collections import defaultdict, deque
 from src.core.log import get_logger
-from src.llm.gemini_client import call_gemini, AllModelsFailedError
+from src.llm.gemini_client import call_gemini, AllModelsFailedError, ProviderFailureError
 from google.genai import errors as genai_errors
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
@@ -72,6 +72,61 @@ _UNSAFE_PLAN_TERMS = (
     "soft porn", "sexual content",
 )
 
+# Academic locations are a behavioural contract, not a preference hidden in a
+# prompt.  Models may still choose LHC for genuinely common/shared teaching or
+# SAB for explicitly shared work, but branch-specific teaching belongs here.
+_BRANCH_VENUES = (
+    ("mechanical", "mechanical_department"),
+    ("chemical", "chemical_department"),
+    ("electrical", "electrical_department"),
+    ("integrated circuit", "electrical_department"),
+    ("computer science", "computer_science_department"),
+    ("aide", "computer_science_department"),
+    ("artificial intelligence", "computer_science_department"),
+    ("data engineering", "computer_science_department"),
+)
+_BRANCH_ACTIVITY_PATTERN = re.compile(
+    r"\b(?:class(?:es)?|lecture(?:s)?|lab(?:s)?|laborator(?:y|ies)|tutorial(?:s)?|practical(?:s)?)\b",
+    re.IGNORECASE,
+)
+_SHARED_SESSION_WORDS = ("common", "core", "elective", "guest", "large", "shared", "interdisciplinary", "seminar")
+
+
+def _academic_venue_policy(persona: Dict[str, Any]) -> str:
+    branch = str(persona.get("Branch", ""))
+    destination = next((venue for marker, venue in _BRANCH_VENUES if marker in branch.lower()), None)
+    if not destination:
+        return "No branch-specific policy is known; choose the listed location that explicitly fits."
+    return (
+        f"This student is in {branch}. Branch-specific classes, tutorials, and labs MUST use "
+        f"`{destination}`. LHC is only for common/core/elective/guest/large shared sessions. "
+        "SAB is only for shared academic services, interdisciplinary work, seminars, overflow labs, "
+        "faculty meetings, or an activity explicitly described as happening there."
+    )
+
+
+def _local_academic_venue_check(actions: List[Dict[str, Any]], persona: Dict[str, Any]) -> Optional[str]:
+    branch = str(persona.get("Branch", "")).lower()
+    required = next((venue for marker, venue in _BRANCH_VENUES if marker in branch), None)
+    if not required:
+        return None
+    for action in actions:
+        description = str(action.get("action", "")).lower()
+        location = str(action.get("location_id", ""))
+        # Use whole academic terms.  A substring check classified ordinary
+        # activities such as "chai break with classmates" as a class because
+        # "class" is part of "classmates", causing needless replan retries.
+        if not _BRANCH_ACTIVITY_PATTERN.search(description):
+            continue
+        if any(word in description for word in _SHARED_SESSION_WORDS):
+            continue
+        if location != required:
+            return (
+                f"branch-specific academic action '{action.get('action')}' for {persona.get('Branch')} "
+                f"must use {required}, not {location}"
+            )
+    return None
+
 
 def load_places(places_file: Optional[Path] = None) -> List[Place]:
     """
@@ -91,7 +146,7 @@ def load_places(places_file: Optional[Path] = None) -> List[Place]:
         )
         return []
 
-    raw = json.loads(Path(path).read_text())
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
     entries = raw.get("locations", [])
 
     places: List[Place] = []
@@ -245,6 +300,7 @@ class DayPlannerState(TypedDict, total=False):
     # ---- output ----
     day_plan: List[Dict[str, Any]]
     error: Optional[str]
+    replan_rejected: bool
 
 
 # ---------------------------------------------------------------------------
@@ -445,6 +501,8 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "locations, ensure the distance is reasonable for the time available. "
             "Default to locations that make sense for this specific persona. "
             "Do not suggest splitting the activity.\n\n"
+            "ACADEMIC VENUE POLICY: obey the branch-specific policy provided with the persona. "
+            "Do not use SAB as a generic lecture/lab default.\n\n"
             "For EACH block, assign realistic energy_change and emotion_change values:\n"
             "- energy_change: positive = restorative, negative = tiring\n"
             "- emotion_change: positive = uplifting, negative = draining\n"
@@ -453,6 +511,7 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"ACADEMIC VENUE POLICY:\n{_academic_venue_policy(persona)}\n\n"
             f"{_flavor_block(state)}\n\n"
             f"ACTIVITIES:\n{json.dumps(atomic_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
@@ -500,6 +559,8 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "Do NOT output walking, commuting, travel, transit, leaving, or arriving "
             "as an action. The runtime owns visible routes between places; every action "
             "you output must be an on-site activity at its assigned location.\n\n"
+            "ACADEMIC VENUE POLICY: obey the branch-specific policy provided with the persona. "
+            "Branch-specific classes/labs must not silently fall back to SAB.\n\n"
             "Make action boundaries feel natural — group related sub-actions together. "
             "Consider typical on-site durations: eating ~20-40min and studying "
             "~30-120min. Keep adjacent location changes realistic by leaving enough "
@@ -512,6 +573,7 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
+            f"ACADEMIC VENUE POLICY:\n{_academic_venue_policy(persona)}\n\n"
             f"{_flavor_block(state)}\n\n"
             f"HOURLY BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
@@ -530,7 +592,11 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
 
     return {**state, "fine_plan": fine_actions}
 
-def _local_overlap_check(actions: List[Dict[str, Any]], mode: str = "full_day") -> Optional[str]:
+def _local_overlap_check(
+    actions: List[Dict[str, Any]],
+    mode: str = "full_day",
+    remaining_start: Optional[str] = None,
+) -> Optional[str]:
     """Cheap deterministic pre-check before spending an LLM call on validation --
     catches the most common failure mode (bad overlaps/gaps) for free."""
     if not actions:
@@ -545,8 +611,16 @@ def _local_overlap_check(actions: List[Dict[str, Any]], mode: str = "full_day") 
     except Exception as e:  # malformed time strings
         return f"unparsable time value: {e}"
 
-    # Remaining-day plans start at the current time, not necessarily 00:00
-    if mode != "remaining" and to_minutes(sorted_actions[0]["start"]) != 0:
+    # Remaining-day replans replace the *whole* active plan.  They therefore
+    # must begin now and continue through midnight; otherwise a valid old-plan
+    # tail would be silently discarded and the agent would become idle.
+    if mode == "remaining" and remaining_start:
+        if to_minutes(sorted_actions[0]["start"]) != to_minutes(remaining_start):
+            return (
+                f"remaining-day plan does not start at {remaining_start} "
+                f"(starts at {sorted_actions[0]['start']})"
+            )
+    elif mode != "remaining" and to_minutes(sorted_actions[0]["start"]) != 0:
         return f"plan does not start at 00:00 (starts at {sorted_actions[0]['start']})"
 
     for prev, curr in zip(sorted_actions, sorted_actions[1:]):
@@ -561,11 +635,11 @@ def _local_overlap_check(actions: List[Dict[str, Any]], mode: str = "full_day") 
     if to_minutes(sorted_actions[-1]["end"]) <= to_minutes(sorted_actions[-1]["start"]):
         return f"action '{sorted_actions[-1]['action']}' has a non-positive duration"
 
-    # Remaining-day plans don't need to perfectly hit 24:00
-    if mode != "remaining":
-        last_end = sorted_actions[-1]["end"]
-        if to_minutes(last_end) not in (24 * 60, 0):
-            return f"plan does not end at 24:00 (ends at {last_end})"
+    # Even a remaining-day plan replaces the entire current plan, so it must
+    # explicitly own the final minute of the day.
+    last_end = sorted_actions[-1]["end"]
+    if to_minutes(last_end) not in (24 * 60, 0):
+        return f"plan does not end at 24:00 (ends at {last_end})"
 
     return None
 
@@ -606,9 +680,15 @@ def _local_content_safety_check(actions: List[Dict[str, Any]]) -> Optional[str]:
 
 
 def validate_plan(state: DayPlannerState) -> DayPlannerState:
-    local_issue = _local_overlap_check(state["fine_plan"], mode=state.get("mode", "full_day")) or _local_location_check(
+    current_time = state.get("current_time", "")
+    remaining_start = current_time.rsplit(" ", 1)[-1] if " " in current_time else None
+    local_issue = _local_overlap_check(
+        state["fine_plan"],
+        mode=state.get("mode", "full_day"),
+        remaining_start=remaining_start,
+    ) or _local_location_check(
         state["fine_plan"], state.get("places", [])
-    ) or _local_content_safety_check(state["fine_plan"])
+    ) or _local_academic_venue_check(state["fine_plan"], state["persona"]) or _local_content_safety_check(state["fine_plan"])
     if local_issue:
         logger.info("[day_planner] local validation failed: %s", local_issue)
         return {
@@ -676,6 +756,20 @@ def _force_accept(state: DayPlannerState) -> DayPlannerState:
     same content constraints as a normally validated plan.  Retrying a model
     output must never turn a rejected unsafe action into an accepted schedule.
     """
+    # A remaining-day replan is optional.  Unlike startup/day-handoff plans,
+    # it has a known-good predecessor.  Never force-accept malformed output
+    # here: the caller will retain the prior plan instead.
+    if state.get("mode") == "remaining":
+        return {
+            **state,
+            "day_plan": [],
+            "replan_rejected": True,
+            "error": (
+                f"replan rejected after {MAX_PLAN_RETRIES} retries, last issue: "
+                f"{state.get('conflict_reason')}"
+            ),
+        }
+
     plan = []
     for original in sorted(state.get("fine_plan", []), key=lambda action: action.get("start", "00:00")):
         action = dict(original)
@@ -858,6 +952,8 @@ def run(agent: Any, world_state: dict) -> dict:
     # only multiplied a provider outage into a startup stall.
     try:
         final_state = get_compiled_graph().invoke(initial_state)
+    except ProviderFailureError:
+        raise
     except (AllModelsFailedError, genai_errors.APIError) as exc:
         final_state = _provider_outage_fallback(initial_state, exc)
 
@@ -909,7 +1005,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "persona",
         nargs="?",
-        default="gurnoor",
+        default="gurnoor_singh",
         help="Persona name or persona JSON path (for example: tanishq or tanishq/tanishq.json)",
     )
     args = parser.parse_args()

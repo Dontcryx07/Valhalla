@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from src.core.log import get_logger
 from src.config import TEMPERATURE
-from src.llm.gemini_client import call_gemini
+from src.llm.gemini_client import call_gemini, ProviderFailureError
 
 logger = get_logger(__name__)
 
@@ -112,6 +112,8 @@ class Brain:
                 self.persona_name, result.decision, result.reason,
             )
             return result
+        except ProviderFailureError:
+            raise
         except Exception as e:
             logger.warning(
                 "[Brain] '%s' decide_tick LLM failed: %s — continuing plan",

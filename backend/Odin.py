@@ -17,8 +17,9 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import re
+import shutil
 import uvicorn
 
 logger = logging.getLogger(__name__)
@@ -65,14 +66,25 @@ _sim_tick_lock = asyncio.Lock()
 
 
 def _clear_runtime_state():
-    """Remove short-term memory and checkpoints for an intentional fresh run."""
-    import shutil
+    """Remove all local runtime records for an intentional fresh run."""
     for d in [
         os.path.join(DATA_DIR, "Short_term_db"),
         os.path.join(ROOT, "backend", "data", "checkpoints"),
+        os.path.join(DATA_DIR, "history"),
     ]:
         if os.path.isdir(d):
             shutil.rmtree(d)
+
+
+def _clear_long_term_memory() -> dict:
+    """Clear only Valhalla-owned semantic collections for an explicit reset."""
+    try:
+        from src.agents.Long_term import get_retriever
+        clear = getattr(get_retriever(), "clear_all_memory", None)
+        return clear() if callable(clear) else {"available": False}
+    except Exception as exc:
+        logger.warning("[SimManager] unable to clear semantic memory: %s", exc)
+        return {"available": False, "error": str(exc)}
 
 
 def _resume_checkpoint_requested() -> bool:
@@ -178,6 +190,7 @@ async def _run_sim(resume_checkpoint: bool = False):
     from src.core.world_engine import WorldEngine
     from src.core.checkpoint_manager import list_checkpoints, load_checkpoint
     from src.core.log import setup_logging
+    from src.llm.gemini_client import ProviderFailureError, provider_failure
 
     setup_logging(run_id="server_sim", console=False)
 
@@ -195,12 +208,9 @@ async def _run_sim(resume_checkpoint: bool = False):
             world, registry, checkpoint_state = load_checkpoint(
                 resume_tick, engine.resolver, return_metadata=True,
             )
-            try:
-                engine.assert_checkpoint_roster_matches_seed(registry)
-            except ValueError as exc:
-                logger.error("[SimManager] %s", exc)
-                _latest_snapshot = {"status": "error", "message": str(exc)}
-                return
+            # Checkpoints own historical membership. Comparing against the
+            # mutable persona folder would make an old checkpoint impossible
+            # to rewind after a roster add/remove operation.
             engine.world = world
             engine.registry = registry
             engine.restore_checkpoint_state(checkpoint_state)
@@ -215,9 +225,17 @@ async def _run_sim(resume_checkpoint: bool = False):
         # The normal command deliberately starts from no short-term memory or
         # checkpoint data. Resuming is available only via the explicit flag.
         _clear_runtime_state()
+        _clear_long_term_memory()
         try:
             logger.info("[SimManager] starting simulation for %s", start_date)
             await engine.initialize()
+        except ProviderFailureError as exc:
+            failure = provider_failure() or exc
+            _latest_snapshot = {"status": "provider_failure", "message": str(failure), "failure": failure.payload(),
+                                "simulation": {"running": False, "stop_reason": failure.code}}
+            print(f"[SimManager] {failure.title.upper()} — simulation stopped: {failure}")
+            await _sim_broadcaster.broadcast(_latest_snapshot)
+            return
         except Exception as e:
             _latest_snapshot = {"status": "error", "message": str(e)}
             import traceback
@@ -243,6 +261,13 @@ async def _run_sim(resume_checkpoint: bool = False):
         except asyncio.CancelledError:
             print("[SimManager] sim task cancelled")
             raise
+        except ProviderFailureError as exc:
+            failure = provider_failure() or exc
+            _latest_snapshot = {"status": "provider_failure", "message": str(failure), "failure": failure.payload(),
+                                "simulation": {"running": False, "stop_reason": failure.code}}
+            print(f"[SimManager] {failure.title.upper()} — simulation stopped: {failure}")
+            await _sim_broadcaster.broadcast(_latest_snapshot)
+            break
         except Exception as exc:
             print(f"[SimManager] error: {exc}")
             import traceback
@@ -291,6 +316,7 @@ async def reset_sim():
 
         _latest_snapshot = {"status": "resetting"}
         _clear_runtime_state()
+        _clear_long_term_memory()
         _sim_task = asyncio.create_task(_run_sim())
 
     await _sim_broadcaster.broadcast({"type": "reset"})
@@ -304,7 +330,8 @@ def _simulation_is_running() -> bool:
 def _snapshot_with_simulation_status(snapshot: Optional[dict]) -> dict:
     """Expose task state without mutating the engine-owned snapshot object."""
     payload = dict(snapshot or {"status": "initializing"})
-    payload["simulation"] = {"running": _simulation_is_running()}
+    existing = payload.get("simulation") if isinstance(payload.get("simulation"), dict) else {}
+    payload["simulation"] = {**existing, "running": _simulation_is_running()}
     return payload
 
 
@@ -358,6 +385,253 @@ class RewindInput(BaseModel):
         if self.hours is not None:
             return max(1, round((self.hours * 60) / max(1, minutes_per_tick)))
         raise ValueError("Provide a positive rewind amount in ticks or hours.")
+
+
+# --------------------------------------------------------------------------- #
+# Stopped-only roster editing.  Each edit writes a successor checkpoint rather
+# than overwriting history, so rewinding to a pre-edit checkpoint restores the
+# roster that actually existed at that point in the timeline.
+# --------------------------------------------------------------------------- #
+
+class AddAgentInput(BaseModel):
+    description: str = Field(min_length=30, max_length=4000)
+
+
+class RemoveAgentInput(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=128)
+
+
+class ReplaceAgentInput(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=128)
+    name: str = Field(min_length=2, max_length=80)
+
+
+class GeneratedPersona(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    age: int = Field(ge=18, le=30)
+    gender: str = Field(min_length=1, max_length=32)
+    branch: str = Field(min_length=2, max_length=160)
+    home_city: str = Field(min_length=2, max_length=120)
+    hostel: str
+    daily_plan_req: str = Field(min_length=40, max_length=900)
+    innate: str = Field(min_length=40, max_length=900)
+    learned: str = Field(min_length=20, max_length=900)
+    lifestyle: str = Field(min_length=40, max_length=900)
+    hobbies: str = Field(min_length=20, max_length=900)
+    goals: str = Field(min_length=30, max_length=900)
+    interests: List[str] = Field(min_length=3, max_length=12)
+
+
+def _require_stopped() -> Optional[JSONResponse]:
+    if _simulation_is_running():
+        return JSONResponse({"error": "Stop the simulation before editing the roster."}, status_code=409)
+    return None
+
+
+def _safe_agent_id(name: str) -> str:
+    result = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    return result or "agent"
+
+
+def _short_term_dir_for(name: str) -> Path:
+    return Path(DATA_DIR) / "Short_term_db" / _safe_agent_id(name)
+
+
+def _persona_file_for(name: str) -> Optional[Path]:
+    root = Path(DATA_DIR) / "personalities"
+    for path in root.glob("**/*.json"):
+        try:
+            if json.loads(path.read_text(encoding="utf-8")).get("Name") == name:
+                return path
+        except (OSError, json.JSONDecodeError):
+            continue
+    return None
+
+
+def _save_roster_successor(world, registry, engine_state: dict) -> int:
+    """Persist a roster edit without mutating its source checkpoint."""
+    from src.core.checkpoint_manager import latest_tick, save_checkpoint
+    # Same simulation minute, next storage tick: previous checkpoint remains
+    # a faithful historical roster while /start picks this successor.
+    successor = max(int(world.tick), int(latest_tick() or 0)) + 1
+    world.tick = successor
+    save_checkpoint(world, registry, successor, engine_state)
+    return successor
+
+
+def _load_stopped_roster():
+    from src.core.checkpoint_manager import list_checkpoints, load_checkpoint
+    from src.core.world_engine import WorldEngine
+    ticks = list_checkpoints()
+    if not ticks:
+        raise ValueError("No checkpoint exists yet. Start and stop a fresh simulation before editing its roster.")
+    engine = WorldEngine()
+    world, registry, state = load_checkpoint(ticks[-1], engine.resolver, return_metadata=True)
+    engine.world, engine.registry = world, registry
+    engine.restore_checkpoint_state(state)
+    return engine, state
+
+
+@app.get("/api/roster")
+async def get_roster():
+    from src.core.checkpoint_manager import list_checkpoints, load_checkpoint
+    from src.core.world_engine import WorldEngine
+    ticks = list_checkpoints()
+    if not ticks:
+        return {"agents": [], "editable": not _simulation_is_running()}
+    engine = WorldEngine()
+    _, registry, _ = load_checkpoint(ticks[-1], engine.resolver, return_metadata=True)
+    return {"editable": not _simulation_is_running(), "agents": [
+        {"id": state.agent_id, "name": state.persona_name, "branch": state.persona.get("Branch", ""), "hostel": state.persona.get("Hostel", "")}
+        for state in registry.all_states()
+    ]}
+
+
+@app.post("/api/roster/remove")
+async def remove_agent(request: RemoveAgentInput):
+    blocked = _require_stopped()
+    if blocked:
+        return blocked
+    try:
+        engine, state = _load_stopped_roster()
+        removed = engine.registry.remove(request.agent_id)
+    except (ValueError, KeyError) as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+
+    engine.world.remove_agent(request.agent_id)
+    engine.relationship_matrix.remove_agent(request.agent_id)
+    archive = Path(DATA_DIR) / "retired_agents" / datetime.now().strftime("%Y%m%d_%H%M%S") / request.agent_id
+    archive.mkdir(parents=True, exist_ok=True)
+    persona_path = _persona_file_for(removed.persona_name)
+    if persona_path:
+        shutil.move(str(persona_path.parent), str(archive / "persona"))
+    short_term = _short_term_dir_for(removed.persona_name)
+    if short_term.exists():
+        shutil.move(str(short_term), str(archive / "short_term"))
+    try:
+        from src.agents.Long_term import get_retriever
+        delete = getattr(get_retriever(), "delete_agent_memory", None)
+        if callable(delete):
+            delete(request.agent_id)
+    except Exception as exc:
+        logger.warning("[Roster] could not delete semantic memory for %s: %s", request.agent_id, exc)
+    tick = _save_roster_successor(engine.world, engine.registry, engine.checkpoint_state())
+    return {"status": "removed", "agent_id": request.agent_id, "checkpoint_tick": tick, "archive": str(archive)}
+
+
+@app.post("/api/roster/replace")
+async def replace_agent(request: ReplaceAgentInput):
+    blocked = _require_stopped()
+    if blocked:
+        return blocked
+    try:
+        engine, state = _load_stopped_roster()
+        agent = engine.registry.get(request.agent_id)
+    except (ValueError, KeyError) as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    old_name = agent.persona_name
+    if _persona_file_for(request.name):
+        return JSONResponse({"error": f"An agent named '{request.name}' already exists."}, status_code=409)
+    agent.persona_name = request.name
+    agent.persona["Name"] = request.name
+    persona_path = _persona_file_for(old_name)
+    if persona_path:
+        new_dir = persona_path.parent.parent / _safe_agent_id(request.name)
+        new_dir.mkdir(parents=True, exist_ok=True)
+        (new_dir / f"{_safe_agent_id(request.name)}.json").write_text(json.dumps(agent.persona, indent=2), encoding="utf-8")
+        shutil.rmtree(persona_path.parent)
+    old_short = _short_term_dir_for(old_name)
+    if old_short.exists():
+        old_short.rename(_short_term_dir_for(request.name))
+    engine.relationship_matrix.replace_display_name(old_name, request.name)
+    tick = _save_roster_successor(engine.world, engine.registry, engine.checkpoint_state())
+    return {"status": "replaced", "agent_id": request.agent_id, "name": request.name, "checkpoint_tick": tick}
+
+
+@app.post("/api/roster/add")
+async def add_agent(request: AddAgentInput):
+    """Generate an adult student persona from observer-provided notes, while stopped."""
+    blocked = _require_stopped()
+    if blocked:
+        return blocked
+    try:
+        engine, state = _load_stopped_roster()
+        from src.agents.day_planner import load_places
+        hostels = [place.id for place in load_places() if place.type == "residential"]
+        from src.llm.gemini_client import call_gemini
+        generated = call_gemini(
+            "Create one grounded adult (18-30) Indian college-student simulation persona. "
+            "Keep it respectful and non-explicit: no harassment, coercion, discrimination, stalking, or pornography. "
+            "Balance academics with routines, friendship, hobbies, flaws, and downtime. Use exactly one supplied hostel id.",
+            f"OBSERVER NOTES:\n{request.description}\n\nAVAILABLE HOSTEL IDS: {', '.join(hostels)}\n"
+            "Return a complete persona matching the requested schema.",
+            GeneratedPersona,
+            "default",
+        )
+    except Exception as exc:
+        logger.exception("[Roster] agent generation failed")
+        return JSONResponse({"error": f"Could not generate agent: {exc}"}, status_code=502)
+
+    agent_id = _safe_agent_id(generated.name)
+    if agent_id in engine.registry:
+        return JSONResponse({"error": f"An agent with id '{agent_id}' already exists."}, status_code=409)
+    if generated.hostel not in hostels:
+        return JSONResponse({"error": "Generated persona selected an invalid hostel."}, status_code=502)
+    persona = {
+        "Name": generated.name, "Age": str(generated.age), "Gender": generated.gender,
+        "Branch": generated.branch, "Home City": generated.home_city, "Hostel": generated.hostel,
+        "daily_plan_req": generated.daily_plan_req, "innate": generated.innate,
+        "learned": generated.learned, "lifestyle": generated.lifestyle,
+        "hobbies": generated.hobbies, "goals": generated.goals, "interests": generated.interests,
+    }
+    # A roster addition is not merely a display record: generate the same
+    # executable remaining-day plan used by the regular runtime before the
+    # successor checkpoint is committed. If the provider cannot do so, leave
+    # every persisted surface untouched and report the failure to the observer.
+    try:
+        from types import SimpleNamespace
+        from src.agents.day_planner import run as plan_day
+        current_hhmm = engine._minutes_to_hhmm(engine.world.tick % (24 * 60))
+        current_date = (datetime.strptime(engine.sim_start_date, "%Y-%m-%d") + timedelta(days=engine.world.tick // (24 * 60))).strftime("%Y-%m-%d")
+        proxy = SimpleNamespace(persona=persona, relevant_memories=[], yesterday_summary=None)
+        plan_result = await asyncio.get_running_loop().run_in_executor(None, lambda: plan_day(proxy, {
+            "current_time": f"{current_date} {current_hhmm}", "places": None,
+            "persona_name": generated.name, "mode": "remaining" if engine.world.tick else "full_day",
+            "current_location_id": generated.hostel, "upcoming_events": [],
+        }))
+        day_plan = plan_result.get("day_plan", [])
+        if not day_plan:
+            raise ValueError(plan_result.get("error") or "planner returned no executable actions")
+    except Exception as exc:
+        return JSONResponse({"error": f"Persona was generated but no executable plan could be created: {exc}"}, status_code=502)
+    from src.agents.Actions import AgentActionManager
+    from src.core.agent_registry import AgentRuntimeState
+    position = engine.resolver.random_interior_point(generated.hostel)
+    manager = AgentActionManager(agent_id, day_plan, position, engine.resolver)
+    engine.registry.register(AgentRuntimeState(
+        agent_id=agent_id, persona=persona, persona_name=generated.name,
+        manager=manager, position=position, day_plan=day_plan,
+        emotion_state=engine._emotion_baseline(persona), emotion_baseline=engine._emotion_baseline(persona),
+    ))
+    engine.world.register_agent(agent_id, position)
+    persona_dir = Path(DATA_DIR) / "personalities" / agent_id
+    persona_dir.mkdir(parents=True, exist_ok=False)
+    (persona_dir / f"{agent_id}.json").write_text(json.dumps(persona, indent=2), encoding="utf-8")
+
+    from src.agents.conversation import RelationshipRecord
+    for other in engine.registry.all_states():
+        if other.agent_id == agent_id:
+            continue
+        engine.relationship_matrix.seed(agent_id, other.agent_id, RelationshipRecord(
+            score=0.32, tags=["new-acquaintance"],
+            context=f"{generated.name} is new to this circle and is still learning {other.persona_name}'s rhythm."
+        ))
+        engine.relationship_matrix.seed(other.agent_id, agent_id, RelationshipRecord(
+            score=0.32, tags=["new-acquaintance"],
+            context=f"{other.persona_name} has only recently met {generated.name}; the connection is open but untested."
+        ))
+    tick = _save_roster_successor(engine.world, engine.registry, engine.checkpoint_state())
+    return {"status": "added", "agent_id": agent_id, "name": generated.name, "checkpoint_tick": tick}
 
 
 @app.post("/api/sim/fast-forward")
@@ -420,7 +694,7 @@ async def rewind_sim(request: RewindInput):
         engine._decision_tasks.clear()
 
         world, registry, state = load_checkpoint(restore_tick, engine.resolver, return_metadata=True)
-        engine.assert_checkpoint_roster_matches_seed(registry)
+        # A checkpoint is the authority for the roster at its timeline point.
         engine.world = world
         engine.registry = registry
         engine.restore_checkpoint_state(state)

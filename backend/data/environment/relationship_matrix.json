@@ -1,731 +1,726 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "relationships": {
     "ankit->ansh_batra": {
-      "score": 0.56,
+      "score": 0.57,
       "tags": [
-        "friendly",
-        "data"
+        "campus-acquaintance",
+        "low-pressure",
+        "lowkey-crush"
       ],
-      "context": "Ankit is curious about Ansh's data work and offers a practical check on what hardware can actually capture."
+      "context": "Ankit and Ansh Batra bonded over late-night meme spirals and Ansh's wild 'what if we hacked the campus WiFi for free pizza' schemes. Ankit lowkey finds Ansh's chaotic energy hot but is playing it cool before things get messy."
     },
     "ankit->anubhav_prasad": {
-      "score": 0.68,
+      "score": 0.61,
       "tags": [
-        "friendship",
-        "electronics"
+        "campus-acquaintance",
+        "chill-vibes"
       ],
-      "context": "Ankit and Anubhav compare circuit ideas and can talk through a confusing lab without making it competitive."
+      "context": "Ankit and Anubhav Prasad vibe during late-night chai sessions where Anubhav drops surprisingly deep advice while Ankit tries not to stare at his sleepy bedroom eyes. It's cozy... maybe too cozy."
     },
     "ankit->ghanisht_kaushal": {
-      "score": 0.59,
+      "score": 0.48,
       "tags": [
-        "respect",
-        "technical"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Ankit appreciates Ghanisht's structured reviews and brings a grounded hardware perspective to technical discussions."
+      "context": "Ankit and Ghanisht Kaushal share quiet dorm hangs and blunt roasts of everyone's terrible dating choices. Ankit respects Ghanisht's no-BS reliability, especially after that one tipsy 'would you rather' game got dangerously personal."
     },
     "ankit->gurnoor_singh": {
-      "score": 0.62,
+      "score": 0.3,
       "tags": [
-        "friendly",
-        "projects"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Gurnoor's initiative helps Ankit share embedded-project ideas beyond his immediate lab group."
+      "context": "Ankit finds Gurnoor's nonstop party energy exhausting but entertaining. Gurnoor once tried to drag Ankit into a 3am dare that ended with both of them hiding from security... and a very awkward morning-after text."
     },
     "ankit->lavanya_sharma": {
-      "score": 0.68,
+      "score": 0.36,
       "tags": [
-        "collaboration",
-        "prototyping"
+        "campus-acquaintance",
+        "tension"
       ],
-      "context": "Ankit and Lavanya have complementary instincts: he cares about reliable electronics and she makes prototypes usable."
+      "context": "Ankit and Lavanya Sharma have this charged banter where her sharp comebacks make Ankit both nervous and turned on. She calls him out on his overthinking, and he secretly loves it."
     },
     "ankit->parv_singla": {
-      "score": 0.6,
+      "score": 0.56,
       "tags": [
-        "friendly",
-        "community"
+        "campus-acquaintance",
+        "impulsive-vibes"
       ],
-      "context": "Parv's invitations make it easy for Ankit to join group plans without losing his quiet routine."
+      "context": "Ankit gets pulled into Parv's spontaneous adventures (and occasional bad decisions). That one time they ended up making out during a 'truth or dare' gone wrong still gets brought up as inside jokes."
     },
     "ankit->riya_murarka": {
-      "score": 0.56,
+      "score": 0.37,
       "tags": [
-        "respect",
-        "community"
+        "campus-acquaintance",
+        "respectful"
       ],
-      "context": "Ankit values Riya's calm clarity and is happy to help with the practical side of reading-circle events."
+      "context": "Ankit admires Riya's boundaries and sharp mind. They've had deep 2am talks that felt flirty until she politely shut it down \u2014 Ankit still respects her for it."
     },
     "ankit->saksham": {
-      "score": 0.67,
+      "score": 0.55,
       "tags": [
-        "friendship",
-        "hardware"
+        "campus-acquaintance",
+        "sarcasm-buddies"
       ],
-      "context": "Ankit trusts Saksham to stay patient when a software-and-sensors problem needs methodical debugging."
+      "context": "Ankit and Saksham trade savage roasts like love letters. Saksham's dry humor always leaves Ankit laughing and lowkey impressed by how effortlessly hot he makes cynicism sound."
     },
     "ankit->tanishq": {
-      "score": 0.54,
+      "score": 0.38,
       "tags": [
-        "acquaintance",
-        "tech"
+        "campus-acquaintance",
+        "protective"
       ],
-      "context": "Ankit is cordial with Tanishq and keeps conversations focused on shared technical interests while trust develops."
+      "context": "Ankit notices Tanishq slowly coming out of his shell and finds it kinda adorable. They've shared quiet playlists and awkward compliments that almost crossed into something more."
     },
     "ansh_batra->ankit": {
-      "score": 0.58,
+      "score": 0.57,
       "tags": [
-        "friendly",
-        "hardware"
+        "campus-acquaintance",
+        "lowkey-crush"
       ],
-      "context": "Ansh enjoys learning how Ankit turns a data idea into something that can be measured in the physical world."
+      "context": "Ansh Batra thinks Ankit's calm practical advice is unfairly attractive. He's been 'accidentally' sending thirst-trap gym selfies and hoping Ankit notices."
     },
     "ansh_batra->anubhav_prasad": {
-      "score": 0.57,
+      "score": 0.36,
       "tags": [
-        "friendly",
-        "research"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Ansh enjoys Anubhav's research curiosity and trades useful papers or prototype links with him."
+      "context": "Ansh Batra drags Anubhav into wild plans and secretly enjoys when Anubhav calmly talks him down. Their dynamic is 90% chaos, 10% 'why is your voice so calming at 3am?'"
     },
     "ansh_batra->ghanisht_kaushal": {
-      "score": 0.7,
+      "score": 0.61,
       "tags": [
-        "respect",
-        "mentoring"
+        "close-vibes",
+        "reliable-chaos"
       ],
-      "context": "Ansh relies on Ghanisht's frank technical feedback and tries to turn it into more rigorous project work."
+      "context": "Ansh and Ghanisht are the duo that somehow finishes projects while drunk-texting each other memes. Ghanisht's reliability is weirdly sexy to Ansh."
     },
     "ansh_batra->gurnoor_singh": {
-      "score": 0.7,
+      "score": 0.43,
       "tags": [
-        "friendship",
-        "projects"
+        "campus-acquaintance",
+        "party-bros"
       ],
-      "context": "Ansh and Gurnoor enjoy turning ambitious AI ideas into demos, with Gurnoor pushing for momentum."
+      "context": "Ansh and Gurnoor's parties always end in legendary stories \u2014 including that one time they both woke up in the same bed after a dare and just laughed it off... mostly."
     },
     "ansh_batra->lavanya_sharma": {
-      "score": 0.59,
+      "score": 0.44,
       "tags": [
-        "collaboration",
-        "design"
+        "campus-acquaintance",
+        "banter"
       ],
-      "context": "Ansh values Lavanya's product instincts and wants his data projects to feel useful outside a notebook."
+      "context": "Ansh loves pushing Lavanya's buttons because her fiery responses do things to him. They've had more than one 'hate-flirt' session that left the group chat suspicious."
     },
     "ansh_batra->parv_singla": {
-      "score": 0.67,
+      "score": 0.46,
       "tags": [
-        "friendship",
-        "club-work"
+        "campus-acquaintance",
+        "impulsive-duo"
       ],
-      "context": "Parv helps Ansh connect people around a project, while Ansh brings structure to the next steps."
+      "context": "Ansh and Parv feed off each other's worst ideas. Their friendship is one impulsive kiss or bad decision away from becoming campus legend."
     },
     "ansh_batra->riya_murarka": {
-      "score": 0.66,
+      "score": 0.5,
       "tags": [
-        "friendship",
-        "community"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Ansh admires Riya's ability to make a group welcoming and asks her to make project presentations clearer."
+      "context": "Ansh respects Riya's clear boundaries while secretly finding her composure insanely attractive. He tones down the chaos around her... slightly."
     },
     "ansh_batra->saksham": {
-      "score": 0.6,
+      "score": 0.47,
       "tags": [
-        "friendly",
-        "projects"
+        "project-partners",
+        "rebuilding-trust"
       ],
-      "context": "Ansh trusts Saksham's careful questions to keep a fast-moving project realistic."
+      "context": "Ansh still feels guilty about the missed deadline, but Saksham's grumpy forgiveness texts have been suspiciously flirty lately."
     },
     "ansh_batra->tanishq": {
-      "score": 0.57,
+      "score": 0.51,
       "tags": [
-        "acquaintance",
-        "coding"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Ansh keeps the connection with Tanishq low-pressure and grounded in side projects and coursework."
+      "context": "Ansh loves hyping up Tanishq's growing confidence, especially when Tanishq blushes at compliments. It's dangerously cute."
     },
     "anubhav_prasad->ankit": {
-      "score": 0.67,
+      "score": 0.61,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "quiet-tension"
       ],
-      "context": "Anubhav Prasad sees Ankit as a practical and patient technical peer."
+      "context": "Anubhav and Ankit's late-night chai talks keep getting longer and more personal. Anubhav wonders if the lingering eye contact means something."
     },
     "anubhav_prasad->ansh_batra": {
-      "score": 0.58,
+      "score": 0.36,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "chaos-manager"
       ],
-      "context": "Anubhav Prasad sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Anubhav is Ansh's reluctant voice of reason. He pretends to be annoyed but secretly enjoys being the one Ansh texts first when things go sideways."
     },
     "anubhav_prasad->ghanisht_kaushal": {
-      "score": 0.68,
+      "score": 0.6,
       "tags": [
-        "friendship",
-        "trust"
+        "campus-acquaintance",
+        "solid-vibes"
       ],
-      "context": "Ghanisht is a reliable project sounding board, even when he gives blunt technical feedback."
+      "context": "Anubhav and Ghanisht have that effortless, reliable friendship that occasionally includes way too much honest talk about hookups and regrets."
     },
     "anubhav_prasad->gurnoor_singh": {
-      "score": 0.56,
+      "score": 0.42,
       "tags": [
-        "friendly",
-        "tech"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "They exchange project links and occasionally compare notes after class."
+      "context": "Gurnoor drags Anubhav to parties and Anubhav somehow ends up being the responsible one... until that one time he wasn't."
     },
     "anubhav_prasad->lavanya_sharma": {
-      "score": 0.53,
+      "score": 0.48,
       "tags": [
-        "friendly",
-        "curious"
+        "campus-acquaintance",
+        "banter"
       ],
-      "context": "Anubhav enjoys Lavanya's clear opinions and has offered to help test a prototype."
+      "context": "Anubhav appreciates Lavanya's directness, especially when she teases him. Their conversations have this undercurrent of 'we could be dangerous together'."
     },
     "anubhav_prasad->parv_singla": {
-      "score": 0.7,
+      "score": 0.35,
       "tags": [
-        "friendship",
-        "support"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv includes Anubhav in group plans and notices when he has had a hard day."
+      "context": "Parv's impulsive energy makes Anubhav smile despite himself. They've shared a few too many 'just one more shot' moments."
     },
     "anubhav_prasad->riya_murarka": {
-      "score": 0.61,
+      "score": 0.49,
       "tags": [
-        "friendly",
-        "admiration"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Anubhav values Riya's calm explanations and feels comfortable discussing research ideas with her."
+      "context": "Anubhav and Riya have calm, meaningful talks that feel intimate without trying. He respects her space but definitely notices her."
     },
     "anubhav_prasad->saksham": {
-      "score": 0.62,
+      "score": 0.34,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "dry-humor"
       ],
-      "context": "Anubhav Prasad sees Saksham as a measured, dependable collaborator."
+      "context": "Saksham's sarcasm and Anubhav's calm create comedy gold. They've bonded over judging everyone's terrible decisions."
     },
     "anubhav_prasad->tanishq": {
-      "score": 0.54,
+      "score": 0.5,
       "tags": [
-        "acquaintance",
-        "gaming"
+        "campus-acquaintance",
+        "gentle"
       ],
-      "context": "They have overlapping gaming interests but have not spent much time together yet."
+      "context": "Anubhav is quietly supportive of Tanishq's confidence journey. Their interactions are soft and full of unspoken understanding."
     },
     "ghanisht_kaushal->ankit": {
-      "score": 0.58,
+      "score": 0.48,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "blunt-bros"
       ],
-      "context": "Ghanisht Kaushal sees Ankit as a practical and patient technical peer."
+      "context": "Ghanisht and Ankit trade brutally honest movie takes and life advice. Ghanisht secretly enjoys how Ankit can match his energy."
     },
     "ghanisht_kaushal->ansh_batra": {
-      "score": 0.71,
-      "tags": [
-        "collaboration",
-        "data"
-      ],
-      "context": "Ghanisht Kaushal sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
-    },
-    "ghanisht_kaushal->anubhav_prasad": {
-      "score": 0.66,
-      "tags": [
-        "friendship",
-        "mentoring"
-      ],
-      "context": "He encourages Anubhav's research curiosity and makes time to troubleshoot difficult concepts."
-    },
-    "ghanisht_kaushal->gurnoor_singh": {
-      "score": 0.76,
-      "tags": [
-        "friendship",
-        "competition",
-        "collaboration"
-      ],
-      "context": "They are competitive coders who respect each other's follow-through and enjoy a difficult build challenge."
-    },
-    "ghanisht_kaushal->lavanya_sharma": {
-      "score": 0.66,
-      "tags": [
-        "respect",
-        "prototype"
-      ],
-      "context": "Lavanya's hands-on design perspective complements Ghanisht's software-first instincts."
-    },
-    "ghanisht_kaushal->parv_singla": {
-      "score": 0.64,
-      "tags": [
-        "friendship",
-        "club-work"
-      ],
-      "context": "Parv's social energy helps pull Ghanisht out of long coding sessions for constructive club meetings."
-    },
-    "ghanisht_kaushal->riya_murarka": {
-      "score": 0.64,
-      "tags": [
-        "respect",
-        "collaboration"
-      ],
-      "context": "Ghanisht respects Riya's organised facilitation and seeks her feedback on making technical work clearer."
-    },
-    "ghanisht_kaushal->saksham": {
-      "score": 0.72,
-      "tags": [
-        "reliable",
-        "technical"
-      ],
-      "context": "Ghanisht Kaushal sees Saksham as a measured, dependable collaborator."
-    },
-    "ghanisht_kaushal->tanishq": {
-      "score": 0.52,
-      "tags": [
-        "peer",
-        "encouragement"
-      ],
-      "context": "Ghanisht sees potential in Tanishq's technical work and expects him to communicate directly and respectfully."
-    },
-    "gurnoor_singh->ankit": {
       "score": 0.61,
       "tags": [
-        "friendly",
-        "practical"
+        "close-vibes",
+        "reliable-chaos"
       ],
-      "context": "Gurnoor Singh sees Ankit as a practical and patient technical peer."
+      "context": "Ghanisht is Ansh's anchor during chaos. Their friendship includes way too many late-night confessions that got a little too spicy."
+    },
+    "ghanisht_kaushal->anubhav_prasad": {
+      "score": 0.6,
+      "tags": [
+        "campus-acquaintance",
+        "solid-vibes"
+      ],
+      "context": "Ghanisht values Anubhav's calm presence. They've had deep talks that occasionally veered into 'what are we even doing with our lives... and each other?' territory."
+    },
+    "ghanisht_kaushal->gurnoor_singh": {
+      "score": 0.34,
+      "tags": [
+        "campus-acquaintance",
+        "low-pressure"
+      ],
+      "context": "Gurnoor's nonstop social battery clashes with Ghanisht's chill, but the rare nights they sync are chaotic gold."
+    },
+    "ghanisht_kaushal->lavanya_sharma": {
+      "score": 0.36,
+      "tags": [
+        "friendly-rivalry",
+        "tension"
+      ],
+      "context": "Ghanisht finds Lavanya's directness intimidatingly hot. Their arguments somehow feel like foreplay."
+    },
+    "ghanisht_kaushal->parv_singla": {
+      "score": 0.6,
+      "tags": [
+        "campus-acquaintance",
+        "impulsive"
+      ],
+      "context": "Ghanisht tries (and fails) to slow Parv down. Their dynamic is pure 'I shouldn't but I will' energy."
+    },
+    "ghanisht_kaushal->riya_murarka": {
+      "score": 0.41,
+      "tags": [
+        "campus-acquaintance",
+        "respect"
+      ],
+      "context": "Ghanisht respects Riya's boundaries and finds her composure refreshing... and attractive."
+    },
+    "ghanisht_kaushal->saksham": {
+      "score": 0.59,
+      "tags": [
+        "campus-acquaintance",
+        "sarcasm-buddies"
+      ],
+      "context": "Ghanisht and Saksham's combined dry humor could roast an entire campus. Their friendship is 80% savage compliments."
+    },
+    "ghanisht_kaushal->tanishq": {
+      "score": 0.42,
+      "tags": [
+        "campus-acquaintance",
+        "encouraging"
+      ],
+      "context": "Ghanisht quietly roots for Tanishq's confidence glow-up and enjoys watching him get bolder."
+    },
+    "gurnoor_singh->ankit": {
+      "score": 0.3,
+      "tags": [
+        "campus-acquaintance",
+        "low-pressure"
+      ],
+      "context": "Gurnoor tries to pull Ankit into his wild world. Ankit's resistance is weirdly charming to him."
     },
     "gurnoor_singh->ansh_batra": {
-      "score": 0.71,
+      "score": 0.43,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "party-bros"
       ],
-      "context": "Gurnoor Singh sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Gurnoor and Ansh are partners in crime. Their nights out always end with questionable decisions and hilarious group chat stories."
     },
     "gurnoor_singh->anubhav_prasad": {
-      "score": 0.55,
+      "score": 0.42,
       "tags": [
-        "friendly",
-        "tech"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "They trade useful tools and research links without much pressure to socialise."
+      "context": "Gurnoor drags Anubhav to parties and loves when he finally lets loose."
     },
     "gurnoor_singh->ghanisht_kaushal": {
-      "score": 0.78,
+      "score": 0.34,
       "tags": [
-        "friendship",
-        "rivalry",
-        "trust"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Their friendly project rivalry produces good work; both know the other will show up when needed."
+      "context": "Gurnoor respects Ghanisht's reliability but wishes he'd loosen up more... preferably with him."
     },
     "gurnoor_singh->lavanya_sharma": {
-      "score": 0.62,
+      "score": 0.5,
       "tags": [
-        "friendship",
-        "creative"
+        "campus-acquaintance",
+        "flirty"
       ],
-      "context": "They enjoy testing visual ideas for Lavanya's prototype presentations and keeping each other grounded."
+      "context": "Gurnoor loves Lavanya's energy. Their banter has definite 'we should make out and see what happens' undertones."
     },
     "gurnoor_singh->parv_singla": {
-      "score": 0.95,
+      "score": 0.86,
       "tags": [
         "close-friends",
-        "collaboration"
+        "chaotic-duo"
       ],
-      "context": "They build ambitious AI ideas together and are comfortable calling out unrealistic timelines."
+      "context": "Gurnoor and Parv are inseparable troublemakers. They've shared clothes, secrets, and one very memorable drunken makeout that they still joke about."
     },
     "gurnoor_singh->riya_murarka": {
-      "score": 0.7,
+      "score": 0.56,
       "tags": [
-        "friendship",
-        "creative",
-        "trust"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Gurnoor enjoys photographing Riya's events and appreciates that she gives clear, kind feedback."
+      "context": "Gurnoor tones down around Riya but finds her boundaries and intelligence hot as hell."
     },
     "gurnoor_singh->saksham": {
-      "score": 0.64,
+      "score": 0.41,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Gurnoor Singh sees Saksham as a measured, dependable collaborator."
+      "context": "Gurnoor enjoys Saksham's sarcasm even when it's aimed at him."
     },
     "gurnoor_singh->tanishq": {
-      "score": 0.62,
+      "score": 0.57,
       "tags": [
-        "friendly",
-        "mentoring"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Gurnoor invites Tanishq to project sessions and respects steady improvement over showmanship."
+      "context": "Gurnoor loves seeing Tanishq come out of his shell and occasionally flirts just to see him blush."
     },
     "lavanya_sharma->ankit": {
-      "score": 0.67,
+      "score": 0.36,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "tension"
       ],
-      "context": "Lavanya Sharma sees Ankit as a practical and patient technical peer."
+      "context": "Lavanya enjoys making Ankit flustered. Their banter is foreplay with extra steps."
     },
     "lavanya_sharma->ansh_batra": {
-      "score": 0.6,
+      "score": 0.44,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "banter"
       ],
-      "context": "Lavanya Sharma sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Lavanya finds Ansh's chaos annoyingly attractive. She's called him out on it... while smiling."
     },
     "lavanya_sharma->anubhav_prasad": {
-      "score": 0.54,
+      "score": 0.48,
       "tags": [
-        "friendly",
-        "collaboration"
+        "campus-acquaintance",
+        "quiet-tension"
       ],
-      "context": "Lavanya likes Anubhav's patient technical questions and wants to test her prototype with him."
+      "context": "Lavanya likes Anubhav's calm vibe. It makes her want to shake him up in the best way."
     },
     "lavanya_sharma->ghanisht_kaushal": {
-      "score": 0.69,
+      "score": 0.28,
       "tags": [
-        "respect",
-        "friendly-rivalry"
+        "friendly-rivalry",
+        "sexual-tension"
       ],
-      "context": "They disagree productively about whether a prototype needs more code or better physical design."
+      "context": "Lavanya and Ghanisht's rivalry is legendary. Everyone knows their arguments are just delayed makeouts waiting to happen."
     },
     "lavanya_sharma->gurnoor_singh": {
-      "score": 0.63,
+      "score": 0.5,
       "tags": [
-        "friendship",
-        "creative"
+        "campus-acquaintance",
+        "flirty"
       ],
-      "context": "Gurnoor's visual storytelling makes Lavanya's projects more approachable, which she values."
+      "context": "Lavanya matches Gurnoor's energy perfectly. Their flirting is shameless and hilarious."
     },
     "lavanya_sharma->parv_singla": {
-      "score": 0.58,
+      "score": 0.43,
       "tags": [
-        "friendly",
-        "club-work"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv is fun in group settings, though Lavanya pushes back when enthusiasm becomes a vague promise."
+      "context": "Lavanya enjoys Parv's impulsiveness... until it becomes her problem."
     },
     "lavanya_sharma->riya_murarka": {
-      "score": 0.83,
+      "score": 0.57,
       "tags": [
         "close-friends",
-        "trust",
-        "history"
+        "girls-support-girls"
       ],
-      "context": "Riya is Lavanya's most trusted reality check; they make time for each other's wins and worries."
+      "context": "Lavanya and Riya have each other's backs through every situationship and heartbreak. Their friendship is pure, supportive, and occasionally gossip-fueled."
     },
     "lavanya_sharma->saksham": {
-      "score": 0.63,
+      "score": 0.42,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "banter"
       ],
-      "context": "Lavanya Sharma sees Saksham as a measured, dependable collaborator."
+      "context": "Lavanya and Saksham's sarcasm battles are campus entertainment."
     },
     "lavanya_sharma->tanishq": {
-      "score": 0.53,
+      "score": 0.63,
       "tags": [
-        "new-acquaintance",
-        "boundaries"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Lavanya is open to collaborating if Tanishq communicates clearly, shares the work, and respects boundaries."
+      "context": "Lavanya is proudly watching Tanishq's glow-up and isn't shy about hyping him up."
     },
     "parv_singla->ankit": {
-      "score": 0.59,
+      "score": 0.56,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "impulsive"
       ],
-      "context": "Parv Singla sees Ankit as a practical and patient technical peer."
+      "context": "Parv keeps dragging Ankit into fun and has zero regrets about that one impulsive kiss."
     },
     "parv_singla->ansh_batra": {
-      "score": 0.68,
+      "score": 0.46,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "impulsive-duo"
       ],
-      "context": "Parv Singla sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Parv and Ansh are a dangerous combination of bad ideas and great stories."
     },
     "parv_singla->anubhav_prasad": {
-      "score": 0.73,
+      "score": 0.35,
       "tags": [
-        "close-friends",
-        "support"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv checks in on Anubhav and makes room for him in group plans when academic stress builds."
+      "context": "Parv loves trying to corrupt Anubhav's calm demeanor."
     },
     "parv_singla->ghanisht_kaushal": {
-      "score": 0.67,
+      "score": 0.6,
       "tags": [
-        "friendship",
-        "collaboration"
+        "campus-acquaintance",
+        "impulsive"
       ],
-      "context": "They balance Parv's big-picture energy with Ghanisht's careful execution."
+      "context": "Parv drags Ghanisht into fun he secretly enjoys."
     },
     "parv_singla->gurnoor_singh": {
-      "score": 0.97,
+      "score": 0.84,
       "tags": [
         "close-friends",
-        "collaboration",
-        "trust"
+        "chaotic-duo"
       ],
-      "context": "They frequently build and critique ambitious AI ideas together, with enough trust to disagree honestly."
+      "context": "Parv and Gurnoor are basically soulmates in crime. Their friendship includes shared hangovers, secrets, and blurry memories."
     },
     "parv_singla->lavanya_sharma": {
-      "score": 0.6,
+      "score": 0.43,
       "tags": [
-        "friendly",
-        "admiration"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv admires Lavanya's follow-through and enjoys helping make her club demos visible."
+      "context": "Parv admires Lavanya's fire and occasionally flirts just to see her reaction."
     },
     "parv_singla->riya_murarka": {
-      "score": 0.67,
+      "score": 0.49,
       "tags": [
-        "friendship",
-        "community"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Parv admires Riya's ability to make an event feel welcoming without losing its purpose."
+      "context": "Parv respects Riya's boundaries while still trying to pull her into mild chaos."
     },
     "parv_singla->saksham": {
-      "score": 0.63,
+      "score": 0.34,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv Singla sees Saksham as a measured, dependable collaborator."
+      "context": "Parv enjoys Saksham's dry humor even when it's roasting him."
     },
     "parv_singla->tanishq": {
-      "score": 0.6,
+      "score": 0.5,
       "tags": [
-        "friendship",
-        "encouragement"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Parv is patient with Tanishq's quietness and invites him to low-pressure group activities."
+      "context": "Parv loves hyping Tanishq up and watching him gain confidence."
     },
     "riya_murarka->ankit": {
-      "score": 0.55,
+      "score": 0.37,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Riya Murarka sees Ankit as a practical and patient technical peer."
+      "context": "Riya appreciates Ankit's steadiness but keeps things light."
     },
     "riya_murarka->ansh_batra": {
-      "score": 0.67,
+      "score": 0.5,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Riya Murarka sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Riya enjoys Ansh's enthusiasm from a safe distance."
     },
     "riya_murarka->anubhav_prasad": {
-      "score": 0.58,
+      "score": 0.49,
       "tags": [
-        "friendly",
-        "research-curious"
+        "campus-acquaintance",
+        "quiet-tension"
       ],
-      "context": "Riya appreciates Anubhav's patient listening and occasionally swaps article recommendations with him."
+      "context": "Riya and Anubhav share calm, flirty-adjacent conversations that feel deeper than they admit."
     },
     "riya_murarka->ghanisht_kaushal": {
-      "score": 0.62,
+      "score": 0.41,
       "tags": [
-        "respectful",
-        "collaboration"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "They have worked well on a reading-circle data poster but are still getting to know each other."
+      "context": "Riya values Ghanisht's reliability and straightforwardness."
     },
     "riya_murarka->gurnoor_singh": {
-      "score": 0.66,
+      "score": 0.56,
       "tags": [
-        "friendship",
-        "creative"
+        "campus-acquaintance",
+        "respect"
       ],
-      "context": "Gurnoor's photography helps Riya with reading-circle posters; she trusts his practical feedback."
+      "context": "Riya finds Gurnoor's energy entertaining in small doses."
     },
     "riya_murarka->lavanya_sharma": {
-      "score": 0.81,
+      "score": 0.57,
       "tags": [
         "close-friends",
-        "trust",
-        "encouragement"
+        "girls-support-girls"
       ],
-      "context": "They are dependable friends who trade honest advice and make time for each other's projects."
+      "context": "Riya and Lavanya are ride-or-die. They share everything from book recs to dating horror stories."
     },
     "riya_murarka->parv_singla": {
-      "score": 0.6,
+      "score": 0.49,
       "tags": [
-        "friendly",
-        "community"
+        "campus-acquaintance",
+        "low-pressure"
       ],
-      "context": "Parv is reliably welcoming at club events, though his packed calendar makes plans change often."
+      "context": "Riya enjoys Parv's chaos from a safe distance."
     },
     "riya_murarka->saksham": {
-      "score": 0.58,
+      "score": 0.48,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "dry-humor"
       ],
-      "context": "Riya Murarka sees Saksham as a measured, dependable collaborator."
+      "context": "Riya and Saksham bond over quiet sarcasm and shared eye-rolls."
     },
     "riya_murarka->tanishq": {
-      "score": 0.56,
+      "score": 0.18,
       "tags": [
-        "new-acquaintance",
-        "cautious"
+        "admiration",
+        "careful-boundaries"
       ],
-      "context": "Riya has seen Tanishq at the library and responds warmly when he is thoughtful and respectful."
+      "context": "Riya notices Tanishq's respectful efforts and finds it sweet, but keeps things slow and platonic for now."
     },
     "saksham->ankit": {
-      "score": 0.66,
+      "score": 0.55,
       "tags": [
-        "friendship",
-        "hardware"
+        "campus-acquaintance",
+        "sarcasm-buddies"
       ],
-      "context": "Saksham and Ankit enjoy patient troubleshooting sessions where software and sensors meet."
+      "context": "Saksham and Ankit's roast sessions are peak entertainment."
     },
     "saksham->ansh_batra": {
-      "score": 0.59,
+      "score": 0.34,
       "tags": [
-        "friendly",
-        "data"
+        "project-partners",
+        "rebuilding-trust"
       ],
-      "context": "Saksham helps Ansh pressure-test project assumptions, and Ansh keeps the work connected to people."
+      "context": "Saksham is still salty about the missed deadline but can't deny Ansh's chaotic charm is growing on him."
     },
     "saksham->anubhav_prasad": {
-      "score": 0.63,
+      "score": 0.34,
       "tags": [
-        "friendship",
-        "gaming"
+        "campus-acquaintance",
+        "dry-humor"
       ],
-      "context": "Saksham and Anubhav trade debugging notes and enjoy low-key strategy games after a difficult week."
+      "context": "Saksham enjoys Anubhav's calm as the perfect straight man for his jokes."
     },
     "saksham->ghanisht_kaushal": {
-      "score": 0.73,
-      "tags": [
-        "respect",
-        "algorithms"
-      ],
-      "context": "Saksham values Ghanisht's disciplined problem-solving and enjoys comparing clean solutions after practice."
-    },
-    "saksham->gurnoor_singh": {
-      "score": 0.65,
-      "tags": [
-        "friendly",
-        "projects"
-      ],
-      "context": "Gurnoor's ambitious builds give Saksham useful real-world problems to think through."
-    },
-    "saksham->lavanya_sharma": {
-      "score": 0.64,
-      "tags": [
-        "friendly",
-        "design"
-      ],
-      "context": "Saksham likes Lavanya's direct design feedback and offers to test the software side of her prototypes."
-    },
-    "saksham->parv_singla": {
-      "score": 0.64,
-      "tags": [
-        "friendship",
-        "club-work"
-      ],
-      "context": "Parv pulls Saksham into collaborative plans without making the quieter pace feel like a problem."
-    },
-    "saksham->riya_murarka": {
       "score": 0.59,
       "tags": [
-        "respect",
-        "reading-circle"
+        "campus-acquaintance",
+        "solid-vibes"
       ],
-      "context": "Saksham appreciates Riya's thoughtful facilitation and occasionally asks for a reading recommendation between library sessions."
+      "context": "Saksham and Ghanisht understand each other's reliability and sarcasm perfectly."
+    },
+    "saksham->gurnoor_singh": {
+      "score": 0.41,
+      "tags": [
+        "campus-acquaintance",
+        "low-pressure"
+      ],
+      "context": "Saksham finds Gurnoor's energy exhausting but entertaining."
+    },
+    "saksham->lavanya_sharma": {
+      "score": 0.42,
+      "tags": [
+        "campus-acquaintance",
+        "banter"
+      ],
+      "context": "Saksham and Lavanya's banter is sharp and mutual."
+    },
+    "saksham->parv_singla": {
+      "score": 0.34,
+      "tags": [
+        "campus-acquaintance",
+        "low-pressure"
+      ],
+      "context": "Saksham tolerates Parv's impulsiveness with heavy sarcasm."
+    },
+    "saksham->riya_murarka": {
+      "score": 0.48,
+      "tags": [
+        "campus-acquaintance",
+        "respect"
+      ],
+      "context": "Saksham respects Riya's boundaries and sharp mind."
     },
     "saksham->tanishq": {
-      "score": 0.56,
+      "score": 0.49,
       "tags": [
-        "acquaintance",
-        "games"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "They have an easy opening through games and technical forums, though neither rushes the friendship."
+      "context": "Saksham quietly supports Tanishq's confidence growth with dry but kind humor."
     },
     "tanishq->ankit": {
-      "score": 0.53,
+      "score": 0.38,
       "tags": [
-        "friendly",
-        "practical"
+        "campus-acquaintance",
+        "admiration"
       ],
-      "context": "Tanishq sees Ankit as a practical and patient technical peer."
+      "context": "Tanishq looks up to Ankit's steadiness and finds it quietly attractive."
     },
     "tanishq->ansh_batra": {
-      "score": 0.58,
+      "score": 0.51,
       "tags": [
-        "collaboration",
-        "data"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Tanishq sees Ansh Batra as an enthusiastic collaborator who benefits from clear priorities."
+      "context": "Tanishq enjoys Ansh's hype energy and is slowly getting bolder around him."
     },
     "tanishq->anubhav_prasad": {
-      "score": 0.56,
+      "score": 0.5,
       "tags": [
-        "acquaintance",
-        "gaming"
+        "campus-acquaintance",
+        "gentle"
       ],
-      "context": "Tanishq sees an easy opening for a friendship through games and technical side projects."
+      "context": "Tanishq feels safe and understood around Anubhav's calm presence."
     },
     "tanishq->ghanisht_kaushal": {
-      "score": 0.55,
+      "score": 0.42,
       "tags": [
-        "respect",
-        "mentoring"
+        "campus-acquaintance",
+        "admiration"
       ],
-      "context": "Tanishq appreciates Ghanisht's direct code reviews and wants to earn trust through reliable work."
+      "context": "Tanishq respects Ghanisht's reliability and blunt honesty."
     },
     "tanishq->gurnoor_singh": {
-      "score": 0.64,
+      "score": 0.57,
       "tags": [
-        "friendship",
-        "mentoring"
+        "campus-acquaintance",
+        "encouraging"
       ],
-      "context": "Gurnoor makes project spaces less intimidating, and Tanishq is grateful for the invitation."
+      "context": "Tanishq is slowly getting pulled into Gurnoor's fun orbit and enjoying it."
     },
     "tanishq->lavanya_sharma": {
-      "score": 0.54,
-      "tags": [
-        "new-acquaintance",
-        "respect"
-      ],
-      "context": "Tanishq is interested in Lavanya's robotics work and understands that collaboration begins with clear boundaries and shared effort."
-    },
-    "tanishq->parv_singla": {
       "score": 0.63,
       "tags": [
-        "friendship",
-        "encouragement"
+        "campus-acquaintance",
+        "admiration"
       ],
-      "context": "Parv's inclusive invitations make social plans feel manageable rather than performative."
+      "context": "Tanishq finds Lavanya's confidence inspiring (and a little intimidating in the best way)."
+    },
+    "tanishq->parv_singla": {
+      "score": 0.5,
+      "tags": [
+        "campus-acquaintance",
+        "encouraging"
+      ],
+      "context": "Tanishq appreciates Parv's outgoing energy and is learning from it."
     },
     "tanishq->riya_murarka": {
-      "score": 0.58,
+      "score": 0.3,
       "tags": [
-        "new-acquaintance",
-        "respect"
+        "admiration",
+        "respectful-distance"
       ],
-      "context": "Tanishq values Riya's book recommendations and is practising being a considerate, unhurried conversational partner."
+      "context": "Tanishq has a quiet crush on Riya but is being extremely patient and respectful while building trust."
     },
     "tanishq->saksham": {
-      "score": 0.55,
+      "score": 0.49,
       "tags": [
-        "reliable",
-        "technical"
+        "campus-acquaintance",
+        "dry-humor"
       ],
-      "context": "Tanishq sees Saksham as a measured, dependable collaborator."
+      "context": "Tanishq enjoys Saksham's sarcasm and finds it comforting in its own way."
     }
   }
 }

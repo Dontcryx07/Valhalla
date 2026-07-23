@@ -196,16 +196,10 @@ CONVERSATION_MIN_EMOTION = _env_float("SIM_CONVERSATION_MIN_EMOTION", 0.05)
 
 # LLM Configuration
 TEMPERATURE = 0.7           # Creativity the model is allowed
-# Per-key RPM limit for Gemini API calls. Google free tier: 5 RPM.
-# Gemini's free tier is five requests/minute/key.  An inherited .env value
-# above that limit silently defeats the limiter, so require an explicit paid
-# tier opt-in before accepting it.
-_requested_api_rpm_limit = max(1, _env_int("SIM_API_RPM_LIMIT", 5))
-API_RPM_LIMIT = (
-    _requested_api_rpm_limit
-    if _env_bool("SIM_ALLOW_HIGHER_API_RPM", False)
-    else min(_requested_api_rpm_limit, 5)
-)
+# Per-key RPM limit. Gemini Flash Lite's available free-tier limit is shown
+# per project in AI Studio; use 15 by default and let the local .env lower it
+# for projects with a smaller allocation.
+API_RPM_LIMIT = max(1, _env_int("SIM_API_RPM_LIMIT", 15))
 # Every individual Gemini HTTP request has a short deadline, and the complete
 # fallback cascade has its own cap.  These prevent one unavailable model from
 # holding a planner/conversation worker indefinitely.

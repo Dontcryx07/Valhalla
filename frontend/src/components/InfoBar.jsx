@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function InfoBar({ snapshot, showDebug, onToggleDebug, onFastForward, onSlowDown, onRewind, simulationRunning, onToggleSimulation }) {
+export default function InfoBar({ snapshot, showDebug, onToggleDebug, onFastForward, onSlowDown, onRewind, simulationRunning, onToggleSimulation, onToggleRoster }) {
   const [rewindAmount, setRewindAmount] = useState("10");
   const [rewindUnit, setRewindUnit] = useState("ticks");
   if (!snapshot) return null;
@@ -122,6 +122,11 @@ export default function InfoBar({ snapshot, showDebug, onToggleDebug, onFastForw
       }}>
         {showDebug ? "DEBUG ON" : "DEBUG"}
       </button>
+      <button onClick={onToggleRoster} style={{
+        pointerEvents: "auto", border: "1px solid rgba(212,160,74,.3)", borderRadius: 3,
+        background: "rgba(212,160,74,.08)", color: "#e7bd70", padding: "2px 5px",
+        fontFamily: "'Space Mono', monospace", fontSize: 8, cursor: "pointer",
+      }} title="Add, retire, or rename agents while the simulation is stopped">ROSTER</button>
     </div>
   );
 }

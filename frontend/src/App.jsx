@@ -6,6 +6,7 @@ import InfoBar from "./components/InfoBar";
 import ConversationFeed from "./components/ConversationFeed";
 import EventsPanel from "./components/EventsPanel";
 import DebugPanel from "./components/DebugPanel";
+import RosterManager from "./components/RosterManager";
 import "./App.css";
 
 function compactTabPosition(index) {
@@ -28,6 +29,7 @@ export default function App() {
   const [conversationFeedMinimized, setConversationFeedMinimized] = useState(false);
   const [controlError, setControlError] = useState(null);
   const [simulationRunning, setSimulationRunning] = useState(true);
+  const [rosterOpen, setRosterOpen] = useState(false);
 
   useEffect(() => {
     if (!snapshot) return;
@@ -47,7 +49,8 @@ export default function App() {
     }
   }, [snapshot]);
 
-  const simulationError = snapshot?.status === "error" ? snapshot.message : null;
+  const providerFailure = snapshot?.status === "provider_failure" ? snapshot.failure : null;
+  const simulationError = (snapshot?.status === "error" || providerFailure) ? snapshot.message : null;
   const agentIds = agentMap ? Object.keys(agentMap) : [];
 
   function toggleAgentInspector(agentId) {
@@ -97,9 +100,9 @@ export default function App() {
 
       {simulationError && (
         <section className="simulation-error" role="alert" aria-live="assertive">
-          <span className="simulation-error__eyebrow">Simulation unavailable</span>
+          <span className="simulation-error__eyebrow">{providerFailure?.title || "Simulation unavailable"}</span>
           <p>{simulationError}</p>
-          <small>Runtime data was left unchanged. Start a fresh simulation when you are ready.</small>
+          <small>{providerFailure?.guidance || "Runtime data was left unchanged. Start a fresh simulation when you are ready."}</small>
         </section>
       )}
       {controlError && (
@@ -116,6 +119,7 @@ export default function App() {
       />
       <EventsPanel events={snapshot?.events} />
       {showDebug && <DebugPanel health={snapshot?.health} />}
+      <RosterManager open={rosterOpen} onClose={() => setRosterOpen(false)} simulationRunning={simulationRunning} onError={setControlError} />
 
       {agentIds.map((id, index) => {
         const expanded = expandedAgentIds.has(id);
@@ -146,6 +150,7 @@ export default function App() {
           const result = await sendControl(simulationRunning ? "/api/sim/stop" : "/api/sim/start");
           if (result && typeof result.running === "boolean") setSimulationRunning(result.running);
         }}
+        onToggleRoster={() => setRosterOpen((value) => !value)}
       />
     </div>
   );

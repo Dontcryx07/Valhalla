@@ -16,7 +16,7 @@ Usage:
     from src.agents.Actions import AgentActionManager, LocationResolver
 
     resolver = LocationResolver()
-    manager = AgentActionManager("parv", day_plan, initial_position)
+    manager = AgentActionManager("parv_singla", day_plan, initial_position)
     state = manager.tick(world_tick, snapshot)
 """
 
@@ -110,6 +110,10 @@ _PLACES_TO_ENTRYPOINT: Dict[str, str] = {
     "Jhelum": "Jhelum",
     "Ravi": "Ravi",
     "SAB": "SAB",
+    "computer_science_department": "CS Department",
+    "electrical_department": "Electrical Department",
+    "mechanical_department": "Mechanical Department",
+    "chemical_department": "Chemical Department",
 }
 
 
@@ -141,7 +145,7 @@ class LocationResolver:
 
         # Load inline coordinates from places.json (3 locations have this)
         if places_path.exists():
-            raw = json.loads(places_path.read_text())
+            raw = json.loads(places_path.read_text(encoding="utf-8"))
             for loc in raw.get("locations", []):
                 inline = loc.get("Entry_point Coordinates", "")
                 if inline and "x" in inline and "y" in inline:
@@ -403,7 +407,30 @@ class AgentActionManager:
         """Pick the next action from the day plan and set up current/next."""
         plan_action = self._find_current_plan_action(current_hhmm)
         if plan_action is None:
-            logger.debug("[Actions] %s: no plan action at %s", self.agent_id, current_hhmm)
+            # This should be unreachable for validated plans.  It can still
+            # occur when resuming a checkpoint created before stricter replan
+            # validation existed, or after a damaged external plan edit.  Keep
+            # the agent embodied instead of surfacing a misleading permanent
+            # ``Idle`` state while the next calendar-day plan is prepared.
+            now = self._hhmm_to_minutes(current_hhmm)
+            later_starts = [
+                self._hhmm_to_minutes(action.get("start", "24:00"))
+                for action in self.day_plan
+                if self._hhmm_to_minutes(action.get("start", "24:00")) > now
+            ]
+            end_time = self._minutes_to_hhmm(min(later_starts) if later_starts else 24 * 60)
+            self.current_action = ActionState(
+                action_type=ActionType.MISC,
+                description="Unscheduled downtime",
+                start_time=current_hhmm,
+                end_time=end_time,
+                location_id=self.position.location_id or "",
+                position=self.position,
+            )
+            logger.warning(
+                "[Actions] %s: no plan action at %s; using bounded recovery activity until %s",
+                self.agent_id, current_hhmm, end_time,
+            )
             return
 
         target_location_id = plan_action.get("location_id", "")
@@ -675,8 +702,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Actions module self-test — simulate an agent's day")
     parser.add_argument(
-        "persona", nargs="?", default="parv",
-        help="Persona name (e.g. parv, tanishq, gurnoor) or path to a persona JSON",
+        "persona", nargs="?", default="parv_singla",
+        help="Persona name (e.g. parv_singla, tanishq, gurnoor_singh) or path to a persona JSON",
     )
     parser.add_argument(
         "-t", "--ticks", type=int, default=600,
