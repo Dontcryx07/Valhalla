@@ -413,7 +413,8 @@ async def generate_daily_summary(persona_name: str, date_str: str) -> str:
     )
     
     try:
-        result = call_gemini(system_prompt, user_prompt, SummaryOutput, "default", temperature=0.5)
+        from src.config import SUMMARY_TEMPERATURE
+        result = call_gemini(system_prompt, user_prompt, SummaryOutput, "default", temperature=SUMMARY_TEMPERATURE)
         # Format for long-term storage
         key_events_text = "\n".join(f"- {evt}" for evt in result.key_events)
         return f"Summary: {result.summary}\nKey events:\n{key_events_text}"

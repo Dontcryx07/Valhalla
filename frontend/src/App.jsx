@@ -22,6 +22,7 @@ function compactTabPosition(index) {
 
 export default function App() {
   const snapshot = useSimState();
+  const [renderSnapshot, setRenderSnapshot] = useState(null);
   const [agentMap, setAgentMap] = useState(null);
   const [focusedId, setFocusedId] = useState(null);
   const [expandedAgentIds, setExpandedAgentIds] = useState(() => new Set());
@@ -43,6 +44,11 @@ export default function App() {
     }
     if (snapshot.agents) {
       setAgentMap(snapshot.agents);
+    }
+    // Handoff status packets intentionally omit a full world frame. Keep the
+    // last complete frame rendered until the first new-day frame arrives.
+    if (snapshot.tick != null && snapshot.time != null && snapshot.day != null) {
+      setRenderSnapshot(snapshot);
     }
     if (typeof snapshot.simulation?.running === "boolean") {
       setSimulationRunning(snapshot.simulation.running);
@@ -96,7 +102,7 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <SimCanvas snapshot={snapshot} focusedId={focusedId} onFocus={focusFromMap} />
+      <SimCanvas snapshot={renderSnapshot || snapshot} focusedId={focusedId} onFocus={focusFromMap} />
 
       {simulationError && (
         <section className="simulation-error" role="alert" aria-live="assertive">
@@ -139,7 +145,7 @@ export default function App() {
       })}
 
       <InfoBar
-        snapshot={snapshot}
+        snapshot={renderSnapshot || snapshot}
         showDebug={showDebug}
         onToggleDebug={() => setShowDebug((value) => !value)}
         onFastForward={() => sendControl("/api/sim/fast-forward")}

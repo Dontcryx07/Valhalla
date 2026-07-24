@@ -9,6 +9,7 @@ const SENTIMENT_COLOR = {
 
 export default function ConversationFeed({ conversations, minimized = false, onToggleMinimized }) {
   const nodeRef = useRef(null);
+  const entries = Array.isArray(conversations) ? conversations : [];
   const [position, setPosition] = useState(() => ({
     x: Math.max(0, window.innerWidth - 306),
     y: 16,
@@ -28,8 +29,6 @@ export default function ConversationFeed({ conversations, minimized = false, onT
     window.addEventListener("resize", clampToViewport);
     return () => window.removeEventListener("resize", clampToViewport);
   }, [minimized, conversations?.length]);
-
-  if (!conversations || conversations.length === 0) return null;
 
   return (
     <Draggable
@@ -85,11 +84,16 @@ export default function ConversationFeed({ conversations, minimized = false, onT
             {minimized ? "+" : "−"}
           </button>
         </div>
-        {!minimized && conversations.map((conversation, index) => (
+        {!minimized && entries.length === 0 && (
+          <div style={{ fontSize: 11, color: "#6b6b78", lineHeight: 1.4 }}>
+            No conversations yet today.
+          </div>
+        )}
+        {!minimized && entries.map((conversation, index) => (
           <div key={index} style={{
             marginBottom: 9,
             paddingBottom: 9,
-            borderBottom: index < conversations.length - 1 ? "1px solid rgba(212,160,74,0.07)" : "none",
+            borderBottom: index < entries.length - 1 ? "1px solid rgba(212,160,74,0.07)" : "none",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
               <span style={{

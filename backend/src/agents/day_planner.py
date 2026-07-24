@@ -47,12 +47,11 @@ import re
 import threading
 from collections import defaultdict, deque
 from src.core.log import get_logger
-from src.llm.gemini_client import call_gemini, AllModelsFailedError, ProviderFailureError
-from google.genai import errors as genai_errors
+from src.llm.gemini_client import call_gemini
 from typing import Any, Dict, List, Optional, TypedDict, Literal
 
 from langgraph.graph import END, StateGraph
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model, model_validator
 
 # Setting up logger
 logger = get_logger(__name__)
@@ -90,6 +89,15 @@ _BRANCH_ACTIVITY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _SHARED_SESSION_WORDS = ("common", "core", "elective", "guest", "large", "shared", "interdisciplinary", "seminar")
+_ACADEMIC_PREPARATION_WORDS = (
+    "prep", "prepare", "preparing", "getting ready", "dress", "dressing",
+    "pack", "packing", "review notes", "reviewing lecture notes",
+    "organizing study material", "plan for",
+)
+_NON_ATTENDANCE_ACADEMIC_WORDS = (
+    "group chat", "groupchat", "class chat", "classmate", "coursework",
+    "assignment", "homework", "notes", "study material",
+)
 
 
 def _academic_venue_policy(persona: Dict[str, Any]) -> str:
@@ -117,6 +125,16 @@ def _local_academic_venue_check(actions: List[Dict[str, Any]], persona: Dict[str
         # activities such as "chai break with classmates" as a class because
         # "class" is part of "classmates", causing needless replan retries.
         if not _BRANCH_ACTIVITY_PATTERN.search(description):
+            continue
+        # Mentioning a lecture while getting ready for it is not attendance.
+        # These private preparation activities legitimately occur in hostels,
+        # libraries, and other non-department locations.
+        if any(word in description for word in _ACADEMIC_PREPARATION_WORDS):
+            continue
+        # Coursework, notes, and class chats refer to an academic subject but
+        # do not mean the agent is physically attending a branch session.
+        # They may legitimately happen in a hostel, library, or common space.
+        if any(word in description for word in _NON_ATTENDANCE_ACADEMIC_WORDS):
             continue
         if any(word in description for word in _SHARED_SESSION_WORDS):
             continue
@@ -198,7 +216,26 @@ class CoarseBlock(BaseModel):
 
 
 class CoarsePlanOutput(BaseModel):
+    # This field is deliberately part of the provider response schema rather
+    # than only a sentence in the prompt.  ``generate_coarse_plan`` narrows it
+    # to a Literal[required_start] for each individual API call.
+    first_start_time: str = Field(
+        description=(
+            "Exact required HH:MM start time of the first block. Copy the "
+            "required first start time from the request exactly."
+        )
+    )
     blocks: List[CoarseBlock]
+
+    @model_validator(mode="after")
+    def first_block_must_match_declared_start(self) -> "CoarsePlanOutput":
+        if not self.blocks:
+            raise ValueError("coarse plan must contain at least one block")
+        if self.blocks[0].start != self.first_start_time:
+            raise ValueError(
+                "first_start_time must exactly match the first coarse block start"
+            )
+        return self
 
 
 class HourlyBlock(BaseModel):
@@ -345,6 +382,64 @@ def _flavor_block(state: DayPlannerState) -> str:
     return f"Today's vibe: {emotion}, leaning into {theme}."
 
 
+def _planning_window(state: DayPlannerState) -> tuple[str, str]:
+    """Return the exact time window owned by this planner invocation."""
+    current_time = state.get("current_time", "")
+    if state.get("mode") == "remaining" and " " in current_time:
+        return current_time.rsplit(" ", 1)[-1], "24:00"
+    return "00:00", "24:00"
+
+
+def _window_constraint(state: DayPlannerState) -> str:
+    start, end = _planning_window(state)
+    if state.get("mode") == "remaining":
+        return (
+            f"This is a REMAINING-DAY REPLAN. You own exactly {start} to {end}. "
+            f"The FIRST output block/action MUST start exactly at {start}; the LAST MUST end "
+            f"exactly at {end}. Never output, mention, or schedule any time before {start}."
+        )
+    return (
+        f"This plan owns exactly {start} to {end}. The FIRST output block/action MUST start "
+        f"exactly at {start}; the LAST MUST end exactly at {end}."
+    )
+
+
+def _coarse_output_schema(required_start: str) -> type[CoarsePlanOutput]:
+    """Build the per-request structured-output contract for the first block.
+
+    Gemini's JSON schema is static for a given call, while a remaining-day
+    replan may begin at any simulation time.  A Literal field turns the
+    runtime start time into a JSON-schema ``const`` sent with that specific
+    API request.  The base-model validator additionally binds that echoed
+    value to the first actual block.
+    """
+    return create_model(
+        "CoarsePlanOutputAt" + required_start.replace(":", "_"),
+        __base__=CoarsePlanOutput,
+        first_start_time=(
+            Literal[required_start],
+            Field(
+                description=(
+                    "Must be exactly " + required_start +
+                    "; it must also equal blocks[0].start."
+                )
+            ),
+        ),
+    )
+
+
+def _within_source_windows(record: Dict[str, Any], sources: List[Dict[str, Any]]) -> bool:
+    """Whether one provider record belongs wholly to an assigned source range."""
+    try:
+        start, end = _hhmm_minutes(record["start"]), _hhmm_minutes(record["end"])
+        return any(
+            _hhmm_minutes(source["start"]) <= start < end <= _hhmm_minutes(source["end"])
+            for source in sources
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -359,7 +454,10 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
     elif mode == "next_day":
         coverage = "covering the full next calendar day from 00:00 to 24:00. The very first action MUST start at 00:00 — this is a brand-new day, do not skip ahead."
     elif mode == "remaining":
-        coverage = f"covering ONLY the REMAINDER of the day from the current time onward -- do NOT schedule anything before the current time"
+        coverage = (
+            "covering ONLY the REMAINDER of the day. The first block must start "
+            f"exactly at {_planning_window(state)[0]}, and no block may start before it"
+        )
     else:
         coverage = "covering the full 24 hours (00:00 to 24:00)"
 
@@ -391,6 +489,7 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
         f"{_flavor_block(state)}\n\n"
         f"Current in-simulation time: {current_time}\n"
         f"Plan mode: {mode}\n"
+        f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n"
         f"Agent location: {current_loc or 'unknown'}{loc_hint}\n\n"
         f"DAY-HANDOFF CONTINUITY:\n{state.get('handoff_context') or '(none)'}\n\n"
         "Generate the coarse plan now."
@@ -402,13 +501,38 @@ def generate_coarse_plan(state: DayPlannerState) -> DayPlannerState:
             f"{state['conflict_reason']}"
         )
 
-    result = call_gemini(system_prompt, user_prompt, CoarsePlanOutput, "default")
+    required_start = _planning_window(state)[0]
+    result = call_gemini(
+        system_prompt,
+        user_prompt,
+        _coarse_output_schema(required_start),
+        "default",
+    )
     logger.info("[day_planner] coarse plan generated: %d blocks", len(result.blocks))
 
     return {
         **state,
         "coarse_plan": [b.model_dump() for b in result.blocks],
     }
+
+
+def validate_coarse_window(state: DayPlannerState) -> DayPlannerState:
+    """Reject an invalid coarse time window before costly LLM refinement."""
+    issue = _local_overlap_check(
+        state.get("coarse_plan", []),
+        mode=state.get("mode", "full_day"),
+        remaining_start=_planning_window(state)[0],
+        action_key="activity",
+    )
+    if issue:
+        logger.info("[day_planner] coarse-window validation failed: %s", issue)
+        return {
+            **state,
+            "conflict_detected": True,
+            "conflict_reason": issue,
+            "retry_count": state.get("retry_count", 0) + 1,
+        }
+    return {**state, "conflict_detected": False, "conflict_reason": None}
 
 
 def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
@@ -456,18 +580,26 @@ def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
             "- energy_change: positive = restorative, negative = tiring\n"
             "- emotion_change: positive = uplifting, negative = draining\n"
             "- Routine work, classes, and meals should usually stay within -0.03 to +0.03; do not make ordinary productivity euphoric\n"
-            "- Be realistic for the persona"
+            "- Be realistic for the persona\n\n"
+            f"{_window_constraint(state)}"
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
             f"{_flavor_block(state)}\n\n"
             f"FULL COARSE PLAN (context only):\n{json.dumps(state['coarse_plan'], indent=2)}\n\n" # Hand the whole day
             f"BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n" # The ONLY data to modify 
+            f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n\n"
             "Produce the hourly-resolution plan for the blocks listed under "
             "'BLOCKS TO REFINE' only."
         )
         result = call_gemini(system_prompt, user_prompt, HourlyPlanOutput, "default")
-        refined = [b.model_dump() for b in result.blocks]
+        raw_refined = [b.model_dump() for b in result.blocks]
+        refined = [block for block in raw_refined if _within_source_windows(block, flexible_blocks)]
+        if len(refined) != len(raw_refined):
+            logger.warning(
+                "[day_planner] discarded %d hourly refinement block(s) outside flexible source windows",
+                len(raw_refined) - len(refined),
+            )
         for b in refined:
             b["granularity"] = "flexible"
         hourly_blocks.extend(refined)
@@ -479,6 +611,51 @@ def decompose_hourly(state: DayPlannerState) -> DayPlannerState:
     )
 
     return {**state, "hourly_plan": hourly_blocks}
+
+
+def validate_hourly_refinement(state: DayPlannerState) -> DayPlannerState:
+    """Ensure the refinement stage did not recreate atomic source blocks.
+
+    Gemini is asked to refine flexible blocks only, but structured output does
+    not itself prevent it from returning a duplicate midnight sleep block.  A
+    bad hourly plan must be retried before the fine planner spends more calls.
+    """
+    flexible_sources = [block for block in state.get("coarse_plan", []) if block.get("granularity") == "flexible"]
+    flexible_by_parent = {}
+    for block in flexible_sources:
+        flexible_by_parent.setdefault(block.get("activity"), []).append(block)
+
+    issue = _local_overlap_check(
+        state.get("hourly_plan", []),
+        mode=state.get("mode", "full_day"),
+        remaining_start=_planning_window(state)[0],
+        action_key="activity",
+    )
+    if not issue:
+        for block in state.get("hourly_plan", []):
+            if block.get("granularity") != "flexible":
+                continue
+            sources = flexible_by_parent.get(block.get("parent_activity"), [])
+            if not sources:
+                issue = f"hourly refinement '{block.get('activity', 'unknown')}' has no flexible source block"
+                break
+            start = _hhmm_minutes(block.get("start", ""))
+            end = _hhmm_minutes(block.get("end", ""))
+            if not any(
+                _hhmm_minutes(source["start"]) <= start < end <= _hhmm_minutes(source["end"])
+                for source in sources
+            ):
+                issue = f"hourly refinement '{block.get('activity', 'unknown')}' exceeds its flexible source window"
+                break
+    if issue:
+        logger.info("[day_planner] hourly refinement validation failed: %s", issue)
+        return {
+            **state,
+            "conflict_detected": True,
+            "conflict_reason": issue,
+            "retry_count": state.get("retry_count", 0) + 1,
+        }
+    return {**state, "conflict_detected": False, "conflict_reason": None}
 
 def decompose_fine(state: DayPlannerState) -> DayPlannerState:
     persona = state["persona"]
@@ -507,13 +684,15 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "- energy_change: positive = restorative, negative = tiring\n"
             "- emotion_change: positive = uplifting, negative = draining\n"
             "- Routine work, classes, and meals should usually stay within -0.03 to +0.03; do not make ordinary productivity euphoric\n"
-            "- Be realistic for the persona"
+            "- Be realistic for the persona\n\n"
+            f"{_window_constraint(state)}"
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
             f"ACADEMIC VENUE POLICY:\n{_academic_venue_policy(persona)}\n\n"
             f"{_flavor_block(state)}\n\n"
             f"ACTIVITIES:\n{json.dumps(atomic_blocks, indent=2)}\n\n"
+            f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             f"The agent's current position is: {current_loc}. This is only their "
             "starting point for the next activity; it is not necessarily their hostel. "
@@ -569,13 +748,15 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "- energy_change: positive = restorative, negative = tiring\n"
             "- emotion_change: positive = uplifting, negative = draining\n"
             "- Routine work, classes, and meals should usually stay within -0.03 to +0.03; do not make ordinary productivity euphoric\n"
-            "- Be realistic for the persona"
+            "- Be realistic for the persona\n\n"
+            f"{_window_constraint(state)}"
         )
         user_prompt = (
             f"PERSONA:\n{_persona_block(persona)}\n\n"
             f"ACADEMIC VENUE POLICY:\n{_academic_venue_policy(persona)}\n\n"
             f"{_flavor_block(state)}\n\n"
             f"HOURLY BLOCKS TO REFINE:\n{json.dumps(flexible_blocks, indent=2)}\n\n"
+            f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n\n"
             f"KNOWN CAMPUS LOCATIONS:\n{_places_block(places)}\n\n"
             f"The agent's current position is: {current_loc}. This is only their "
             "starting point for the next activity; it is not necessarily their hostel. "
@@ -585,7 +766,14 @@ def decompose_fine(state: DayPlannerState) -> DayPlannerState:
             "Produce the fine-grained action plan for these blocks now."
         )
         result = call_gemini(system_prompt, user_prompt, FinePlanOutput, "default")
-        fine_actions.extend(a.model_dump() for a in result.actions)
+        raw_actions = [action.model_dump() for action in result.actions]
+        scoped_actions = [action for action in raw_actions if _within_source_windows(action, flexible_blocks)]
+        if len(scoped_actions) != len(raw_actions):
+            logger.warning(
+                "[day_planner] discarded %d fine action(s) outside flexible source windows",
+                len(raw_actions) - len(scoped_actions),
+            )
+        fine_actions.extend(scoped_actions)
 
     fine_actions.sort(key=lambda a: a["start"])
     logger.info("[day_planner] fine plan: %d total actions", len(fine_actions))
@@ -596,18 +784,15 @@ def _local_overlap_check(
     actions: List[Dict[str, Any]],
     mode: str = "full_day",
     remaining_start: Optional[str] = None,
+    action_key: str = "action",
 ) -> Optional[str]:
     """Cheap deterministic pre-check before spending an LLM call on validation --
     catches the most common failure mode (bad overlaps/gaps) for free."""
     if not actions:
         return "fine plan is empty"
 
-    def to_minutes(hhmm: str) -> int:
-        h, m = hhmm.split(":")
-        return int(h) * 60 + int(m)
-
     try:
-        sorted_actions = sorted(actions, key=lambda a: to_minutes(a["start"]))
+        sorted_actions = sorted(actions, key=lambda a: _hhmm_minutes(a["start"]))
     except Exception as e:  # malformed time strings
         return f"unparsable time value: {e}"
 
@@ -615,33 +800,38 @@ def _local_overlap_check(
     # must begin now and continue through midnight; otherwise a valid old-plan
     # tail would be silently discarded and the agent would become idle.
     if mode == "remaining" and remaining_start:
-        if to_minutes(sorted_actions[0]["start"]) != to_minutes(remaining_start):
+        if _hhmm_minutes(sorted_actions[0]["start"]) != _hhmm_minutes(remaining_start):
             return (
                 f"remaining-day plan does not start at {remaining_start} "
                 f"(starts at {sorted_actions[0]['start']})"
             )
-    elif mode != "remaining" and to_minutes(sorted_actions[0]["start"]) != 0:
+    elif mode != "remaining" and _hhmm_minutes(sorted_actions[0]["start"]) != 0:
         return f"plan does not start at 00:00 (starts at {sorted_actions[0]['start']})"
 
     for prev, curr in zip(sorted_actions, sorted_actions[1:]):
-        if to_minutes(prev["end"]) <= to_minutes(prev["start"]):
-            return f"action '{prev['action']}' has a non-positive duration"
-        if to_minutes(prev["end"]) != to_minutes(curr["start"]):
+        if _hhmm_minutes(prev["end"]) <= _hhmm_minutes(prev["start"]):
+            return f"action '{prev.get(action_key, 'unknown')}' has a non-positive duration"
+        if _hhmm_minutes(prev["end"]) != _hhmm_minutes(curr["start"]):
             return (
-                f"gap or overlap between '{prev['action']}' (ends {prev['end']}) "
-                f"and '{curr['action']}' (starts {curr['start']})"
+                f"gap or overlap between '{prev.get(action_key, 'unknown')}' (ends {prev['end']}) "
+                f"and '{curr.get(action_key, 'unknown')}' (starts {curr['start']})"
             )
 
-    if to_minutes(sorted_actions[-1]["end"]) <= to_minutes(sorted_actions[-1]["start"]):
-        return f"action '{sorted_actions[-1]['action']}' has a non-positive duration"
+    if _hhmm_minutes(sorted_actions[-1]["end"]) <= _hhmm_minutes(sorted_actions[-1]["start"]):
+        return f"action '{sorted_actions[-1].get(action_key, 'unknown')}' has a non-positive duration"
 
     # Even a remaining-day plan replaces the entire current plan, so it must
     # explicitly own the final minute of the day.
     last_end = sorted_actions[-1]["end"]
-    if to_minutes(last_end) not in (24 * 60, 0):
+    if _hhmm_minutes(last_end) not in (24 * 60, 0):
         return f"plan does not end at 24:00 (ends at {last_end})"
 
     return None
+
+
+def _hhmm_minutes(hhmm: str) -> int:
+    h, m = str(hhmm).split(":")
+    return int(h) * 60 + int(m)
 
 
 def _local_location_check(actions: List[Dict[str, Any]], places: List[Place]) -> Optional[str]:
@@ -710,6 +900,7 @@ def validate_plan(state: DayPlannerState) -> DayPlannerState:
         f"DETAILED PERSONA:\n{json.dumps(state['persona'], indent=2)}\n\n"
         f"COARSE PLAN (intent and priorities):\n{json.dumps(state.get('coarse_plan', []), indent=2)}\n\n"
         f"FINE PLAN:\n{json.dumps(state['fine_plan'], indent=2)}\n\n"
+        f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n\n"
         "Is this plan valid for this persona? Flag only clear persona contradictions "
         "or nonsensical sequencing."
     )
@@ -770,90 +961,33 @@ def _force_accept(state: DayPlannerState) -> DayPlannerState:
             ),
         }
 
-    plan = []
-    for original in sorted(state.get("fine_plan", []), key=lambda action: action.get("start", "00:00")):
-        action = dict(original)
-        if _local_content_safety_check([action]):
-            action["action"] = "Private downtime and preparation for rest"
-            logger.warning(
-                "[day_planner] replaced rejected unsafe fallback activity at %s",
-                action.get("start", "unknown time"),
-            )
-        plan.append(action)
-    mode = state.get("mode", "full_day")
-
-    # Safety normalization for full-day output: fill every uncovered period so
-    # the executor never encounters a silent gap after retry exhaustion.
-    if mode in ("full_day", "next_day") and plan:
-        def _hhmm(m):
-            h, mn = m.split(":")
-            return int(h) * 60 + int(mn)
-        normalized = []
-        cursor = 0
-        location_id = plan[0].get("location_id", "")
-        for action in plan:
-            start, end = _hhmm(action.get("start", "00:00")), _hhmm(action.get("end", "00:00"))
-            if end <= start or start < cursor:
-                continue
-            if start > cursor:
-                normalized.append({"action": "Free time", "start": f"{cursor // 60:02}:{cursor % 60:02}", "end": action["start"], "location_id": location_id, "sub_area": None, "energy_change": 0.0, "emotion_change": 0.0})
-            normalized.append(action)
-            cursor, location_id = end, action.get("location_id", location_id)
-        if cursor < 24 * 60:
-            normalized.append({"action": "Free time", "start": f"{cursor // 60:02}:{cursor % 60:02}", "end": "24:00", "location_id": location_id, "sub_area": None, "energy_change": 0.0, "emotion_change": 0.0})
-        plan = normalized
-
-    return {
-        **state,
-        "day_plan": plan,
-        "error": f"accepted after {MAX_PLAN_RETRIES} retries, last issue: {state.get('conflict_reason')}",
-    }
-
-
-def _provider_outage_fallback(state: DayPlannerState, error: Exception) -> DayPlannerState:
-    """Create a safe local schedule when every configured model is unavailable.
-
-    This keeps the agent embodied and schedulable during a provider incident.
-    It is deliberately modest and location-stable; a later replan can restore
-    a personalised schedule once the provider is healthy again.
-    """
-    current_time = str(state.get("current_time", "00:00")).split()[-1]
-    try:
-        hour, minute = (int(part) for part in current_time.split(":", 1))
-        start_minute = min(24 * 60, max(0, hour * 60 + minute))
-    except (TypeError, ValueError):
-        start_minute = 0
-
-    location_id = state.get("current_location_id") or "campus"
-    segments = [
-        (0, 7 * 60, "Sleep and recover", 0.25, 0.0),
-        (7 * 60, 22 * 60, "Self-directed routine and coursework", -0.05, 0.0),
-        (22 * 60, 24 * 60, "Wind down and rest", 0.15, 0.0),
+    # Full-day and next-day plans have no safe predecessor.  Never install an
+    # LLM-invalid plan after retries: produce a small, valid local schedule at
+    # a known location instead.  This contains provider mistakes before they
+    # reach the action manager and preserves a living agent over a server exit.
+    places = _normalize_places(state.get("places", []))
+    valid_locations = {place.id for place in places}
+    preferred_locations = [
+        state.get("current_location_id"),
+        state.get("persona", {}).get("Hostel"),
+        next(iter(valid_locations), None),
     ]
-    plan = []
-    for segment_start, segment_end, action, energy_change, emotion_change in segments:
-        actual_start = max(start_minute, segment_start)
-        if actual_start >= segment_end:
-            continue
-        plan.append({
-            "action": action,
-            "start": f"{actual_start // 60:02}:{actual_start % 60:02}",
-            "end": f"{segment_end // 60:02}:{segment_end % 60:02}",
-            "location_id": location_id,
-            "sub_area": None,
-            "energy_change": energy_change,
-            "emotion_change": emotion_change,
-        })
-
-    logger.error(
-        "[day_planner] provider fallback for %s at %s: %s",
-        state.get("persona", {}).get("Name", "unknown"), current_time, error,
-    )
+    location_id = next((item for item in preferred_locations if item in valid_locations), None)
+    if not location_id:
+        return {
+            **state,
+            "day_plan": [],
+            "error": "planner rejected after retries and no valid fallback location is available",
+        }
     return {
         **state,
-        "day_plan": plan,
-        "error": f"LLM provider unavailable; using local continuity plan: {error}",
+        "day_plan": [
+            {"action": "Sleep and recover", "start": "00:00", "end": "07:00", "location_id": location_id, "sub_area": None, "energy_change": 0.25, "emotion_change": 0.02},
+            {"action": "Unscheduled downtime", "start": "07:00", "end": "24:00", "location_id": location_id, "sub_area": None, "energy_change": -0.02, "emotion_change": 0.0},
+        ],
+        "error": f"deterministic fallback used after {MAX_PLAN_RETRIES} retries: {state.get('conflict_reason')}",
     }
+
 
 
 # ---------------------------------------------------------------------------
@@ -864,14 +998,34 @@ def build_day_planner_graph():
     graph = StateGraph(DayPlannerState)
 
     graph.add_node("generate_coarse_plan", generate_coarse_plan)
+    graph.add_node("validate_coarse_window", validate_coarse_window)
     graph.add_node("decompose_hourly", decompose_hourly)
+    graph.add_node("validate_hourly_refinement", validate_hourly_refinement)
     graph.add_node("decompose_fine", decompose_fine)
     graph.add_node("validate_plan", validate_plan)
     graph.add_node("force_accept", _force_accept)
 
     graph.set_entry_point("generate_coarse_plan")
-    graph.add_edge("generate_coarse_plan", "decompose_hourly")
-    graph.add_edge("decompose_hourly", "decompose_fine")
+    graph.add_edge("generate_coarse_plan", "validate_coarse_window")
+    graph.add_conditional_edges(
+        "validate_coarse_window",
+        route_after_validation,
+        {
+            "accept": "decompose_hourly",
+            "retry": "generate_coarse_plan",
+            "give_up": "force_accept",
+        },
+    )
+    graph.add_edge("decompose_hourly", "validate_hourly_refinement")
+    graph.add_conditional_edges(
+        "validate_hourly_refinement",
+        route_after_validation,
+        {
+            "accept": "decompose_fine",
+            "retry": "generate_coarse_plan",
+            "give_up": "force_accept",
+        },
+    )
     graph.add_edge("decompose_fine", "validate_plan")
 
     graph.add_conditional_edges(
@@ -947,15 +1101,9 @@ def run(agent: Any, world_state: dict) -> dict:
         "retry_count": 0,
     }
 
-    # The Gemini caller already rotates keys/models under a strict deadline.
-    # Retrying the complete multi-step graph (formerly 10s then 15s sleeps)
-    # only multiplied a provider outage into a startup stall.
-    try:
-        final_state = get_compiled_graph().invoke(initial_state)
-    except ProviderFailureError:
-        raise
-    except (AllModelsFailedError, genai_errors.APIError) as exc:
-        final_state = _provider_outage_fallback(initial_state, exc)
+    # API-key traversal is owned exclusively by gemini_client.  If every key
+    # fails there, propagate its quota-exhausted signal to the server/UI.
+    final_state = get_compiled_graph().invoke(initial_state)
 
     # Save day plan to short-term memory
     from src.agents.Short_term import save_day_plan, date_from_simulation_time

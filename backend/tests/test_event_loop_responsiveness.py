@@ -52,64 +52,42 @@ class EventLoopResponsivenessTests(unittest.IsolatedAsyncioTestCase):
 
 
 class GeminiAttemptTests(unittest.TestCase):
-    def test_full_key_circle_classifies_network_timeout_without_model_fallback(self):
-        model_tiers = {"default": ["primary", "unused-fallback"]}
-        with patch.object(gemini_client, "API_KEYS", ["key-one", "key-two"]), \
-                patch.object(gemini_client, "MODEL_TIERS", model_tiers), \
-                patch.object(gemini_client, "_single_attempt", side_effect=[TimeoutError("one"), TimeoutError("two")]) as attempt:
-            gemini_client._provider_failure.clear()
-            gemini_client._provider_failure_error = None
-            gemini_client._key_ring._keys = ()
-            gemini_client._key_ring._cursor = 0
-            with self.assertRaises(gemini_client.ProviderTimeoutError):
-                gemini_client.call_gemini("system", "user", TickDecision, complexity="default")
+    def test_ring_always_starts_at_first_key_and_advances_after_any_error(self):
+        ring = gemini_client.CircularKeyRing(["key-one", "key-two", "key-three"])
+        self.assertEqual([node.index for node in ring.traverse_from_head()], [1, 2, 3])
+        self.assertEqual([node.index for node in ring.traverse_from_head()], [1, 2, 3])
 
-        self.assertEqual(
-            [call.args[:2] for call in attempt.call_args_list],
-            [("key-one", "primary"), ("key-two", "primary")],
-        )
-        gemini_client._provider_failure.clear()
-        gemini_client._provider_failure_error = None
-
-    def test_resource_exhaustion_without_retry_hint_cools_for_a_full_rpm_window(self):
-        duration = gemini_client._parse_retry_after(
-            "429 RESOURCE_EXHAUSTED: Resource has been exhausted (e.g. check quota)."
-        )
-
-        self.assertGreaterEqual(duration, 60.0)
-
-    def test_fast_fail_mode_still_attempts_the_selected_model(self):
-        expected = TickDecision(decision="continue", reason="test")
-        with patch.object(gemini_client, "API_KEYS", ["test-key"]), \
-                patch.object(gemini_client, "_reserve_key_with_brief_wait", return_value="test-key"), \
-                patch.object(gemini_client, "_mark_used"), \
-                patch.object(gemini_client, "_single_attempt", return_value=expected) as attempt:
-            result = gemini_client.call_gemini(
-                "system", "user", TickDecision, complexity="default"
-            )
-
-        self.assertIs(result, expected)
-        self.assertEqual(attempt.call_count, 1)
-
-    def test_transport_timeout_rotates_to_another_key_without_model_fallback(self):
+    def test_any_failure_moves_to_next_key_without_timeout_or_model_change(self):
         expected = TickDecision(decision="continue", reason="recovered")
-        model_tiers = {"default": ["primary", "fallback"]}
+        attempted = []
+
+        class Models:
+            def generate_content(self, **_kwargs):
+                attempted.append(len(attempted) + 1)
+                if len(attempted) == 1:
+                    raise RuntimeError("any provider error")
+                return type("Response", (), {"parsed": expected})()
+
+        client = type("Client", (), {"models": Models()})()
         with patch.object(gemini_client, "API_KEYS", ["key-one", "key-two"]), \
-                patch.object(gemini_client, "MODEL_TIERS", model_tiers), \
-                patch.object(gemini_client, "_mark_cooldown") as cooldown, \
-                patch.object(gemini_client, "_mark_used"), \
-                patch.object(gemini_client, "_single_attempt", side_effect=[TimeoutError("stalled"), expected]) as attempt:
-            result = gemini_client.call_gemini(
-                "system", "user", TickDecision, complexity="default"
-            )
+                patch.object(gemini_client, "_get_client", return_value=client):
+            result = gemini_client.call_gemini("system", "user", TickDecision)
 
         self.assertIs(result, expected)
-        attempted = [call.args[:2] for call in attempt.call_args_list]
-        self.assertEqual({key for key, _model in attempted}, {"key-one", "key-two"})
-        self.assertEqual([model for _key, model in attempted], ["primary", "primary"])
-        cooldown.assert_called_once_with(
-            attempted[0][0], duration=gemini_client.TRANSIENT_KEY_COOLDOWN_SECONDS
-        )
+        self.assertEqual(attempted, [1, 2])
+
+    def test_full_circle_shows_quota_exhausted(self):
+        class Models:
+            def generate_content(self, **_kwargs):
+                raise RuntimeError("unavailable")
+
+        client = type("Client", (), {"models": Models()})()
+        with patch.object(gemini_client, "API_KEYS", ["key-one", "key-two"]), \
+                patch.object(gemini_client, "_get_client", return_value=client):
+            with self.assertRaises(gemini_client.APIQuotaExhaustedError) as raised:
+                gemini_client.call_gemini("system", "user", TickDecision)
+
+        self.assertEqual(raised.exception.code, "api_quota_exhausted")
 
 
 if __name__ == "__main__":

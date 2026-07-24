@@ -88,9 +88,20 @@ def _clear_long_term_memory() -> dict:
 
 
 def _resume_checkpoint_requested() -> bool:
-    """Read only Valhalla's startup flag without consuming Uvicorn arguments."""
+    """Read only Valhalla's startup flag without consuming Uvicorn arguments.
+
+    A near-miss such as ``--resume--checkpoint`` must never silently become a
+    fresh start, because the fresh-start path intentionally clears local
+    runtime state.
+    """
     import argparse
 
+    invalid_resume_flags = [arg for arg in sys.argv[1:] if arg.startswith("--resume") and arg != "--resume-checkpoint"]
+    if invalid_resume_flags:
+        raise SystemExit(
+            "Invalid resume flag: " + ", ".join(invalid_resume_flags)
+            + ". Did you mean --resume-checkpoint?"
+        )
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--resume-checkpoint", action="store_true")
     args, _ = parser.parse_known_args()
@@ -253,7 +264,8 @@ async def _run_sim(resume_checkpoint: bool = False):
             ).strftime("%Y-%m-%d")
             logger.info("[SimManager] day transition — advancing to %s", start_date)
             async with _sim_tick_lock:
-                _latest_snapshot = {"type": "day_handoff", "phase": "draining", "date": start_date}
+                _latest_snapshot = engine.current_frontend_snapshot()
+                _latest_snapshot.update({"type": "day_handoff", "phase": "draining", "date": start_date})
                 await _sim_broadcaster.broadcast(_latest_snapshot)
                 _latest_snapshot = await engine.handoff_to_next_day(start_date)
                 await _sim_broadcaster.broadcast(_latest_snapshot)
@@ -913,6 +925,12 @@ async def serve_spa(full_path: str):
 
 if __name__ == "__main__":
     import argparse
+    invalid_resume_flags = [arg for arg in sys.argv[1:] if arg.startswith("--resume") and arg != "--resume-checkpoint"]
+    if invalid_resume_flags:
+        raise SystemExit(
+            "Invalid resume flag: " + ", ".join(invalid_resume_flags)
+            + ". Did you mean --resume-checkpoint?"
+        )
     parser = argparse.ArgumentParser(description="Valhalla simulation server")
     parser.add_argument(
         "--resume-checkpoint", action="store_true", default=False,

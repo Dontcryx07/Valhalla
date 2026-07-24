@@ -55,7 +55,7 @@
       "open_hours": {"weekdays": "08:00-20:00", "weekends": "10:00-17:00"},
       "capacity": "medium",
       "typical_activities": ["computer science lecture", "AIDE lecture", "programming lab", "systems lab", "project meeting", "faculty office hour"],
-      "connected_locations": ["LHC", "SAB", "library", "central_lawn"],
+      
       "notes": "Map entrypoint: CS Department. The default home for CSE and AIDE branch-specific teaching and labs; shared large lectures belong at LHC instead."
     },
     {
@@ -66,7 +66,7 @@
       "open_hours": {"weekdays": "08:00-20:00", "weekends": "10:00-17:00"},
       "capacity": "medium",
       "typical_activities": ["electrical engineering lecture", "circuits lab", "electronics lab", "embedded systems lab", "faculty office hour"],
-      "connected_locations": ["LHC", "SAB", "library", "central_lawn"],
+      
       "notes": "Map entrypoint: Electrical Department. The default home for branch-specific Electrical and IC-design teaching and labs."
     },
     {
@@ -77,7 +77,7 @@
       "open_hours": {"weekdays": "08:00-20:00", "weekends": "10:00-17:00"},
       "capacity": "medium",
       "typical_activities": ["mechanical engineering lecture", "CAD studio", "manufacturing lab", "robotics workshop", "faculty office hour"],
-      "connected_locations": ["LHC", "SAB", "library", "central_lawn"],
+      
       "notes": "Map entrypoint: Mechanical Department. The default home for branch-specific Mechanical teaching, labs, and workshops."
     },
     {
@@ -88,7 +88,7 @@
       "open_hours": {"weekdays": "08:00-20:00", "weekends": "10:00-17:00"},
       "capacity": "medium",
       "typical_activities": ["chemical engineering lecture", "process lab", "chemistry lab", "research meeting", "faculty office hour"],
-      "connected_locations": ["LHC", "SAB", "library", "central_lawn"],
+      
       "notes": "Map entrypoint: Chemical Department. The default home for branch-specific Chemical teaching and labs."
     },
     {

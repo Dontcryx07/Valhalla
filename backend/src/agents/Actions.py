@@ -189,6 +189,9 @@ class LocationResolver:
 
     def resolve(self, location_id: str) -> Optional[Position]:
         """Convert a places.json ID to a Position with pixel coordinates."""
+        if not isinstance(location_id, str) or not location_id.strip():
+            logger.warning("[LocationResolver] invalid empty location_id: %r", location_id)
+            return None
         # Strategy 1: inline coordinates from places.json
         if location_id in self._places_inline:
             x, y = self._places_inline[location_id]
@@ -433,7 +436,23 @@ class AgentActionManager:
             )
             return
 
-        target_location_id = plan_action.get("location_id", "")
+        target_location_id = plan_action.get("location_id")
+        if not isinstance(target_location_id, str) or not target_location_id.strip():
+            logger.error(
+                "[Actions] %s: plan action '%s' has no valid location; using bounded recovery activity",
+                self.agent_id, plan_action.get("action", "unknown"),
+            )
+            now = self._hhmm_to_minutes(current_hhmm)
+            end_time = plan_action.get("end", self._minutes_to_hhmm(min(now + 30, 24 * 60)))
+            self.current_action = ActionState(
+                action_type=ActionType.MISC,
+                description="Recovering from invalid planned location",
+                start_time=current_hhmm,
+                end_time=end_time,
+                location_id=self.position.location_id or "",
+                position=self.position,
+            )
+            return
         target_position = self.resolver.resolve(target_location_id)
 
         if target_position is None:

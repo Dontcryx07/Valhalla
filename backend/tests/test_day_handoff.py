@@ -83,6 +83,11 @@ class DayHandoffTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(state.replan_count, 0)
         self.assertEqual(manager.current_action.description, "Sleep")
         self.assertEqual(snapshot["type"], "day_initialized")
+        self.assertEqual(snapshot["tick"], engine.world.tick)
+        self.assertEqual(snapshot["time"], "00:00")
+        self.assertEqual(snapshot["day"], 2)
+        self.assertIn("speed", snapshot)
+        self.assertIn("health", snapshot)
         archive.assert_awaited_once_with("Alice", "2026-07-03")
         clear.assert_called_once_with("Alice", "2026-07-03")
 

@@ -130,9 +130,8 @@ SIM_START_TIME = _env_str("SIM_START_TIME", "00:00")
 #   REAL_SECONDS_PER_TICK       = derived (do NOT set manually).
 #
 # Default is 4.0 real-sec/sim-min => a full sim-day (1440 min) takes ~96 real
-# minutes. Slowing the clock does not reduce total LLM calls per sim-day, but
-# it spreads them over 4x more wall-clock time, easing the per-key 5-RPM free
-# tier limit and reducing 429 cooldowns.
+# minutes. Clock speed changes observation cadence, not the deterministic
+# API-key traversal policy.
 # ---------------------------------------------------------------------------
 SIM_MINUTES_PER_TICK = _env_int("SIM_MINUTES_PER_TICK", 1)
 REAL_SECONDS_PER_SIM_MINUTE = _env_float("SIM_REAL_SECONDS_PER_SIM_MINUTE", 4.0)
@@ -194,35 +193,25 @@ DECIDE_COOLDOWN_TICKS = _env_int("SIM_DECIDE_COOLDOWN_TICKS", 30)
 CONVERSATION_MIN_ENERGY = _env_float("SIM_CONVERSATION_MIN_ENERGY", 0.05)
 CONVERSATION_MIN_EMOTION = _env_float("SIM_CONVERSATION_MIN_EMOTION", 0.05)
 
-# LLM Configuration
-TEMPERATURE = 0.7           # Creativity the model is allowed
-# Per-key RPM limit. Gemini Flash Lite's available free-tier limit is shown
-# per project in AI Studio; use 15 by default and let the local .env lower it
-# for projects with a smaller allocation.
-API_RPM_LIMIT = max(1, _env_int("SIM_API_RPM_LIMIT", 15))
-# Every individual Gemini HTTP request has a short deadline, and the complete
-# fallback cascade has its own cap.  These prevent one unavailable model from
-# holding a planner/conversation worker indefinitely.
-# Gemini rejects manually configured deadlines below 10 seconds.  Keep the
-# outer deadline long enough for a bounded primary/key fallback sequence.
-LLM_REQUEST_TIMEOUT_MS = max(10_000, _env_int("SIM_LLM_REQUEST_TIMEOUT_MS", 10_000))
-LLM_CALL_DEADLINE_SECONDS = max(10.0, _env_float("SIM_LLM_CALL_DEADLINE_SECONDS", 30.0))
-LLM_TRANSIENT_KEY_COOLDOWN_SECONDS = max(
-    1.0, _env_float("SIM_LLM_TRANSIENT_KEY_COOLDOWN_SECONDS", 15.0)
-)
-LLM_KEY_ACQUIRE_WAIT_SECONDS = max(
-    0.0, _env_float("SIM_LLM_KEY_ACQUIRE_WAIT_SECONDS", 2.0)
-)
+# LLM creativity profile.  This single observer-facing setting controls how
+# varied plans, decisions, and conversations may be while keeping memory
+# summaries intentionally stable.  0.0 is conservative; 1.0 is lively.
+SIM_CREATIVITY = min(1.0, max(0.0, _env_float("SIM_CREATIVITY", 1.0)))
+# Controls the size of non-LLM wellbeing variation.  This is deliberately
+# independent from creativity: an observer can ask for more varied plans
+# without making students' energy and mood unrealistically volatile.
+SIM_WELLBEING_VARIABILITY = min(1.0, max(0.0, _env_float("SIM_WELLBEING_VARIABILITY", 0.75)))
+TEMPERATURE = 0.7 + (0.4 * SIM_CREATIVITY)  # planning and decisions: 1.1 at lively
+CONVERSATION_TEMPERATURE = 0.6 + (0.4 * SIM_CREATIVITY)  # 1.0 at lively
+SUMMARY_TEMPERATURE = 0.5
+# The simulation intentionally uses one model.  Key traversal, implemented in
+# ``gemini_client``, is the only provider recovery behaviour.
+GEMINI_MODEL = _env_str("SIM_GEMINI_MODEL", "gemini-3.1-flash-lite")
 
-# Model fallback chain. Order = preference order.
-# All calls use the single "default" tier: primary gemini-3.1-flash-lite, with fallbacks.
-# Multiple API keys provide rate-limit resilience (see API_KEYS below).
-MODEL_TIERS: dict[str, list[str]] = {
-    "default": ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3-flash-preview"],
-}
-
-# Support multiple API keys (comma-separated in env var).
-# Rotates through them when rate limits are hit on the current key.
+# Support multiple API keys (comma-separated in env var). When numbered
+# variables are used, they are read in ascending numeric order.
+# ``gemini_client`` rebuilds its circular linked list from this ordered list
+# for every API call, beginning at index 1 each time.
 API_KEYS: list[str] = [
     k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()
 ]
@@ -236,13 +225,13 @@ if not API_KEYS:
             numbered_keys.append(key)
     API_KEYS = [key for key in [os.environ.get("GEMINI_API_KEY", ""), *numbered_keys] if key]
 
-# Drop obvious placeholder values so the client doesn't waste attempts (and
-# incur cooldowns) on non-functional keys.
+# Drop obvious placeholder values before building the deterministic key ring.
 _PLACEHOLDER_MARKERS = ("your_google_api_key", "your_api_key", "changeme", "xxxx")
 API_KEYS = [
     k for k in API_KEYS
     if not any(marker in k.lower() for marker in _PLACEHOLDER_MARKERS)
 ]
+API_KEY_COUNT = len(API_KEYS)
 
 
 # Conversation cap (per agent per day)
@@ -357,9 +346,11 @@ def describe_settings() -> str:
     day_real_min = (1440 * REAL_SECONDS_PER_SIM_MINUTE / max(TICK_SPEED, 1e-9)) / 60.0
     return (
         "Valhalla simulation settings\n"
-        f"  API keys loaded              : {len(API_KEYS)}\n"
-        f"  API RPM limit per key        : {API_RPM_LIMIT}\n"
-        f"  Model tiers                  : default={MODEL_TIERS['default']}\n"
+        f"  API keys loaded              : {API_KEY_COUNT} (head resets to index 1/call)\n"
+        f"  Gemini model                 : {GEMINI_MODEL}\n"
+        f"  Simulation creativity        : {SIM_CREATIVITY:.2f} "
+        f"(plan/decision {TEMPERATURE:.2f}, conversation {CONVERSATION_TEMPERATURE:.2f}, summary {SUMMARY_TEMPERATURE:.2f})\n"
+        f"  Wellbeing variation           : {SIM_WELLBEING_VARIABILITY:.2f}\n"
         f"  Memory backend               : {MEMORY_BACKEND}\n"
         f"  Semantic memory              : {'ON' if SEMANTIC_MEMORY_ENABLED else 'OFF'}\n"
         f"  Perception                   : {'ON' if PERCEPTION_ENABLED else 'OFF'} (radius {PERCEPTION_RADIUS_PX}px)\n"

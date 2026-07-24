@@ -23,6 +23,7 @@ coverage.xml
 htmlcov/
 test-results/
 playwright-report/
+.VSCodeCounter/
 
 # Generated simulation runtime state.  The live server recreates these on a
 # fresh run; static environments, personas, and event definitions stay tracked.
@@ -33,6 +34,7 @@ playwright-report/
 # migration utility. The live simulator uses Qdrant instead.
 /backend/data/Long_term_db/
 /backend/output/
+
 
 # Frontend dependencies and build output
 /frontend/node_modules/

@@ -6,12 +6,13 @@ import ChatPanel from "./ChatPanel";
 
 function emotionLabel(value) {
   if (value == null) return "Neutral";
-  if (value >= 0.9) return "Extremely Joyful";
-  if (value >= 0.7) return "Very Happy";
-  if (value > 0.5) return "Happy";
-  if (value >= 0.3) return "Neutral";
-  if (value >= 0.1) return "Sad";
-  return "Extremely Sad";
+  if (value >= 0.84) return "Elated";
+  if (value >= 0.68) return "Upbeat";
+  if (value >= 0.56) return "Content";
+  if (value >= 0.44) return "Neutral";
+  if (value >= 0.30) return "Low";
+  if (value >= 0.16) return "Stressed";
+  return "Overwhelmed";
 }
 
 export default function AgentWindow({ agentId, data, speed, defaultPosition, expanded = false, expandedLayer = 0, onToggle }) {
@@ -207,12 +208,12 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, exp
             {/* Energy bar */}
             <div style={{ marginBottom: 4 }}>
               <div style={{ fontSize: 9, color: "#6b6b78", fontFamily: "'Space Mono', monospace", marginBottom: 2 }}>
-                ENERGY
+                ENERGY Â· {Math.round((data.energy_level ?? 0) * 100)}%
               </div>
               <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
-                  width: `${Math.round((data.energy_level || 0) * 100)}%`,
+                  width: `${Math.round((data.energy_level ?? 0) * 100)}%`,
                   background: "linear-gradient(90deg, #ff6b6b, #ffd43b, #51cf66)",
                   borderRadius: 3,
                   transition: "width 0.3s",
@@ -222,7 +223,7 @@ export default function AgentWindow({ agentId, data, speed, defaultPosition, exp
 
             {/* Emotion label */}
             <div style={{ fontSize: 9, color: "#6b6b78", fontFamily: "'Space Mono', monospace", marginBottom: 6 }}>
-              EMOTION: <span style={{ color: "#d0d0da" }}>{emotionLabel(data.emotion_state)}</span>
+              EMOTION: <span style={{ color: "#d0d0da" }}>{emotionLabel(data.emotion_state)} Â· {Math.round((data.emotion_state ?? 0.5) * 100)}%</span>
             </div>
 
             {paused && !conversation && (

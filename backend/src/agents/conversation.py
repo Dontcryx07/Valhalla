@@ -50,7 +50,8 @@ from pydantic import BaseModel, Field
 
 from src.core.log import get_logger
 from src.core.world_state import CurrentAction
-from src.llm.gemini_client import call_gemini, AllModelsFailedError, ProviderFailureError
+from src.llm.gemini_client import call_gemini, ProviderFailureError
+from src.config import CONVERSATION_TEMPERATURE
 
 logger = get_logger(__name__)
 
@@ -619,7 +620,7 @@ def generate_conversation(
             user_prompt=user_prompt,
             schema=ConversationResult,
             complexity="default",
-            temperature=0.7,
+            temperature=CONVERSATION_TEMPERATURE,
         )
         logger.info(
             "[Conversation] generated %d messages, %d min, sentiment=%s, delta=%.2f",

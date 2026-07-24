@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import random
 import sys
@@ -333,28 +334,68 @@ class WorldEngine:
         for marker in ("introverted", "quiet", "reserved", "awkward", "irregular sleep", "bad sleep", "procrastinate"):
             if marker in traits:
                 baseline -= 0.015
-        return max(0.44, min(0.57, baseline))
+        return max(0.40, min(0.62, baseline))
 
     @staticmethod
-    def _bounded_action_emotion_change(action: Any) -> tuple[float, float]:
-        """Return a realistic action delta and its allowed mood ceiling.
+    def _energy_baseline(persona: Dict[str, Any]) -> float:
+        """Return a personality-informed morning energy level, not 100%."""
+        traits = " ".join(str(persona.get(key, "")) for key in ("innate", "lifestyle", "learned")).lower()
+        baseline = 0.74
+        for marker in ("regular sleep", "early riser", "exercise", "sport", "disciplined", "morning person"):
+            if marker in traits:
+                baseline += 0.025
+        for marker in ("irregular sleep", "bad sleep", "late-night", "procrastinate", "overcommitted", "insomni"):
+            if marker in traits:
+                baseline -= 0.04
+        return max(0.56, min(0.86, baseline))
 
-        Planner output can be optimistic. Classes and lab work are usually
-        emotionally neutral; social/sport blocks can lift mood modestly, but
-        only rare standout moments should approach the top of the scale.
+    def _action_wellbeing_deltas(self, state: AgentRuntimeState, action: Any) -> tuple[float, float]:
+        """Compute a deterministic total wellbeing effect for one action.
+
+        LLM-supplied deltas are useful hints, but are normally very small.  A
+        shared local activity model therefore gives classes, travel, rest, and
+        social time their ordinary human cost or benefit.  The small stable
+        variation is keyed by agent/action, rather than sampled each tick, so
+        replaying a checkpoint remains reproducible.
         """
         description = (getattr(action, "description", "") or "").lower()
-        delta = max(-0.08, min(0.06, float(getattr(action, "emotion_change", 0.0))))
-        routine_words = ("class", "lecture", "lab", "study", "assignment", "coding", "project", "tutorial", "review")
-        restorative_words = ("sleep", "rest", "shower", "meal", "breakfast", "lunch", "dinner")
-        uplifting_words = ("sport", "gym", "run", "basketball", "music", "open mic", "friends", "club", "game")
-        if any(word in description for word in routine_words):
-            return min(delta, 0.012), 0.14
-        if any(word in description for word in restorative_words):
-            return min(delta, 0.025), 0.14
-        if any(word in description for word in uplifting_words):
-            return min(delta, 0.050), 0.22
-        return delta, 0.18
+        action_type = str(getattr(action, "action_type", "")).lower()
+        planner_energy = max(-0.16, min(0.14, float(getattr(action, "energy_change", 0.0))))
+        planner_emotion = max(-0.12, min(0.12, float(getattr(action, "emotion_change", 0.0))))
+        energy, emotion = 0.0, 0.0
+
+        if action_type.endswith("move") or any(word in description for word in ("walk", "travel", "commute", "go to")):
+            energy, emotion = -0.055, -0.008
+        elif any(word in description for word in ("sleep", "nap", "rest")):
+            energy, emotion = 0.28, 0.025
+        elif any(word in description for word in ("class", "lecture", "lab", "tutorial", "study", "assignment", "coding", "project", "exam")):
+            energy, emotion = -0.105, -0.025
+        elif any(word in description for word in ("gym", "sport", "run", "football", "basketball", "badminton", "workout")):
+            energy, emotion = -0.16, 0.075
+        elif any(word in description for word in ("breakfast", "lunch", "dinner", "meal", "food", "tea")):
+            energy, emotion = 0.055, 0.025
+        elif any(word in description for word in ("friends", "club", "music", "open mic", "game", "movie", "social", "hangout")):
+            energy, emotion = -0.035, 0.075
+        elif any(word in description for word in ("laundry", "clean", "errand", "admin", "queue", "chore")):
+            energy, emotion = -0.065, -0.025
+        else:
+            energy, emotion = -0.025, 0.0
+
+        # Introverted students generally enjoy a good conversation but spend
+        # more energy on it; this keeps personality visible without judging it.
+        traits = " ".join(str(state.persona.get(key, "")) for key in ("innate", "lifestyle", "learned")).lower()
+        if any(word in description for word in ("friends", "club", "social", "hangout")) and any(
+            marker in traits for marker in ("introverted", "quiet", "reserved")
+        ):
+            energy -= 0.03
+
+        variation = _cfg.SIM_WELLBEING_VARIABILITY
+        token = f"{state.agent_id}|{getattr(action, 'start_time', '')}|{getattr(action, 'end_time', '')}|{description}"
+        digest = hashlib.blake2s(token.encode("utf-8"), digest_size=4).digest()
+        jitter = (int.from_bytes(digest, "big") / 0xFFFFFFFF) * 2.0 - 1.0
+        energy += planner_energy + jitter * 0.035 * variation
+        emotion += planner_emotion + jitter * 0.045 * variation
+        return max(-0.28, min(0.30, energy)), max(-0.18, min(0.16, emotion))
 
     def _memory_context(self, persona_name, persona, before_date=None, query_hint=""):
         """Build (relevant_memories, rolling_summary) for a day-planner call.
@@ -438,7 +479,7 @@ class WorldEngine:
                             agent_id=agent_id, persona=persona, persona_name=name,
                             manager=manager, position=position, day_plan=day_plan,
                             emotion_state=self._emotion_baseline(persona),
-                            emotion_baseline=self._emotion_baseline(persona), energy_level=1.0,
+                            emotion_baseline=self._emotion_baseline(persona), energy_level=self._energy_baseline(persona),
                         )
                     )
                     self.world.register_agent(agent_id, position)
@@ -489,7 +530,7 @@ class WorldEngine:
                         agent_id=agent_id, persona=persona, persona_name=name,
                         manager=manager, position=position, day_plan=day_plan,
                         emotion_state=self._emotion_baseline(persona),
-                        emotion_baseline=self._emotion_baseline(persona), energy_level=1.0,
+                        emotion_baseline=self._emotion_baseline(persona), energy_level=self._energy_baseline(persona),
                     )
                 )
                 self.world.register_agent(agent_id, position)
@@ -509,7 +550,7 @@ class WorldEngine:
                         agent_id=agent_id, persona=persona, persona_name=name,
                         manager=manager, position=position, day_plan=[],
                         emotion_state=self._emotion_baseline(persona),
-                        emotion_baseline=self._emotion_baseline(persona), energy_level=1.0,
+                        emotion_baseline=self._emotion_baseline(persona), energy_level=self._energy_baseline(persona),
                     )
                 )
                 self.world.register_agent(agent_id, position)
@@ -965,7 +1006,7 @@ class WorldEngine:
             seen.append((x, y))
 
     def _update_energy_emotion(self, state: AgentRuntimeState) -> None:
-        """Update wellbeing without allowing routine plans to create euphoria."""
+        """Apply the active action's bounded, personality-aware wellbeing effect."""
         manager = state.manager
         if manager is None or manager.current_action is None:
             return
@@ -975,17 +1016,15 @@ class WorldEngine:
             end_min = self._hhmm_to_minutes(action.end_time)
             duration = max(1, end_min - start_min)
             tick_step = _cfg.SIM_MINUTES_PER_TICK
-            energy_tick = (action.energy_change / duration) * tick_step
-            action_emotion_change, mood_headroom = self._bounded_action_emotion_change(action)
+            action_energy_change, action_emotion_change = self._action_wellbeing_deltas(state, action)
+            energy_tick = (action_energy_change / duration) * tick_step
             emotion_tick = (action_emotion_change / duration) * tick_step
-            state.energy_level = max(0.0, min(1.0, state.energy_level + energy_tick))
+            state.energy_level = max(0.08, min(0.97, state.energy_level + energy_tick))
             baseline = state.emotion_baseline
-            # A small regression to the agent's normal mood prevents a chain
-            # of mildly positive schedule entries from permanently saturating
-            # the display at "Very Happy".
-            recovery = (baseline - state.emotion_state) * min(0.05, 0.002 * tick_step)
-            ceiling = min(0.82, baseline + mood_headroom)
-            state.emotion_state = max(0.18, min(ceiling, state.emotion_state + emotion_tick + recovery))
+            # Mood has a weak pull towards personality baseline, but day
+            # events are allowed to remain visible for several actions.
+            recovery = (baseline - state.emotion_state) * min(0.015, 0.0005 * tick_step)
+            state.emotion_state = max(0.10, min(0.90, state.emotion_state + emotion_tick + recovery))
         except Exception:
             pass
 
@@ -1422,6 +1461,23 @@ class WorldEngine:
         self.relationship_matrix.update(a.agent_id, b.agent_id, conv_result.relationship_delta)
         self.relationship_matrix.update(b.agent_id, a.agent_id, conv_result.relationship_delta)
         self.relationship_matrix.save()
+        # Conversations affect the people having them, not only their stored
+        # relationship score.  A warm chat is a modest lift; an awkward one is
+        # draining.  The effect is applied once per completed conversation.
+        relationship_delta = max(-0.20, min(0.20, conv_result.relationship_delta))
+        sentiment = (getattr(conv_result, "sentiment", "neutral") or "neutral").lower()
+        for state in (a, b):
+            social_cost = 0.045 if any(marker in " ".join(
+                str(state.persona.get(key, "")) for key in ("innate", "lifestyle", "learned")
+            ).lower() for marker in ("introverted", "quiet", "reserved")) else 0.025
+            state.energy_level = max(0.08, min(0.97, state.energy_level - social_cost))
+            if sentiment in ("positive", "warm", "friendly"):
+                mood_delta = 0.035 + max(0.0, relationship_delta) * 0.25
+            elif sentiment in ("negative", "tense", "awkward"):
+                mood_delta = -0.035 + min(0.0, relationship_delta) * 0.25
+            else:
+                mood_delta = relationship_delta * 0.08
+            state.emotion_state = max(0.10, min(0.90, state.emotion_state + mood_delta))
         logger.info(
             "[WorldEngine] conversation '%s' <-> '%s' active until tick %d",
             a.persona_name, b.persona_name, self.world.tick + conv_result.duration_minutes,
@@ -1741,10 +1797,12 @@ class WorldEngine:
             # schedule is the safest fallback because it preserves continuity.
             return state, state.day_plan
 
-        planned = await asyncio.gather(
-            *[_plan_next_day(state) for state in self.registry.all_states()],
-            return_exceptions=False,
-        )
+        # Keep day-handoff planner traffic serial.  A single key ring is shared
+        # across agents, and concurrent full pipelines caused a burst of
+        # provider failures precisely when a new day was being installed.
+        planned = []
+        for state in self.registry.all_states():
+            planned.append(await _plan_next_day(state))
 
         self.sim_start_date = next_date
         self.sim_start_hhmm = "00:00"
@@ -1791,34 +1849,17 @@ class WorldEngine:
             logger.exception("[WorldEngine] unable to checkpoint handoff at tick %d", self.world.tick)
             handoff_warnings.append(f"handoff checkpoint failed: {exc}")
 
-        return {
+        snapshot = self._frontend_snapshot(self.world.tick, "00:00")
+        snapshot.update({
             "type": "day_initialized",
             "phase": "initialized",
             "date": next_date,
-            "day": self._day_index + 1,
             "cancelled_conversations": cancelled,
             "archived_agents": sum(bool(result) for result in archive_results),
             "warnings": handoff_warnings,
-            "agents": {
-                state.agent_id: {
-                    "name": state.persona_name,
-                    "color": state.color,
-                    "position": state.position.model_dump(),
-                    "current_action": state.manager.current_action.model_dump()
-                    if state.manager and state.manager.current_action else None,
-                    "activity": state.manager.current_action.description
-                    if state.manager and state.manager.current_action else "Idle",
-                    "paused": state.paused,
-                    "in_conversation": False,
-                    "in_last_action": state.manager.is_last_action if state.manager else False,
-                    "energy_level": state.energy_level,
-                    "emotion_state": state.emotion_state,
-                    "conversation": None,
-                }
-                for state in self.registry.all_states()
-            },
             "recent_conversations": [],
-        }
+        })
+        return snapshot
 
     # ------------------------------------------------------------------ #
     # Main run loop

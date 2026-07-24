@@ -12,11 +12,10 @@ shows the live campus state.
 - Students follow AI-generated day plans and use grid pathfinding to move.
 - When two eligible students are close enough, a Gemini-generated conversation
   is stored for both of them and can affect later memories.
-- At a day boundary, the running simulation keeps the same students and action
-  state. It allows active conversation work a bounded time to finish, archives
-  the completed day, then installs continuity-aware plans for the next day.
+- At a day boundary, the simulation archives the completed day and installs
+  continuity-aware plans for the next day.
 - Checkpoints preserve the world, agent action state, pending conversations,
-  relationships, and random state for recovery.
+  relationships, random state, and roster membership for recovery.
 
 ## Requirements
 
@@ -50,14 +49,14 @@ working Gemini key:
 GEMINI_API_KEY=your-google-gemini-api-key
 ```
 
-Multiple keys can be supplied for rate-limit resilience:
+Supply all Gemini keys in deterministic index order:
 
 ```text
 GEMINI_API_KEYS=key-one,key-two,key-three
 ```
 
-Alternatively, use `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on. Do not
-commit `.env` or any API key.
+Alternatively, use `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on. Valhalla
+reads numbered keys in ascending order. Do not commit `.env` or any API key.
 
 ### 3. Build the frontend
 
@@ -80,9 +79,9 @@ python backend/Odin.py
 
 Open <http://127.0.0.1:8000>.
 
-This is intentionally a **fresh** start: it clears short-term runtime memory
-and checkpoints before it initializes a new simulation. Long-term archives are
-not cleared.
+This is intentionally a **fresh** start: it clears short-term runtime memory,
+checkpoints, history archives, and Valhalla-owned semantic-memory collections
+before it initializes a new simulation.
 
 ### 5. Resume a saved simulation
 
@@ -90,10 +89,9 @@ not cleared.
 python backend/Odin.py --resume-checkpoint
 ```
 
-This command preserves runtime data and restores the newest checkpoint. It
-fails instead of silently starting a new simulation when no checkpoint exists
-or when the checkpoint roster differs from the configured personas. Start a
-fresh simulation after adding, removing, or renaming personas.
+This command preserves runtime data and restores the newest checkpoint. A
+checkpoint owns its historical roster: rewinding to a checkpoint from before
+an agent was added or removed restores exactly that earlier membership.
 
 Use a different port when needed:
 
@@ -130,10 +128,26 @@ The code defaults are one simulated minute per tick, four real seconds per
 simulated minute, and a speed multiplier of one. `.env` values can be
 overridden by the corresponding engine command-line flags.
 
-At midnight, the same simulation instance continues into the next day. It waits
-up to `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` for active conversations,
-cancels any that exceed the limit, archives the finished day, and generates
-next-day plans with each student's ending location and wellbeing as context.
+At midnight, the same simulation instance continues into the next day. It
+waits up to `SIM_DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS` for active
+conversations, cancels any that exceed the limit, archives the finished day,
+and generates next-day plans with each student's ending location and wellbeing
+as context.
+
+### Gemini key traversal
+
+Valhalla uses one model, `gemini-3.1-flash-lite`, and one deterministic
+recovery rule. A generation or embedding call constructs a circular linked
+list from the configured keys and always begins at node 1. If a key returns
+*any* error, the call immediately advances to the next node. It does not wait,
+retry a key, apply a timeout, pace requests, or switch models. The next API
+call starts again at node 1. If all keys fail in one full circle, the backend
+stops the simulation and the UI displays **API quota exhausted**.
+
+Initial day planning is deliberately sequential: the next student's plan does
+not begin until the previous student's plan has completed. This prevents a
+startup burst from exhausting the key pool and prevents agents from entering
+the world with empty plans.
 
 ## Runtime safeguards
 
@@ -141,13 +155,14 @@ next-day plans with each student's ending location and wellbeing as context.
   settled at the same location; close passes on unrelated routes do not pause
   them for a chat.
 - Gemini decisions run in the background, so provider latency does not freeze
-  simulation ticks or WebSocket updates. Any unfinished decision is discarded
-  at day handoff and cannot replan the next day from stale context.
+  simulation ticks or WebSocket updates.
 - The planner validates time ranges, known locations, and unsafe activity text.
-  If retries are exhausted, its deterministic fallback replaces rejected
-  activities with neutral downtime while preserving a complete schedule.
-- The frontend shows a clear error state when a protected resume is rejected,
-  instead of rendering an empty campus.
+  Zero- or negative-duration actions (where `end <= start`) are rejected.
+- The planner applies a local academic venue policy: branch-specific
+  classes/labs use their department, AIDE uses Computer Science, LHC is for
+  shared/common teaching, and SAB is not a generic academic fallback.
+- The frontend shows a clear provider-failure state rather than rendering
+  empty-plan agents when every API key is unavailable.
 
 ## Live UI and observability
 
@@ -164,6 +179,16 @@ next-day plans with each student's ending location and wellbeing as context.
 - Scheduled campus events are included in the live snapshot. Eligible agents
   can add them to their plans, and the events panel shows upcoming and active
   entries.
+- Agent cards are movable and independently expandable, so several detailed
+  states can be observed at once. The map remains pannable.
+- The observer can fast-forward, slow down, rewind by a chosen number of ticks
+  or hours, and start/stop from the nearest checkpoint. The in-memory rewind
+  window retains a full day (1,440 snapshots); persisted checkpoints are
+  compressed JSON (`.json.gz`).
+- The `ROSTER` panel is available only while stopped. It can archive/remove an
+  agent, replace a display name while retaining its stable ID, or generate and
+  add an adult student persona from observer-provided notes. Removed persona
+  data is archived under `backend/data/retired_agents/` rather than deleted.
 
 ## Memory
 
@@ -262,10 +287,9 @@ dimensions in one collection.
 | Simulated minutes per tick | `SIM_MINUTES_PER_TICK` | `1` |
 | Real seconds per simulated minute | `SIM_REAL_SECONDS_PER_SIM_MINUTE` | `4.0` |
 | Simulation speed multiplier | `SIM_TICK_SPEED` | `1.0` |
-| Per-Gemini request deadline | `SIM_LLM_REQUEST_TIMEOUT_MS` | `10000` |
-| Entire Gemini fallback deadline | `SIM_LLM_CALL_DEADLINE_SECONDS` | `30` |
-| Retryable-key cooldown | `SIM_LLM_TRANSIENT_KEY_COOLDOWN_SECONDS` | `15` |
-| Maximum wait for a rate-spaced key | `SIM_LLM_KEY_ACQUIRE_WAIT_SECONDS` | `2` |
+| Simulation creativity (`0.0` conservative to `1.0` lively) | `SIM_CREATIVITY` | `1.0` |
+| Wellbeing variation (`0.0` steady to `1.0` most varied) | `SIM_WELLBEING_VARIABILITY` | `0.75` |
+| Gemini generation model | `SIM_GEMINI_MODEL` | `gemini-3.1-flash-lite` |
 | Perception radius | `SIM_PERCEPTION_RADIUS_PX` | `50` |
 | Conversation radius | `SIM_CONVERSATION_RADIUS_PX` | `20` |
 | Memory backend | `SIM_MEMORY_BACKEND` | Qdrant-only (fixed) |
@@ -289,10 +313,11 @@ $env:PYTHONPATH="backend"; python backend/src/core/world_engine.py --days 1 --ti
 | Path | Contents |
 |---|---|
 | `backend/data/personalities/` | Persona profiles and initial hostels |
-| `backend/data/environment/` | Campus locations, entry points, and relationships |
+| `backend/data/environment/` | Campus locations, entry points, events, and directional relationships |
 | `backend/data/Short_term_db/` | Active day plans, events, and conversations |
 | Qdrant Cloud persona collections | Durable semantic long-term memory |
-| `backend/data/checkpoints/` | Recovery checkpoints |
+| `backend/data/checkpoints/` | Compressed recovery checkpoints (`.json.gz`) |
+| `backend/data/retired_agents/` | Archived persona and short-term data for removed agents |
 | `backend/output/logs/` | Application logs |
 
 Short-term records, checkpoints, logs, frontend build output, and local test
@@ -317,3 +342,15 @@ python -m unittest backend.tests.test_vector_memory -v
 ```
 
 The test creates and removes its dedicated test collection.
+
+## Overnight sidecar monitor
+
+For non-LLM operational telemetry alongside a running server, use:
+
+```powershell
+python backend/tools/sidecar_monitor.py --url http://127.0.0.1:8000
+```
+
+It writes bounded health samples to the configured output directory, including
+agent location/action/conversation state, UI reachability, tick health, and
+resource indicators. It does not alter simulation state.
