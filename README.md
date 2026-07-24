@@ -3,9 +3,10 @@
 A multi-agent simulation of IIT Ropar where AI student personas plan their day,
 move around a campus map, talk when they meet, and remember past experiences.
 
-<video src="Valhalla_run_1.mp4" controls width="100%">
-  Your browser does not support the video tag.
-</video>
+
+
+https://github.com/user-attachments/assets/1e48772a-e8a9-45d3-a462-ddfe83b1c640
+
 
 ## Pipeline
 
