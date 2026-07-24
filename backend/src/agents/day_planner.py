@@ -106,10 +106,9 @@ def _academic_venue_policy(persona: Dict[str, Any]) -> str:
     if not destination:
         return "No branch-specific policy is known; choose the listed location that explicitly fits."
     return (
-        f"This student is in {branch}. Branch-specific classes, tutorials, and labs MUST use "
-        f"`{destination}`. LHC is only for common/core/elective/guest/large shared sessions. "
-        "SAB is only for shared academic services, interdisciplinary work, seminars, overflow labs, "
-        "faculty meetings, or an activity explicitly described as happening there."
+        f"This student is in {branch}. Branch-specific classes, tutorials, and labs may use "
+        f"`{destination}` or Library/ SAB. LHC is only for common/core/elective/guest/large shared sessions and classes. "
+        
     )
 
 
@@ -893,7 +892,8 @@ def validate_plan(state: DayPlannerState) -> DayPlannerState:
     system_prompt = (
         "You are QA-checking a simulated character's day plan for internal consistency "
         "with their persona (not just time-math, which has already been verified). "
-        "Flag it invalid only for clear persona contradictions or nonsensical sequencing."
+        "Flag it invalid only for clear nonsensical sequencing."
+        
     )
     user_prompt = (
         f"PERSONA:\n{_persona_block(state['persona'])}\n\n"
@@ -901,8 +901,8 @@ def validate_plan(state: DayPlannerState) -> DayPlannerState:
         f"COARSE PLAN (intent and priorities):\n{json.dumps(state.get('coarse_plan', []), indent=2)}\n\n"
         f"FINE PLAN:\n{json.dumps(state['fine_plan'], indent=2)}\n\n"
         f"REQUIRED OUTPUT WINDOW: {_window_constraint(state)}\n\n"
-        "Is this plan valid for this persona? Flag only clear persona contradictions "
-        "or nonsensical sequencing."
+        "Is this plan valid for this persona? Flag only clear for "
+        " nonsensical sequencing."
     )
     result = call_gemini(system_prompt, user_prompt, ValidationResult, "default")
 

@@ -55,10 +55,11 @@ def _register(engine, agent_id, name, position, plan=None):
 
 
 async def _trigger_and_detect(engine, tick=0):
-    """Call _check_conversations with mocked LLM, return after bg task completes."""
-    with patch("src.core.world_engine.generate_conversation", return_value=None):
+    """Exercise eligibility only; conversation generation has its own tests."""
+    with patch.object(engine, "_conversation_request", return_value={}), patch.object(
+        engine, "_start_conversation_task"
+    ):
         await engine._check_conversations(tick, engine._minutes_to_hhmm(tick))
-        await asyncio.sleep(0)
 
 
 # ── Tests ──
@@ -96,8 +97,8 @@ async def test_far_agents_no_conversation():
     assert not engine.registry.get("a2").paused
 
 
-async def test_transit_or_different_venues_cannot_start_a_conversation():
-    """Proximity is meaningful only after both agents have arrived together."""
+async def test_transit_or_different_venues_can_start_a_conversation():
+    """A close one-to-one encounter may interrupt travel or happen between venues."""
     engine = WorldEngine(sim_start_date=THROWAWAY_DATE)
     a = _register(engine, "a1", "Agent A", Position(x=100, y=100, location_id="mess"))
     b = _register(engine, "a2", "Agent B", Position(x=106, y=100, location_id="library"))
@@ -111,10 +112,15 @@ async def test_transit_or_different_venues_cannot_start_a_conversation():
         path=[(106, 100), (100, 100)],
     )
     await _trigger_and_detect(engine)
-    assert not a.paused
-    assert not b.paused
+    assert a.paused
+    assert b.paused
+    assert a.active_conversation["location_id"] == "campus_path"
 
-    # Even stationary agents do not chat across different semantic venues.
+    # The same physical proximity rule also applies across differing source
+    # locations, for example when agents meet at an edge or crossing.
+    engine = WorldEngine(sim_start_date=THROWAWAY_DATE)
+    a = _register(engine, "a1", "Agent A", Position(x=100, y=100, location_id="mess"))
+    b = _register(engine, "a2", "Agent B", Position(x=106, y=100, location_id="library"))
     b.manager.current_action = ActionState(
         action_type=ActionType.MISC,
         description="Studying",
@@ -124,8 +130,9 @@ async def test_transit_or_different_venues_cannot_start_a_conversation():
         position=b.position,
     )
     await _trigger_and_detect(engine)
-    assert not a.paused
-    assert not b.paused
+    assert a.paused
+    assert b.paused
+    assert a.active_conversation["location_id"] == "campus_path"
 
 
 async def test_cooldown_respected():
@@ -182,7 +189,7 @@ async def main() -> int:
         ("pair_detected", test_pair_detected),
         ("crowd_skipped", test_crowd_skipped),
         ("far_agents", test_far_agents_no_conversation),
-        ("transit_or_different_venues", test_transit_or_different_venues_cannot_start_a_conversation),
+        ("transit_or_different_venues", test_transit_or_different_venues_can_start_a_conversation),
         ("cooldown", test_cooldown_respected),
         ("blocked_action", test_blocked_action_skipped),
         ("max_cap", test_max_conversations_cap),

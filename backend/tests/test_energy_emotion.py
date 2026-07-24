@@ -71,3 +71,32 @@ def test_wellbeing_is_activity_driven_and_snapshot_is_direct():
     payload = engine._frontend_snapshot(12, "00:12")["agents"]["visible"]
     assert payload["energy_level"] == 0.37
     assert payload["emotion_state"] == 0.64
+
+
+def test_energy_model_restores_passive_tasks_and_drains_physical_work():
+    """Sitting/resting tasks must counterbalance a normal active student day."""
+    from types import SimpleNamespace
+    from src.core.agent_registry import AgentRuntimeState
+    from src.core.world_engine import WorldEngine
+    from src.core.world_state import Position
+
+    engine = WorldEngine()
+    state = AgentRuntimeState(
+        agent_id="energy", persona={}, persona_name="Energy Test",
+        position=Position(x=1, y=2, location_id="hostel"), energy_level=0.50,
+    )
+
+    def delta(description, action_type="misc"):
+        action = SimpleNamespace(
+            description=description, start_time="12:00", end_time="13:00",
+            energy_change=0.0, emotion_change=0.0, action_type=action_type,
+        )
+        return engine._action_wellbeing_deltas(state, action)[0]
+
+    assert delta("Eating lunch quietly") > 0.08
+    assert delta("Sitting on a bench and seeing memes") > 0.05
+    assert delta("Resting in hostel room") > 0.15
+    assert delta("Walk from hostel to library", "move") < -0.05
+    assert delta("Standing in a long queue") < -0.02
+    assert delta("High-intensity cardio and weightlifting") < -0.12
+    assert delta("Deep coding and project work") < -0.04

@@ -1,6 +1,16 @@
 {
   "schema_version": 2,
   "relationships": {
+    "a1->a2": {
+      "score": 0.55,
+      "tags": [],
+      "context": ""
+    },
+    "a2->a1": {
+      "score": 0.55,
+      "tags": [],
+      "context": ""
+    },
     "ankit->ansh_batra": {
       "score": 0.57,
       "tags": [
@@ -99,7 +109,7 @@
       "context": "Ansh and Ghanisht are the duo that somehow finishes projects while drunk-texting each other memes. Ghanisht's reliability is weirdly sexy to Ansh."
     },
     "ansh_batra->gurnoor_singh": {
-      "score": 0.43,
+      "score": 0.48,
       "tags": [
         "campus-acquaintance",
         "party-bros"
@@ -179,7 +189,7 @@
       "context": "Gurnoor drags Anubhav to parties and Anubhav somehow ends up being the responsible one... until that one time he wasn't."
     },
     "anubhav_prasad->lavanya_sharma": {
-      "score": 0.63,
+      "score": 0.68,
       "tags": [
         "campus-acquaintance",
         "banter"
@@ -195,7 +205,7 @@
       "context": "Parv's impulsive energy makes Anubhav smile despite himself. They've shared a few too many 'just one more shot' moments."
     },
     "anubhav_prasad->riya_murarka": {
-      "score": 0.49,
+      "score": 0.54,
       "tags": [
         "campus-acquaintance",
         "respect"
@@ -267,7 +277,7 @@
       "context": "Ghanisht tries (and fails) to slow Parv down. Their dynamic is pure 'I shouldn't but I will' energy."
     },
     "ghanisht_kaushal->riya_murarka": {
-      "score": 0.41,
+      "score": 0.43,
       "tags": [
         "campus-acquaintance",
         "respect"
@@ -275,7 +285,7 @@
       "context": "Ghanisht respects Riya's boundaries and finds her composure refreshing... and attractive."
     },
     "ghanisht_kaushal->saksham": {
-      "score": 0.59,
+      "score": 0.64,
       "tags": [
         "campus-acquaintance",
         "sarcasm-buddies"
@@ -283,7 +293,7 @@
       "context": "Ghanisht and Saksham's combined dry humor could roast an entire campus. Their friendship is 80% savage compliments."
     },
     "ghanisht_kaushal->tanishq": {
-      "score": 0.47,
+      "score": 0.57,
       "tags": [
         "campus-acquaintance",
         "encouraging"
@@ -299,7 +309,7 @@
       "context": "Gurnoor tries to pull Ankit into his wild world. Ankit's resistance is weirdly charming to him."
     },
     "gurnoor_singh->ansh_batra": {
-      "score": 0.43,
+      "score": 0.48,
       "tags": [
         "campus-acquaintance",
         "party-bros"
@@ -379,7 +389,7 @@
       "context": "Lavanya finds Ansh's chaos annoyingly attractive. She's called him out on it... while smiling."
     },
     "lavanya_sharma->anubhav_prasad": {
-      "score": 0.63,
+      "score": 0.68,
       "tags": [
         "campus-acquaintance",
         "quiet-tension"
@@ -523,7 +533,7 @@
       "context": "Riya enjoys Ansh's enthusiasm from a safe distance."
     },
     "riya_murarka->anubhav_prasad": {
-      "score": 0.49,
+      "score": 0.54,
       "tags": [
         "campus-acquaintance",
         "quiet-tension"
@@ -531,7 +541,7 @@
       "context": "Riya and Anubhav share calm, flirty-adjacent conversations that feel deeper than they admit."
     },
     "riya_murarka->ghanisht_kaushal": {
-      "score": 0.41,
+      "score": 0.43,
       "tags": [
         "campus-acquaintance",
         "respect"
@@ -571,7 +581,7 @@
       "context": "Riya and Saksham bond over quiet sarcasm and shared eye-rolls."
     },
     "riya_murarka->tanishq": {
-      "score": 0.23,
+      "score": 0.28,
       "tags": [
         "admiration",
         "careful-boundaries"
@@ -603,7 +613,7 @@
       "context": "Saksham enjoys Anubhav's calm as the perfect straight man for his jokes."
     },
     "saksham->ghanisht_kaushal": {
-      "score": 0.59,
+      "score": 0.64,
       "tags": [
         "campus-acquaintance",
         "solid-vibes"
@@ -675,7 +685,7 @@
       "context": "Tanishq feels safe and understood around Anubhav's calm presence."
     },
     "tanishq->ghanisht_kaushal": {
-      "score": 0.47,
+      "score": 0.57,
       "tags": [
         "campus-acquaintance",
         "admiration"
@@ -707,7 +717,7 @@
       "context": "Tanishq appreciates Parv's outgoing energy and is learning from it."
     },
     "tanishq->riya_murarka": {
-      "score": 0.35,
+      "score": 0.4,
       "tags": [
         "admiration",
         "respectful-distance"

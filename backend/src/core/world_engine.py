@@ -360,26 +360,42 @@ class WorldEngine:
         """
         description = (getattr(action, "description", "") or "").lower()
         action_type = str(getattr(action, "action_type", "")).lower()
-        planner_energy = max(-0.16, min(0.14, float(getattr(action, "energy_change", 0.0))))
+        # The planner can add personality-specific flavour, but it must not
+        # turn an otherwise restorative meal or quiet break into a day-long
+        # energy drain.  The local physical activity model is authoritative.
+        planner_energy = max(-0.08, min(0.08, float(getattr(action, "energy_change", 0.0))))
         planner_emotion = max(-0.12, min(0.12, float(getattr(action, "emotion_change", 0.0))))
         energy, emotion = 0.0, 0.0
 
         if action_type.endswith("move") or any(word in description for word in ("walk", "travel", "commute", "go to")):
-            energy, emotion = -0.055, -0.008
-        elif any(word in description for word in ("sleep", "nap", "rest")):
-            energy, emotion = 0.28, 0.025
+            energy, emotion = -0.075, -0.008
+        elif "sleep" in description:
+            energy, emotion = 0.50, 0.025
+        elif any(word in description for word in ("nap", "rest", "recharge", "lie down")):
+            energy, emotion = 0.20, 0.020
+        elif any(word in description for word in (
+            "meme", "memes", "scroll", "social media", "youtube", "video",
+            "reading for pleasure", "quiet reading", "reading quietly", "bench", "downtime",
+            "free time", "relax", "relaxing", "wind-down", "wind down",
+        )):
+            energy, emotion = 0.090, 0.025
         elif any(word in description for word in ("class", "lecture", "lab", "tutorial", "study", "assignment", "coding", "project", "exam")):
-            energy, emotion = -0.105, -0.025
-        elif any(word in description for word in ("gym", "sport", "run", "football", "basketball", "badminton", "workout")):
-            energy, emotion = -0.16, 0.075
-        elif any(word in description for word in ("breakfast", "lunch", "dinner", "meal", "food", "tea")):
-            energy, emotion = 0.055, 0.025
+            energy, emotion = -0.070, -0.025
+        elif any(word in description for word in ("gym", "sport", "run", "football", "basketball", "badminton", "workout", "cardio", "weightlift", "training")):
+            energy, emotion = -0.180, 0.075
+        elif any(word in description for word in ("breakfast", "lunch", "dinner", "meal", "food", "tea", "chai", "eat", "eating")):
+            energy, emotion = 0.130, 0.025
         elif any(word in description for word in ("friends", "club", "music", "open mic", "game", "movie", "social", "hangout")):
-            energy, emotion = -0.035, 0.075
+            energy, emotion = 0.015, 0.075
         elif any(word in description for word in ("laundry", "clean", "errand", "admin", "queue", "chore")):
-            energy, emotion = -0.065, -0.025
+            energy, emotion = -0.080, -0.025
+        elif any(word in description for word in ("stand", "standing", "wait", "waiting")):
+            energy, emotion = -0.040, -0.005
         else:
-            energy, emotion = -0.025, 0.0
+            # Neutral, seated or low-intensity tasks should not silently push
+            # every agent toward exhaustion merely because their wording was
+            # not anticipated above.
+            energy, emotion = -0.005, 0.0
 
         # Introverted students generally enjoy a good conversation but spend
         # more energy on it; this keeps personality visible without judging it.
@@ -1209,28 +1225,26 @@ class WorldEngine:
 
     async def _check_conversations(self, tick: int, hhmm: str) -> None:
         """
-        Detect settled pairs at the same venue whose proximity circles overlap
-        and fire a background LLM conversation. A close pass on two unrelated
-        routes is not a conversation: each agent must have completed transit
-        and share one resolved location id. The pair-only rule, cooldown,
-        per-day cap, and blocked-action (e.g. sleeping) guard still apply.
+        Detect close one-to-one pairs and fire a background LLM conversation.
+        Agents may meet while travelling: the action manager pauses their
+        routes and resumes them from the exact path point when the chat ends.
+        The pair-only rule, cooldown, per-day cap, and blocked-action (e.g.
+        sleeping) guard still apply.
         Triggered pairs are paused immediately and resume when the background
         task completes.
         """
         radius = float(_cfg.CONVERSATION_RADIUS_PX)
 
-        def is_settled_candidate(state: AgentRuntimeState) -> bool:
-            action = state.manager.current_action if state.manager else None
+        def is_conversation_candidate(state: AgentRuntimeState) -> bool:
             return (
                 not state.paused
                 and not (state.manager and state.manager.is_last_action)
                 and bool(state.position.location_id)
-                and not (action and action.action_type == ActionType.MOVE)
                 and state.energy_level >= _cfg.CONVERSATION_MIN_ENERGY
                 and state.emotion_state >= _cfg.CONVERSATION_MIN_EMOTION
             )
 
-        candidates = [s for s in self.registry.all_states() if is_settled_candidate(s)]
+        candidates = [s for s in self.registry.all_states() if is_conversation_candidate(s)]
         candidate_ids = {state.agent_id for state in candidates}
         busy: set = set()  # agents already committed to a conversation this tick
 
@@ -1241,7 +1255,6 @@ class WorldEngine:
                 n for n in self._neighbors_within_px(a, radius)
                 if n.agent_id in candidate_ids
                 and n.agent_id not in busy
-                and n.position.location_id == a.position.location_id
             ]
             if not neighbors:
                 continue
@@ -1258,7 +1271,6 @@ class WorldEngine:
             b_neighbors = [
                 n for n in self._neighbors_within_px(b, radius)
                 if n.agent_id in candidate_ids
-                and n.position.location_id == b.position.location_id
             ]
             if len(b_neighbors) > 1:
                 continue
@@ -1290,7 +1302,16 @@ class WorldEngine:
                 )):
                     continue
 
-            loc_id = a.position.location_id or b.position.location_id or "campus"
+            # A travelling pair may still carry different source-location ids.
+            # Label the dialogue honestly instead of claiming they are already
+            # inside either endpoint building.
+            a_is_moving = bool(a.manager and a.manager.current_action and a.manager.current_action.action_type == ActionType.MOVE)
+            b_is_moving = bool(b.manager and b.manager.current_action and b.manager.current_action.action_type == ActionType.MOVE)
+            loc_id = (
+                "campus_path"
+                if a_is_moving or b_is_moving or a.position.location_id != b.position.location_id
+                else a.position.location_id
+            ) or "campus"
 
             logger.info(
                 "[WorldEngine] triggering conversation: '%s' <-> '%s' near %s (within %.0fpx)",
