@@ -207,5 +207,5 @@ A small random jitter is added each tick, controlled by `SIM_WELLBEING_VARIABILI
 | `SIM_CONVERSATION_MIN_ENERGY` | 0.25 | Agent can't start new conversations |
 | `SIM_CONVERSATION_MIN_EMOTION` | 0.25 | Same as above |
 
-Both values are passed into the LLM prompts, so Gemini factors the agent's state into its decisions and dialogue tone.
+Both values are passed into the LLM prompts, so the LLM factors the agent's state into its decisions and dialogue tone.
 
