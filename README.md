@@ -109,7 +109,7 @@ Open <http://127.0.0.1:8000> for the live UI with the campus map, agent cards, a
 
 Valhalla uses Qdrant Cloud (by default) as its long-term memory store. Each persona gets an
 isolated collection. At the end of each day, summaries, actions, and conversation
-highlights are archived there. If Qdrant is not connected the sim continues without any long term memory and the agents only rely on their current day context.
+highlights are archived there. If Qdrant is not connected the sim continues with a text based long term memory with simple keyword search.
 
 Add these to your `.env` to enable:
 
