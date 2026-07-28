@@ -1,0 +1,3878 @@
+[
+  {
+    "building_name": "PolygonBuilding_1_part1",
+    "top_left": [
+      777,
+      445
+    ],
+    "top_right": [
+      785,
+      445
+    ],
+    "bottom_left": [
+      777,
+      560
+    ],
+    "bottom_right": [
+      785,
+      560
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part2",
+    "top_left": [
+      785,
+      445
+    ],
+    "top_right": [
+      793,
+      445
+    ],
+    "bottom_left": [
+      785,
+      559
+    ],
+    "bottom_right": [
+      793,
+      559
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part3",
+    "top_left": [
+      793,
+      445
+    ],
+    "top_right": [
+      801,
+      445
+    ],
+    "bottom_left": [
+      793,
+      559
+    ],
+    "bottom_right": [
+      801,
+      559
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part4",
+    "top_left": [
+      801,
+      444
+    ],
+    "top_right": [
+      809,
+      444
+    ],
+    "bottom_left": [
+      801,
+      558
+    ],
+    "bottom_right": [
+      809,
+      558
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part5",
+    "top_left": [
+      809,
+      444
+    ],
+    "top_right": [
+      817,
+      444
+    ],
+    "bottom_left": [
+      809,
+      558
+    ],
+    "bottom_right": [
+      817,
+      558
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part6",
+    "top_left": [
+      817,
+      444
+    ],
+    "top_right": [
+      825,
+      444
+    ],
+    "bottom_left": [
+      817,
+      559
+    ],
+    "bottom_right": [
+      825,
+      559
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part7",
+    "top_left": [
+      825,
+      444
+    ],
+    "top_right": [
+      833,
+      444
+    ],
+    "bottom_left": [
+      825,
+      560
+    ],
+    "bottom_right": [
+      833,
+      560
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part8",
+    "top_left": [
+      833,
+      443
+    ],
+    "top_right": [
+      841,
+      443
+    ],
+    "bottom_left": [
+      833,
+      561
+    ],
+    "bottom_right": [
+      841,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part9",
+    "top_left": [
+      841,
+      443
+    ],
+    "top_right": [
+      849,
+      443
+    ],
+    "bottom_left": [
+      841,
+      562
+    ],
+    "bottom_right": [
+      849,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part10",
+    "top_left": [
+      849,
+      443
+    ],
+    "top_right": [
+      857,
+      443
+    ],
+    "bottom_left": [
+      849,
+      564
+    ],
+    "bottom_right": [
+      857,
+      564
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part11",
+    "top_left": [
+      857,
+      443
+    ],
+    "top_right": [
+      865,
+      443
+    ],
+    "bottom_left": [
+      857,
+      565
+    ],
+    "bottom_right": [
+      865,
+      565
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part12",
+    "top_left": [
+      865,
+      442
+    ],
+    "top_right": [
+      873,
+      442
+    ],
+    "bottom_left": [
+      865,
+      564
+    ],
+    "bottom_right": [
+      873,
+      564
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part13",
+    "top_left": [
+      873,
+      442
+    ],
+    "top_right": [
+      881,
+      442
+    ],
+    "bottom_left": [
+      873,
+      563
+    ],
+    "bottom_right": [
+      881,
+      563
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part14",
+    "top_left": [
+      881,
+      442
+    ],
+    "top_right": [
+      889,
+      442
+    ],
+    "bottom_left": [
+      881,
+      561
+    ],
+    "bottom_right": [
+      889,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part15",
+    "top_left": [
+      889,
+      441
+    ],
+    "top_right": [
+      897,
+      441
+    ],
+    "bottom_left": [
+      889,
+      560
+    ],
+    "bottom_right": [
+      897,
+      560
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_1_part16",
+    "top_left": [
+      897,
+      453
+    ],
+    "top_right": [
+      905,
+      453
+    ],
+    "bottom_left": [
+      897,
+      558
+    ],
+    "bottom_right": [
+      905,
+      558
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part1",
+    "top_left": [
+      200,
+      544
+    ],
+    "top_right": [
+      208,
+      544
+    ],
+    "bottom_left": [
+      200,
+      561
+    ],
+    "bottom_right": [
+      208,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part2",
+    "top_left": [
+      208,
+      534
+    ],
+    "top_right": [
+      216,
+      534
+    ],
+    "bottom_left": [
+      208,
+      561
+    ],
+    "bottom_right": [
+      216,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part3",
+    "top_left": [
+      216,
+      524
+    ],
+    "top_right": [
+      224,
+      524
+    ],
+    "bottom_left": [
+      216,
+      561
+    ],
+    "bottom_right": [
+      224,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part4",
+    "top_left": [
+      224,
+      518
+    ],
+    "top_right": [
+      232,
+      518
+    ],
+    "bottom_left": [
+      224,
+      561
+    ],
+    "bottom_right": [
+      232,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part5",
+    "top_left": [
+      232,
+      519
+    ],
+    "top_right": [
+      240,
+      519
+    ],
+    "bottom_left": [
+      232,
+      561
+    ],
+    "bottom_right": [
+      240,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part6",
+    "top_left": [
+      240,
+      521
+    ],
+    "top_right": [
+      248,
+      521
+    ],
+    "bottom_left": [
+      240,
+      561
+    ],
+    "bottom_right": [
+      248,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part7",
+    "top_left": [
+      248,
+      522
+    ],
+    "top_right": [
+      256,
+      522
+    ],
+    "bottom_left": [
+      248,
+      561
+    ],
+    "bottom_right": [
+      256,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part8",
+    "top_left": [
+      256,
+      523
+    ],
+    "top_right": [
+      264,
+      523
+    ],
+    "bottom_left": [
+      256,
+      561
+    ],
+    "bottom_right": [
+      264,
+      561
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part9",
+    "top_left": [
+      264,
+      525
+    ],
+    "top_right": [
+      272,
+      525
+    ],
+    "bottom_left": [
+      264,
+      562
+    ],
+    "bottom_right": [
+      272,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part10",
+    "top_left": [
+      272,
+      526
+    ],
+    "top_right": [
+      280,
+      526
+    ],
+    "bottom_left": [
+      272,
+      562
+    ],
+    "bottom_right": [
+      280,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part11",
+    "top_left": [
+      280,
+      524
+    ],
+    "top_right": [
+      288,
+      524
+    ],
+    "bottom_left": [
+      280,
+      562
+    ],
+    "bottom_right": [
+      288,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part12",
+    "top_left": [
+      288,
+      523
+    ],
+    "top_right": [
+      296,
+      523
+    ],
+    "bottom_left": [
+      288,
+      562
+    ],
+    "bottom_right": [
+      296,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part13",
+    "top_left": [
+      296,
+      522
+    ],
+    "top_right": [
+      304,
+      522
+    ],
+    "bottom_left": [
+      296,
+      562
+    ],
+    "bottom_right": [
+      304,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part14",
+    "top_left": [
+      304,
+      527
+    ],
+    "top_right": [
+      312,
+      527
+    ],
+    "bottom_left": [
+      304,
+      562
+    ],
+    "bottom_right": [
+      312,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part15",
+    "top_left": [
+      312,
+      536
+    ],
+    "top_right": [
+      320,
+      536
+    ],
+    "bottom_left": [
+      312,
+      562
+    ],
+    "bottom_right": [
+      320,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part16",
+    "top_left": [
+      320,
+      546
+    ],
+    "top_right": [
+      328,
+      546
+    ],
+    "bottom_left": [
+      320,
+      562
+    ],
+    "bottom_right": [
+      328,
+      562
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_2_part17",
+    "top_left": [
+      328,
+      556
+    ],
+    "top_right": [
+      336,
+      556
+    ],
+    "bottom_left": [
+      328,
+      563
+    ],
+    "bottom_right": [
+      336,
+      563
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part1",
+    "top_left": [
+      72,
+      518
+    ],
+    "top_right": [
+      80,
+      518
+    ],
+    "bottom_left": [
+      72,
+      570
+    ],
+    "bottom_right": [
+      80,
+      570
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part2",
+    "top_left": [
+      80,
+      519
+    ],
+    "top_right": [
+      88,
+      519
+    ],
+    "bottom_left": [
+      80,
+      570
+    ],
+    "bottom_right": [
+      88,
+      570
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part3",
+    "top_left": [
+      88,
+      519
+    ],
+    "top_right": [
+      96,
+      519
+    ],
+    "bottom_left": [
+      88,
+      571
+    ],
+    "bottom_right": [
+      96,
+      571
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part4",
+    "top_left": [
+      96,
+      519
+    ],
+    "top_right": [
+      104,
+      519
+    ],
+    "bottom_left": [
+      96,
+      571
+    ],
+    "bottom_right": [
+      104,
+      571
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part5",
+    "top_left": [
+      104,
+      520
+    ],
+    "top_right": [
+      112,
+      520
+    ],
+    "bottom_left": [
+      104,
+      571
+    ],
+    "bottom_right": [
+      112,
+      571
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part6",
+    "top_left": [
+      112,
+      520
+    ],
+    "top_right": [
+      120,
+      520
+    ],
+    "bottom_left": [
+      112,
+      572
+    ],
+    "bottom_right": [
+      120,
+      572
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part7",
+    "top_left": [
+      120,
+      521
+    ],
+    "top_right": [
+      128,
+      521
+    ],
+    "bottom_left": [
+      120,
+      572
+    ],
+    "bottom_right": [
+      128,
+      572
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part8",
+    "top_left": [
+      128,
+      522
+    ],
+    "top_right": [
+      136,
+      522
+    ],
+    "bottom_left": [
+      128,
+      572
+    ],
+    "bottom_right": [
+      136,
+      572
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part9",
+    "top_left": [
+      136,
+      524
+    ],
+    "top_right": [
+      144,
+      524
+    ],
+    "bottom_left": [
+      136,
+      573
+    ],
+    "bottom_right": [
+      144,
+      573
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part10",
+    "top_left": [
+      144,
+      526
+    ],
+    "top_right": [
+      152,
+      526
+    ],
+    "bottom_left": [
+      144,
+      573
+    ],
+    "bottom_right": [
+      152,
+      573
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part11",
+    "top_left": [
+      152,
+      528
+    ],
+    "top_right": [
+      160,
+      528
+    ],
+    "bottom_left": [
+      152,
+      574
+    ],
+    "bottom_right": [
+      160,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part12",
+    "top_left": [
+      160,
+      529
+    ],
+    "top_right": [
+      168,
+      529
+    ],
+    "bottom_left": [
+      160,
+      573
+    ],
+    "bottom_right": [
+      168,
+      573
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part13",
+    "top_left": [
+      168,
+      531
+    ],
+    "top_right": [
+      176,
+      531
+    ],
+    "bottom_left": [
+      168,
+      566
+    ],
+    "bottom_right": [
+      176,
+      566
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part14",
+    "top_left": [
+      176,
+      533
+    ],
+    "top_right": [
+      184,
+      533
+    ],
+    "bottom_left": [
+      176,
+      551
+    ],
+    "bottom_right": [
+      184,
+      551
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_3_part15",
+    "top_left": [
+      184,
+      534
+    ],
+    "top_right": [
+      187,
+      534
+    ],
+    "bottom_left": [
+      184,
+      535
+    ],
+    "bottom_right": [
+      187,
+      535
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part1",
+    "top_left": [
+      118,
+      500
+    ],
+    "top_right": [
+      126,
+      500
+    ],
+    "bottom_left": [
+      118,
+      515
+    ],
+    "bottom_right": [
+      126,
+      515
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part2",
+    "top_left": [
+      126,
+      487
+    ],
+    "top_right": [
+      134,
+      487
+    ],
+    "bottom_left": [
+      126,
+      517
+    ],
+    "bottom_right": [
+      134,
+      517
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part3",
+    "top_left": [
+      134,
+      474
+    ],
+    "top_right": [
+      142,
+      474
+    ],
+    "bottom_left": [
+      134,
+      519
+    ],
+    "bottom_right": [
+      142,
+      519
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part4",
+    "top_left": [
+      142,
+      461
+    ],
+    "top_right": [
+      150,
+      461
+    ],
+    "bottom_left": [
+      142,
+      521
+    ],
+    "bottom_right": [
+      150,
+      521
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part5",
+    "top_left": [
+      150,
+      455
+    ],
+    "top_right": [
+      158,
+      455
+    ],
+    "bottom_left": [
+      150,
+      523
+    ],
+    "bottom_right": [
+      158,
+      523
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part6",
+    "top_left": [
+      158,
+      458
+    ],
+    "top_right": [
+      166,
+      458
+    ],
+    "bottom_left": [
+      158,
+      525
+    ],
+    "bottom_right": [
+      166,
+      525
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part7",
+    "top_left": [
+      166,
+      462
+    ],
+    "top_right": [
+      174,
+      462
+    ],
+    "bottom_left": [
+      166,
+      528
+    ],
+    "bottom_right": [
+      174,
+      528
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part8",
+    "top_left": [
+      174,
+      466
+    ],
+    "top_right": [
+      182,
+      466
+    ],
+    "bottom_left": [
+      174,
+      530
+    ],
+    "bottom_right": [
+      182,
+      530
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part9",
+    "top_left": [
+      182,
+      470
+    ],
+    "top_right": [
+      190,
+      470
+    ],
+    "bottom_left": [
+      182,
+      532
+    ],
+    "bottom_right": [
+      190,
+      532
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part10",
+    "top_left": [
+      190,
+      474
+    ],
+    "top_right": [
+      198,
+      474
+    ],
+    "bottom_left": [
+      190,
+      521
+    ],
+    "bottom_right": [
+      198,
+      521
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part11",
+    "top_left": [
+      198,
+      478
+    ],
+    "top_right": [
+      206,
+      478
+    ],
+    "bottom_left": [
+      198,
+      515
+    ],
+    "bottom_right": [
+      206,
+      515
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part12",
+    "top_left": [
+      206,
+      482
+    ],
+    "top_right": [
+      214,
+      482
+    ],
+    "bottom_left": [
+      206,
+      503
+    ],
+    "bottom_right": [
+      214,
+      503
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_4_part13",
+    "top_left": [
+      214,
+      486
+    ],
+    "top_right": [
+      218,
+      486
+    ],
+    "bottom_left": [
+      214,
+      489
+    ],
+    "bottom_right": [
+      218,
+      489
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part1",
+    "top_left": [
+      378,
+      496
+    ],
+    "top_right": [
+      386,
+      496
+    ],
+    "bottom_left": [
+      378,
+      580
+    ],
+    "bottom_right": [
+      386,
+      580
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part2",
+    "top_left": [
+      386,
+      496
+    ],
+    "top_right": [
+      394,
+      496
+    ],
+    "bottom_left": [
+      386,
+      579
+    ],
+    "bottom_right": [
+      394,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part3",
+    "top_left": [
+      394,
+      496
+    ],
+    "top_right": [
+      402,
+      496
+    ],
+    "bottom_left": [
+      394,
+      579
+    ],
+    "bottom_right": [
+      402,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part4",
+    "top_left": [
+      402,
+      496
+    ],
+    "top_right": [
+      410,
+      496
+    ],
+    "bottom_left": [
+      402,
+      579
+    ],
+    "bottom_right": [
+      410,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part5",
+    "top_left": [
+      410,
+      496
+    ],
+    "top_right": [
+      418,
+      496
+    ],
+    "bottom_left": [
+      410,
+      579
+    ],
+    "bottom_right": [
+      418,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part6",
+    "top_left": [
+      418,
+      496
+    ],
+    "top_right": [
+      426,
+      496
+    ],
+    "bottom_left": [
+      418,
+      578
+    ],
+    "bottom_right": [
+      426,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part7",
+    "top_left": [
+      426,
+      496
+    ],
+    "top_right": [
+      434,
+      496
+    ],
+    "bottom_left": [
+      426,
+      578
+    ],
+    "bottom_right": [
+      434,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part8",
+    "top_left": [
+      434,
+      496
+    ],
+    "top_right": [
+      442,
+      496
+    ],
+    "bottom_left": [
+      434,
+      578
+    ],
+    "bottom_right": [
+      442,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part9",
+    "top_left": [
+      442,
+      496
+    ],
+    "top_right": [
+      450,
+      496
+    ],
+    "bottom_left": [
+      442,
+      578
+    ],
+    "bottom_right": [
+      450,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part10",
+    "top_left": [
+      450,
+      496
+    ],
+    "top_right": [
+      458,
+      496
+    ],
+    "bottom_left": [
+      450,
+      577
+    ],
+    "bottom_right": [
+      458,
+      577
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part11",
+    "top_left": [
+      458,
+      496
+    ],
+    "top_right": [
+      466,
+      496
+    ],
+    "bottom_left": [
+      458,
+      577
+    ],
+    "bottom_right": [
+      466,
+      577
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part12",
+    "top_left": [
+      466,
+      496
+    ],
+    "top_right": [
+      474,
+      496
+    ],
+    "bottom_left": [
+      466,
+      577
+    ],
+    "bottom_right": [
+      474,
+      577
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_5_part13",
+    "top_left": [
+      474,
+      496
+    ],
+    "top_right": [
+      478,
+      496
+    ],
+    "bottom_left": [
+      474,
+      577
+    ],
+    "bottom_right": [
+      478,
+      577
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part1",
+    "top_left": [
+      30,
+      362
+    ],
+    "top_right": [
+      38,
+      362
+    ],
+    "bottom_left": [
+      30,
+      407
+    ],
+    "bottom_right": [
+      38,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part2",
+    "top_left": [
+      38,
+      318
+    ],
+    "top_right": [
+      46,
+      318
+    ],
+    "bottom_left": [
+      38,
+      408
+    ],
+    "bottom_right": [
+      46,
+      408
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part3",
+    "top_left": [
+      46,
+      303
+    ],
+    "top_right": [
+      54,
+      303
+    ],
+    "bottom_left": [
+      46,
+      407
+    ],
+    "bottom_right": [
+      54,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part4",
+    "top_left": [
+      54,
+      302
+    ],
+    "top_right": [
+      62,
+      302
+    ],
+    "bottom_left": [
+      54,
+      407
+    ],
+    "bottom_right": [
+      62,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part5",
+    "top_left": [
+      62,
+      301
+    ],
+    "top_right": [
+      70,
+      301
+    ],
+    "bottom_left": [
+      62,
+      407
+    ],
+    "bottom_right": [
+      70,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part6",
+    "top_left": [
+      70,
+      301
+    ],
+    "top_right": [
+      78,
+      301
+    ],
+    "bottom_left": [
+      70,
+      407
+    ],
+    "bottom_right": [
+      78,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part7",
+    "top_left": [
+      78,
+      300
+    ],
+    "top_right": [
+      86,
+      300
+    ],
+    "bottom_left": [
+      78,
+      407
+    ],
+    "bottom_right": [
+      86,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part8",
+    "top_left": [
+      86,
+      301
+    ],
+    "top_right": [
+      94,
+      301
+    ],
+    "bottom_left": [
+      86,
+      407
+    ],
+    "bottom_right": [
+      94,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part9",
+    "top_left": [
+      94,
+      302
+    ],
+    "top_right": [
+      102,
+      302
+    ],
+    "bottom_left": [
+      94,
+      407
+    ],
+    "bottom_right": [
+      102,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part10",
+    "top_left": [
+      102,
+      303
+    ],
+    "top_right": [
+      110,
+      303
+    ],
+    "bottom_left": [
+      102,
+      407
+    ],
+    "bottom_right": [
+      110,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part11",
+    "top_left": [
+      110,
+      304
+    ],
+    "top_right": [
+      118,
+      304
+    ],
+    "bottom_left": [
+      110,
+      407
+    ],
+    "bottom_right": [
+      118,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_6_part12",
+    "top_left": [
+      118,
+      304
+    ],
+    "top_right": [
+      126,
+      304
+    ],
+    "bottom_left": [
+      118,
+      407
+    ],
+    "bottom_right": [
+      126,
+      407
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part1",
+    "top_left": [
+      528,
+      541
+    ],
+    "top_right": [
+      536,
+      541
+    ],
+    "bottom_left": [
+      528,
+      574
+    ],
+    "bottom_right": [
+      536,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part2",
+    "top_left": [
+      536,
+      542
+    ],
+    "top_right": [
+      544,
+      542
+    ],
+    "bottom_left": [
+      536,
+      574
+    ],
+    "bottom_right": [
+      544,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part3",
+    "top_left": [
+      544,
+      539
+    ],
+    "top_right": [
+      552,
+      539
+    ],
+    "bottom_left": [
+      544,
+      574
+    ],
+    "bottom_right": [
+      552,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part4",
+    "top_left": [
+      552,
+      539
+    ],
+    "top_right": [
+      560,
+      539
+    ],
+    "bottom_left": [
+      552,
+      574
+    ],
+    "bottom_right": [
+      560,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part5",
+    "top_left": [
+      560,
+      540
+    ],
+    "top_right": [
+      568,
+      540
+    ],
+    "bottom_left": [
+      560,
+      574
+    ],
+    "bottom_right": [
+      568,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part6",
+    "top_left": [
+      568,
+      544
+    ],
+    "top_right": [
+      576,
+      544
+    ],
+    "bottom_left": [
+      568,
+      574
+    ],
+    "bottom_right": [
+      576,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part7",
+    "top_left": [
+      576,
+      520
+    ],
+    "top_right": [
+      584,
+      520
+    ],
+    "bottom_left": [
+      576,
+      574
+    ],
+    "bottom_right": [
+      584,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part8",
+    "top_left": [
+      584,
+      519
+    ],
+    "top_right": [
+      592,
+      519
+    ],
+    "bottom_left": [
+      584,
+      574
+    ],
+    "bottom_right": [
+      592,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part9",
+    "top_left": [
+      592,
+      519
+    ],
+    "top_right": [
+      600,
+      519
+    ],
+    "bottom_left": [
+      592,
+      574
+    ],
+    "bottom_right": [
+      600,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part10",
+    "top_left": [
+      600,
+      518
+    ],
+    "top_right": [
+      608,
+      518
+    ],
+    "bottom_left": [
+      600,
+      574
+    ],
+    "bottom_right": [
+      608,
+      574
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part11",
+    "top_left": [
+      608,
+      517
+    ],
+    "top_right": [
+      616,
+      517
+    ],
+    "bottom_left": [
+      608,
+      575
+    ],
+    "bottom_right": [
+      616,
+      575
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_7_part12",
+    "top_left": [
+      616,
+      521
+    ],
+    "top_right": [
+      619,
+      521
+    ],
+    "bottom_left": [
+      616,
+      548
+    ],
+    "bottom_right": [
+      619,
+      548
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part1",
+    "top_left": [
+      679,
+      415
+    ],
+    "top_right": [
+      687,
+      415
+    ],
+    "bottom_left": [
+      679,
+      534
+    ],
+    "bottom_right": [
+      687,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part2",
+    "top_left": [
+      687,
+      414
+    ],
+    "top_right": [
+      695,
+      414
+    ],
+    "bottom_left": [
+      687,
+      534
+    ],
+    "bottom_right": [
+      695,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part3",
+    "top_left": [
+      695,
+      413
+    ],
+    "top_right": [
+      703,
+      413
+    ],
+    "bottom_left": [
+      695,
+      534
+    ],
+    "bottom_right": [
+      703,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part4",
+    "top_left": [
+      703,
+      412
+    ],
+    "top_right": [
+      711,
+      412
+    ],
+    "bottom_left": [
+      703,
+      534
+    ],
+    "bottom_right": [
+      711,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part5",
+    "top_left": [
+      711,
+      411
+    ],
+    "top_right": [
+      719,
+      411
+    ],
+    "bottom_left": [
+      711,
+      534
+    ],
+    "bottom_right": [
+      719,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part6",
+    "top_left": [
+      719,
+      415
+    ],
+    "top_right": [
+      727,
+      415
+    ],
+    "bottom_left": [
+      719,
+      534
+    ],
+    "bottom_right": [
+      727,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part7",
+    "top_left": [
+      727,
+      414
+    ],
+    "top_right": [
+      735,
+      414
+    ],
+    "bottom_left": [
+      727,
+      534
+    ],
+    "bottom_right": [
+      735,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part8",
+    "top_left": [
+      735,
+      414
+    ],
+    "top_right": [
+      743,
+      414
+    ],
+    "bottom_left": [
+      735,
+      534
+    ],
+    "bottom_right": [
+      743,
+      534
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part9",
+    "top_left": [
+      743,
+      413
+    ],
+    "top_right": [
+      750,
+      413
+    ],
+    "bottom_left": [
+      743,
+      491
+    ],
+    "bottom_right": [
+      750,
+      491
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_8_part10",
+    "top_left": [
+      743,
+      531
+    ],
+    "top_right": [
+      750,
+      531
+    ],
+    "bottom_left": [
+      743,
+      532
+    ],
+    "bottom_right": [
+      750,
+      532
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part1",
+    "top_left": [
+      527,
+      594
+    ],
+    "top_right": [
+      535,
+      594
+    ],
+    "bottom_left": [
+      527,
+      654
+    ],
+    "bottom_right": [
+      535,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part2",
+    "top_left": [
+      535,
+      594
+    ],
+    "top_right": [
+      543,
+      594
+    ],
+    "bottom_left": [
+      535,
+      654
+    ],
+    "bottom_right": [
+      543,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part3",
+    "top_left": [
+      543,
+      594
+    ],
+    "top_right": [
+      551,
+      594
+    ],
+    "bottom_left": [
+      543,
+      654
+    ],
+    "bottom_right": [
+      551,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part4",
+    "top_left": [
+      551,
+      594
+    ],
+    "top_right": [
+      559,
+      594
+    ],
+    "bottom_left": [
+      551,
+      654
+    ],
+    "bottom_right": [
+      559,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part5",
+    "top_left": [
+      559,
+      594
+    ],
+    "top_right": [
+      567,
+      594
+    ],
+    "bottom_left": [
+      559,
+      654
+    ],
+    "bottom_right": [
+      567,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part6",
+    "top_left": [
+      567,
+      594
+    ],
+    "top_right": [
+      575,
+      594
+    ],
+    "bottom_left": [
+      567,
+      654
+    ],
+    "bottom_right": [
+      575,
+      654
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part7",
+    "top_left": [
+      575,
+      594
+    ],
+    "top_right": [
+      583,
+      594
+    ],
+    "bottom_left": [
+      575,
+      655
+    ],
+    "bottom_right": [
+      583,
+      655
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part8",
+    "top_left": [
+      583,
+      594
+    ],
+    "top_right": [
+      591,
+      594
+    ],
+    "bottom_left": [
+      583,
+      655
+    ],
+    "bottom_right": [
+      591,
+      655
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part9",
+    "top_left": [
+      591,
+      594
+    ],
+    "top_right": [
+      599,
+      594
+    ],
+    "bottom_left": [
+      591,
+      655
+    ],
+    "bottom_right": [
+      599,
+      655
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part10",
+    "top_left": [
+      599,
+      594
+    ],
+    "top_right": [
+      607,
+      594
+    ],
+    "bottom_left": [
+      599,
+      655
+    ],
+    "bottom_right": [
+      607,
+      655
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part11",
+    "top_left": [
+      607,
+      594
+    ],
+    "top_right": [
+      615,
+      594
+    ],
+    "bottom_left": [
+      607,
+      655
+    ],
+    "bottom_right": [
+      615,
+      655
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_9_part12",
+    "top_left": [
+      615,
+      594
+    ],
+    "top_right": [
+      623,
+      594
+    ],
+    "bottom_left": [
+      615,
+      656
+    ],
+    "bottom_right": [
+      623,
+      656
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part1",
+    "top_left": [
+      590,
+      428
+    ],
+    "top_right": [
+      598,
+      428
+    ],
+    "bottom_left": [
+      590,
+      464
+    ],
+    "bottom_right": [
+      598,
+      464
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part2",
+    "top_left": [
+      598,
+      421
+    ],
+    "top_right": [
+      606,
+      421
+    ],
+    "bottom_left": [
+      598,
+      472
+    ],
+    "bottom_right": [
+      606,
+      472
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part3",
+    "top_left": [
+      606,
+      416
+    ],
+    "top_right": [
+      614,
+      416
+    ],
+    "bottom_left": [
+      606,
+      481
+    ],
+    "bottom_right": [
+      614,
+      481
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part4",
+    "top_left": [
+      614,
+      411
+    ],
+    "top_right": [
+      622,
+      411
+    ],
+    "bottom_left": [
+      614,
+      482
+    ],
+    "bottom_right": [
+      622,
+      482
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part5",
+    "top_left": [
+      622,
+      414
+    ],
+    "top_right": [
+      630,
+      414
+    ],
+    "bottom_left": [
+      622,
+      482
+    ],
+    "bottom_right": [
+      630,
+      482
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part6",
+    "top_left": [
+      630,
+      422
+    ],
+    "top_right": [
+      638,
+      422
+    ],
+    "bottom_left": [
+      630,
+      483
+    ],
+    "bottom_right": [
+      638,
+      483
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part7",
+    "top_left": [
+      638,
+      439
+    ],
+    "top_right": [
+      646,
+      439
+    ],
+    "bottom_left": [
+      638,
+      476
+    ],
+    "bottom_right": [
+      646,
+      476
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part8",
+    "top_left": [
+      646,
+      448
+    ],
+    "top_right": [
+      654,
+      448
+    ],
+    "bottom_left": [
+      646,
+      470
+    ],
+    "bottom_right": [
+      654,
+      470
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_10_part9",
+    "top_left": [
+      654,
+      456
+    ],
+    "top_right": [
+      657,
+      456
+    ],
+    "bottom_left": [
+      654,
+      458
+    ],
+    "bottom_right": [
+      657,
+      458
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part1",
+    "top_left": [
+      475,
+      317
+    ],
+    "top_right": [
+      483,
+      317
+    ],
+    "bottom_left": [
+      475,
+      375
+    ],
+    "bottom_right": [
+      483,
+      375
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part2",
+    "top_left": [
+      483,
+      319
+    ],
+    "top_right": [
+      491,
+      319
+    ],
+    "bottom_left": [
+      483,
+      376
+    ],
+    "bottom_right": [
+      491,
+      376
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part3",
+    "top_left": [
+      491,
+      321
+    ],
+    "top_right": [
+      499,
+      321
+    ],
+    "bottom_left": [
+      491,
+      377
+    ],
+    "bottom_right": [
+      499,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part4",
+    "top_left": [
+      499,
+      321
+    ],
+    "top_right": [
+      507,
+      321
+    ],
+    "bottom_left": [
+      499,
+      378
+    ],
+    "bottom_right": [
+      507,
+      378
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part5",
+    "top_left": [
+      507,
+      321
+    ],
+    "top_right": [
+      515,
+      321
+    ],
+    "bottom_left": [
+      507,
+      377
+    ],
+    "bottom_right": [
+      515,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part6",
+    "top_left": [
+      515,
+      321
+    ],
+    "top_right": [
+      523,
+      321
+    ],
+    "bottom_left": [
+      515,
+      377
+    ],
+    "bottom_right": [
+      523,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part7",
+    "top_left": [
+      523,
+      316
+    ],
+    "top_right": [
+      531,
+      316
+    ],
+    "bottom_left": [
+      523,
+      377
+    ],
+    "bottom_right": [
+      531,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part8",
+    "top_left": [
+      531,
+      316
+    ],
+    "top_right": [
+      539,
+      316
+    ],
+    "bottom_left": [
+      531,
+      377
+    ],
+    "bottom_right": [
+      539,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part9",
+    "top_left": [
+      539,
+      316
+    ],
+    "top_right": [
+      547,
+      316
+    ],
+    "bottom_left": [
+      539,
+      377
+    ],
+    "bottom_right": [
+      547,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_11_part10",
+    "top_left": [
+      547,
+      316
+    ],
+    "top_right": [
+      555,
+      316
+    ],
+    "bottom_left": [
+      547,
+      377
+    ],
+    "bottom_right": [
+      555,
+      377
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part1",
+    "top_left": [
+      143,
+      336
+    ],
+    "top_right": [
+      151,
+      336
+    ],
+    "bottom_left": [
+      143,
+      405
+    ],
+    "bottom_right": [
+      151,
+      405
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part2",
+    "top_left": [
+      151,
+      314
+    ],
+    "top_right": [
+      159,
+      314
+    ],
+    "bottom_left": [
+      151,
+      404
+    ],
+    "bottom_right": [
+      159,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part3",
+    "top_left": [
+      159,
+      313
+    ],
+    "top_right": [
+      167,
+      313
+    ],
+    "bottom_left": [
+      159,
+      404
+    ],
+    "bottom_right": [
+      167,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part4",
+    "top_left": [
+      167,
+      311
+    ],
+    "top_right": [
+      175,
+      311
+    ],
+    "bottom_left": [
+      167,
+      404
+    ],
+    "bottom_right": [
+      175,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part5",
+    "top_left": [
+      175,
+      310
+    ],
+    "top_right": [
+      183,
+      310
+    ],
+    "bottom_left": [
+      175,
+      404
+    ],
+    "bottom_right": [
+      183,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part6",
+    "top_left": [
+      183,
+      309
+    ],
+    "top_right": [
+      191,
+      309
+    ],
+    "bottom_left": [
+      183,
+      404
+    ],
+    "bottom_right": [
+      191,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part7",
+    "top_left": [
+      191,
+      309
+    ],
+    "top_right": [
+      199,
+      309
+    ],
+    "bottom_left": [
+      191,
+      404
+    ],
+    "bottom_right": [
+      199,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part8",
+    "top_left": [
+      199,
+      309
+    ],
+    "top_right": [
+      207,
+      309
+    ],
+    "bottom_left": [
+      199,
+      404
+    ],
+    "bottom_right": [
+      207,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part9",
+    "top_left": [
+      207,
+      309
+    ],
+    "top_right": [
+      215,
+      309
+    ],
+    "bottom_left": [
+      207,
+      404
+    ],
+    "bottom_right": [
+      215,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part10",
+    "top_left": [
+      215,
+      308
+    ],
+    "top_right": [
+      223,
+      308
+    ],
+    "bottom_left": [
+      215,
+      404
+    ],
+    "bottom_right": [
+      223,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part11",
+    "top_left": [
+      223,
+      310
+    ],
+    "top_right": [
+      231,
+      310
+    ],
+    "bottom_left": [
+      223,
+      404
+    ],
+    "bottom_right": [
+      231,
+      404
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part12",
+    "top_left": [
+      231,
+      315
+    ],
+    "top_right": [
+      235,
+      315
+    ],
+    "bottom_left": [
+      231,
+      325
+    ],
+    "bottom_right": [
+      235,
+      325
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_12_part13",
+    "top_left": [
+      231,
+      349
+    ],
+    "top_right": [
+      235,
+      349
+    ],
+    "bottom_left": [
+      231,
+      404
+    ],
+    "bottom_right": [
+      235,
+      404
+    ]
+  },
+  {
+    "building_name": "Building_1",
+    "top_left": [
+      572,
+      342
+    ],
+    "top_right": [
+      633,
+      342
+    ],
+    "bottom_left": [
+      572,
+      393
+    ],
+    "bottom_right": [
+      633,
+      393
+    ]
+  },
+  {
+    "building_name": "Building_2",
+    "top_left": [
+      658,
+      342
+    ],
+    "top_right": [
+      799,
+      342
+    ],
+    "bottom_left": [
+      658,
+      372
+    ],
+    "bottom_right": [
+      799,
+      372
+    ]
+  },
+  {
+    "building_name": "Building_3",
+    "top_left": [
+      819,
+      343
+    ],
+    "top_right": [
+      885,
+      343
+    ],
+    "bottom_left": [
+      819,
+      390
+    ],
+    "bottom_right": [
+      885,
+      390
+    ]
+  },
+  {
+    "building_name": "Building_4",
+    "top_left": [
+      905,
+      309
+    ],
+    "top_right": [
+      959,
+      309
+    ],
+    "bottom_left": [
+      905,
+      368
+    ],
+    "bottom_right": [
+      959,
+      368
+    ]
+  },
+  {
+    "building_name": "Building_5",
+    "top_left": [
+      961,
+      185
+    ],
+    "top_right": [
+      1013,
+      185
+    ],
+    "bottom_left": [
+      961,
+      242
+    ],
+    "bottom_right": [
+      1013,
+      242
+    ]
+  },
+  {
+    "building_name": "Building_6",
+    "top_left": [
+      459,
+      45
+    ],
+    "top_right": [
+      626,
+      45
+    ],
+    "bottom_left": [
+      459,
+      246
+    ],
+    "bottom_right": [
+      626,
+      246
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part1",
+    "top_left": [
+      451,
+      437
+    ],
+    "top_right": [
+      459,
+      437
+    ],
+    "bottom_left": [
+      451,
+      489
+    ],
+    "bottom_right": [
+      459,
+      489
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part2",
+    "top_left": [
+      459,
+      437
+    ],
+    "top_right": [
+      467,
+      437
+    ],
+    "bottom_left": [
+      459,
+      489
+    ],
+    "bottom_right": [
+      467,
+      489
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part3",
+    "top_left": [
+      467,
+      437
+    ],
+    "top_right": [
+      475,
+      437
+    ],
+    "bottom_left": [
+      467,
+      489
+    ],
+    "bottom_right": [
+      475,
+      489
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part4",
+    "top_left": [
+      475,
+      437
+    ],
+    "top_right": [
+      483,
+      437
+    ],
+    "bottom_left": [
+      475,
+      489
+    ],
+    "bottom_right": [
+      483,
+      489
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part5",
+    "top_left": [
+      483,
+      437
+    ],
+    "top_right": [
+      491,
+      437
+    ],
+    "bottom_left": [
+      483,
+      580
+    ],
+    "bottom_right": [
+      491,
+      580
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part6",
+    "top_left": [
+      491,
+      437
+    ],
+    "top_right": [
+      499,
+      437
+    ],
+    "bottom_left": [
+      491,
+      579
+    ],
+    "bottom_right": [
+      499,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part7",
+    "top_left": [
+      499,
+      437
+    ],
+    "top_right": [
+      507,
+      437
+    ],
+    "bottom_left": [
+      499,
+      579
+    ],
+    "bottom_right": [
+      507,
+      579
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part8",
+    "top_left": [
+      507,
+      437
+    ],
+    "top_right": [
+      515,
+      437
+    ],
+    "bottom_left": [
+      507,
+      578
+    ],
+    "bottom_right": [
+      515,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part9",
+    "top_left": [
+      515,
+      437
+    ],
+    "top_right": [
+      523,
+      437
+    ],
+    "bottom_left": [
+      515,
+      578
+    ],
+    "bottom_right": [
+      523,
+      578
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part10",
+    "top_left": [
+      523,
+      437
+    ],
+    "top_right": [
+      531,
+      437
+    ],
+    "bottom_left": [
+      523,
+      512
+    ],
+    "bottom_right": [
+      531,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part11",
+    "top_left": [
+      531,
+      437
+    ],
+    "top_right": [
+      539,
+      437
+    ],
+    "bottom_left": [
+      531,
+      512
+    ],
+    "bottom_right": [
+      539,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part12",
+    "top_left": [
+      539,
+      437
+    ],
+    "top_right": [
+      547,
+      437
+    ],
+    "bottom_left": [
+      539,
+      512
+    ],
+    "bottom_right": [
+      547,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part13",
+    "top_left": [
+      547,
+      437
+    ],
+    "top_right": [
+      555,
+      437
+    ],
+    "bottom_left": [
+      547,
+      512
+    ],
+    "bottom_right": [
+      555,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part14",
+    "top_left": [
+      555,
+      437
+    ],
+    "top_right": [
+      563,
+      437
+    ],
+    "bottom_left": [
+      555,
+      512
+    ],
+    "bottom_right": [
+      563,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part15",
+    "top_left": [
+      563,
+      437
+    ],
+    "top_right": [
+      571,
+      437
+    ],
+    "bottom_left": [
+      563,
+      512
+    ],
+    "bottom_right": [
+      571,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part16",
+    "top_left": [
+      571,
+      437
+    ],
+    "top_right": [
+      579,
+      437
+    ],
+    "bottom_left": [
+      571,
+      512
+    ],
+    "bottom_right": [
+      579,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part17",
+    "top_left": [
+      579,
+      437
+    ],
+    "top_right": [
+      587,
+      437
+    ],
+    "bottom_left": [
+      579,
+      512
+    ],
+    "bottom_right": [
+      587,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part18",
+    "top_left": [
+      587,
+      465
+    ],
+    "top_right": [
+      595,
+      465
+    ],
+    "bottom_left": [
+      587,
+      512
+    ],
+    "bottom_right": [
+      595,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part19",
+    "top_left": [
+      595,
+      473
+    ],
+    "top_right": [
+      603,
+      473
+    ],
+    "bottom_left": [
+      595,
+      512
+    ],
+    "bottom_right": [
+      603,
+      512
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_13_part20",
+    "top_left": [
+      603,
+      483
+    ],
+    "top_right": [
+      607,
+      483
+    ],
+    "bottom_left": [
+      603,
+      513
+    ],
+    "bottom_right": [
+      607,
+      513
+    ]
+  },
+  {
+    "building_name": "Building_7",
+    "top_left": [
+      409,
+      295
+    ],
+    "top_right": [
+      452,
+      295
+    ],
+    "bottom_left": [
+      409,
+      378
+    ],
+    "bottom_right": [
+      452,
+      378
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part1",
+    "top_left": [
+      285,
+      329
+    ],
+    "top_right": [
+      293,
+      329
+    ],
+    "bottom_left": [
+      285,
+      398
+    ],
+    "bottom_right": [
+      293,
+      398
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part2",
+    "top_left": [
+      293,
+      294
+    ],
+    "top_right": [
+      301,
+      294
+    ],
+    "bottom_left": [
+      293,
+      398
+    ],
+    "bottom_right": [
+      301,
+      398
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part3",
+    "top_left": [
+      301,
+      295
+    ],
+    "top_right": [
+      309,
+      295
+    ],
+    "bottom_left": [
+      301,
+      398
+    ],
+    "bottom_right": [
+      309,
+      398
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part4",
+    "top_left": [
+      309,
+      295
+    ],
+    "top_right": [
+      317,
+      295
+    ],
+    "bottom_left": [
+      309,
+      398
+    ],
+    "bottom_right": [
+      317,
+      398
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part5",
+    "top_left": [
+      317,
+      295
+    ],
+    "top_right": [
+      325,
+      295
+    ],
+    "bottom_left": [
+      317,
+      398
+    ],
+    "bottom_right": [
+      325,
+      398
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part6",
+    "top_left": [
+      325,
+      295
+    ],
+    "top_right": [
+      333,
+      295
+    ],
+    "bottom_left": [
+      325,
+      399
+    ],
+    "bottom_right": [
+      333,
+      399
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part7",
+    "top_left": [
+      333,
+      295
+    ],
+    "top_right": [
+      341,
+      295
+    ],
+    "bottom_left": [
+      333,
+      399
+    ],
+    "bottom_right": [
+      341,
+      399
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part8",
+    "top_left": [
+      341,
+      295
+    ],
+    "top_right": [
+      349,
+      295
+    ],
+    "bottom_left": [
+      341,
+      399
+    ],
+    "bottom_right": [
+      349,
+      399
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part9",
+    "top_left": [
+      349,
+      295
+    ],
+    "top_right": [
+      357,
+      295
+    ],
+    "bottom_left": [
+      349,
+      399
+    ],
+    "bottom_right": [
+      357,
+      399
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part10",
+    "top_left": [
+      357,
+      295
+    ],
+    "top_right": [
+      365,
+      295
+    ],
+    "bottom_left": [
+      357,
+      399
+    ],
+    "bottom_right": [
+      365,
+      399
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part11",
+    "top_left": [
+      365,
+      300
+    ],
+    "top_right": [
+      373,
+      300
+    ],
+    "bottom_left": [
+      365,
+      400
+    ],
+    "bottom_right": [
+      373,
+      400
+    ]
+  },
+  {
+    "building_name": "PolygonBuilding_14_part12",
+    "top_left": [
+      373,
+      320
+    ],
+    "top_right": [
+      378,
+      320
+    ],
+    "bottom_left": [
+      373,
+      395
+    ],
+    "bottom_right": [
+      378,
+      395
+    ]
+  },
+  {
+    "building_name": "Building_8",
+    "top_left": [
+      276,
+      413
+    ],
+    "top_right": [
+      375,
+      413
+    ],
+    "bottom_left": [
+      276,
+      497
+    ],
+    "bottom_right": [
+      375,
+      497
+    ]
+  },
+  {
+    "building_name": "Building_9",
+    "top_left": [
+      714,
+      210
+    ],
+    "top_right": [
+      734,
+      210
+    ],
+    "bottom_left": [
+      714,
+      230
+    ],
+    "bottom_right": [
+      734,
+      230
+    ]
+  },
+  {
+    "building_name": "Building_10",
+    "top_left": [
+      696,
+      72
+    ],
+    "top_right": [
+      759,
+      72
+    ],
+    "bottom_left": [
+      696,
+      142
+    ],
+    "bottom_right": [
+      759,
+      142
+    ]
+  },
+  {
+    "building_name": "Building_11",
+    "top_left": [
+      632,
+      908
+    ],
+    "top_right": [
+      653,
+      908
+    ],
+    "bottom_left": [
+      632,
+      941
+    ],
+    "bottom_right": [
+      653,
+      941
+    ]
+  },
+  {
+    "building_name": "Building_12",
+    "top_left": [
+      656,
+      908
+    ],
+    "top_right": [
+      675,
+      908
+    ],
+    "bottom_left": [
+      656,
+      940
+    ],
+    "bottom_right": [
+      675,
+      940
+    ]
+  },
+  {
+    "building_name": "Building_13",
+    "top_left": [
+      633,
+      943
+    ],
+    "top_right": [
+      653,
+      943
+    ],
+    "bottom_left": [
+      633,
+      976
+    ],
+    "bottom_right": [
+      653,
+      976
+    ]
+  },
+  {
+    "building_name": "Building_14",
+    "top_left": [
+      656,
+      943
+    ],
+    "top_right": [
+      676,
+      943
+    ],
+    "bottom_left": [
+      656,
+      976
+    ],
+    "bottom_right": [
+      676,
+      976
+    ]
+  },
+  {
+    "building_name": "Building_15",
+    "top_left": [
+      419,
+      417
+    ],
+    "top_right": [
+      441,
+      417
+    ],
+    "bottom_left": [
+      419,
+      486
+    ],
+    "bottom_right": [
+      441,
+      486
+    ]
+  },
+  {
+    "building_name": "Building_16",
+    "top_left": [
+      382,
+      415
+    ],
+    "top_right": [
+      410,
+      415
+    ],
+    "bottom_left": [
+      382,
+      485
+    ],
+    "bottom_right": [
+      410,
+      485
+    ]
+  },
+  {
+    "building_name": "Building_17",
+    "top_left": [
+      974,
+      337
+    ],
+    "top_right": [
+      1079,
+      337
+    ],
+    "bottom_left": [
+      974,
+      512
+    ],
+    "bottom_right": [
+      1079,
+      512
+    ]
+  },
+  {
+    "building_name": "Building_18",
+    "top_left": [
+      990,
+      92
+    ],
+    "top_right": [
+      1048,
+      92
+    ],
+    "bottom_left": [
+      990,
+      130
+    ],
+    "bottom_right": [
+      1048,
+      130
+    ]
+  },
+  {
+    "building_name": "Building_19",
+    "top_left": [
+      1052,
+      116
+    ],
+    "top_right": [
+      1188,
+      116
+    ],
+    "bottom_left": [
+      1052,
+      249
+    ],
+    "bottom_right": [
+      1188,
+      249
+    ]
+  },
+  {
+    "building_name": "Building_20",
+    "top_left": [
+      362,
+      195
+    ],
+    "top_right": [
+      432,
+      195
+    ],
+    "bottom_left": [
+      362,
+      248
+    ],
+    "bottom_right": [
+      432,
+      248
+    ]
+  }
+]

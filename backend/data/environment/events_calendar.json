@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "events": [
+    {
+      "id": "aadvitya_open_mic",
+      "name": "Aadvitya Open-Mic & Project Showcase",
+      "description": "A low-pressure evening showcase where students demo small projects, exchange feedback, and enjoy music on the central lawn.",
+      "category": "technical-cultural",
+      "date": "2026-09-03",
+      "start_time": "18:00",
+      "end_time": "19:00",
+      "location_id": "central_lawn",
+      "capacity": 4,
+      "interest_tags": ["ai", "coding", "music", "creative", "project", "photography"],
+      "eligibility_tags": [],
+      "energy_effect": -0.04,
+      "emotion_effect": 0.12,
+      "relationship_effect": 0.03,
+      "announcement": "Tonight: Aadvitya open-mic and project showcase on the central lawn. Bring a demo, a song, or just curiosity."
+    },
+    {
+      "id": "interhostel_volleyball",
+      "name": "Inter-Hostel Volleyball Match",
+      "description": "An evening sports fixture with a casual spectator section and a short post-match cooldown.",
+      "category": "sports",
+      "date": "2026-12-03",
+      "start_time": "19:00",
+      "end_time": "20:00",
+      "location_id": "sports_complex",
+      "capacity": 6,
+      "interest_tags": ["sports", "running", "fitness", "exercise", "teamwork"],
+      "eligibility_tags": [],
+      "energy_effect": -0.10,
+      "emotion_effect": 0.10,
+      "relationship_effect": 0.02,
+      "announcement": "Inter-hostel volleyball starts at 19:00 at the sports complex; spectators are welcome."
+    },
+    {
+      "id": "exam_week_library_late",
+      "name": "Exam-Week Library Study Circle",
+      "description": "A quiet, optional peer study circle with a librarian-led break schedule and group problem solving.",
+      "category": "academic",
+      "date": "2026-18-04",
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "location_id": "library",
+      "capacity": 8,
+      "interest_tags": ["study", "research", "academic", "ai", "engineering"],
+      "eligibility_tags": [],
+      "energy_effect": -0.06,
+      "emotion_effect": 0.05,
+      "relationship_effect": 0.02,
+      "announcement": "Exam-week study circle begins at 20:00 in the library's group-study area."
+    }
+  ]
+}

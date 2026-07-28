@@ -1,0 +1,34 @@
+building 1 - SAB
+building 2 - Mess
+building 3 - Brahmputra Boys 1
+building 4 - Brahmputra Boys 2
+building 5 - Ravi
+building 6 - Chenab
+building 7 - Mechanical Workshop
+building 8 - Auditorium + Library
+building 9 - Cafeteria 
+building 10 - Lecture Hall complex
+building 11 - Chemical Department
+building 12 - Beas
+building 13 - Mechanical Department
+building 14 - Admin Block
+building 15 - Electrical Department
+building 16 - CS Department
+building 17 - Director's Residence
+building 18 - Main fest Ground
+building 19 - Rose Garden
+building 20 - Bus stand
+building 21 - Satluj
+building 22 - Jhelum 
+building 23 - LOC
+building 24 - Campus Main gate
+building 25 - Volleyball Court
+building 26 - Basketball Court
+building 27 - Tennis Court - 1
+building 28 - Tennis Court - 2
+building 29 - Utility/ SAC
+building 30 - Maggie point
+building 31 - Faculty Quarters - 1
+building 32 - Guest House
+building 33 - Faculty Quarters - 2
+building 34 - AC unit

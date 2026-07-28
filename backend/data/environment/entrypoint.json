@@ -1,0 +1,240 @@
+{
+  "PolygonBuilding_1": {
+    "x": 780,
+    "y": 489,
+    "distance_to_building": 0.0,
+    "name": "SAB",
+    "building_num": 1
+  },
+  "PolygonBuilding_2": {
+    "x": 201,
+    "y": 519,
+    "distance_to_building": 0.0,
+    "name": "Mess",
+    "building_num": 2
+  },
+  "PolygonBuilding_3": {
+    "x": 185,
+    "y": 547,
+    "distance_to_building": 0.0,
+    "name": "Brahmputra Boys 1",
+    "building_num": 3
+  },
+  "PolygonBuilding_4": {
+    "x": 216,
+    "y": 502,
+    "distance_to_building": 0.0,
+    "name": "Brahmputra Boys 2",
+    "building_num": 4
+  },
+  "PolygonBuilding_5": {
+    "x": 390,
+    "y": 497,
+    "distance_to_building": 0.0,
+    "name": "Ravi",
+    "building_num": 5
+  },
+  "PolygonBuilding_6": {
+    "x": 31,
+    "y": 324,
+    "distance_to_building": 0.0,
+    "name": "Chenab",
+    "building_num": 6
+  },
+  "PolygonBuilding_7": {
+    "x": 599,
+    "y": 517,
+    "distance_to_building": 0.0,
+    "name": "Mechanical Workshop",
+    "building_num": 7
+  },
+  "PolygonBuilding_8": {
+    "x": 712,
+    "y": 414,
+    "distance_to_building": 0.0,
+    "name": "Auditorium + Library",
+    "building_num": 8
+  },
+  "PolygonBuilding_9": {
+    "x": 623,
+    "y": 643,
+    "distance_to_building": 0.0,
+    "name": "Cafeteria",
+    "building_num": 9
+  },
+  "PolygonBuilding_10": {
+    "x": 654,
+    "y": 460,
+    "distance_to_building": 0.0,
+    "name": "Lecture Hall complex",
+    "building_num": 10
+  },
+  "PolygonBuilding_11": {
+    "x": 555,
+    "y": 318,
+    "distance_to_building": 0.0,
+    "name": "Chemical Department",
+    "building_num": 11
+  },
+  "PolygonBuilding_12": {
+    "x": 233,
+    "y": 405,
+    "distance_to_building": 0.0,
+    "name": "Beas",
+    "building_num": 12
+  },
+  "Building_1": {
+    "x": 640,
+    "y": 372,
+    "distance_to_building": 37.8,
+    "name": "Mechanical Department",
+    "building_num": 13
+  },
+  "Building_2": {
+    "x": 789,
+    "y": 372,
+    "distance_to_building": 0.0,
+    "name": "Admin Block",
+    "building_num": 14
+  },
+  "Building_3": {
+    "x": 849,
+    "y": 335,
+    "distance_to_building": 31.6,
+    "name": "Electrical Department",
+    "building_num": 15
+  },
+  "Building_4": {
+    "x": 905,
+    "y": 356,
+    "distance_to_building": 0.0,
+    "name": "CS Department",
+    "building_num": 16
+  },
+  "Building_5": {
+    "x": 975,
+    "y": 261,
+    "distance_to_building": 49.0,
+    "name": "Director's Residence",
+    "building_num": 17
+  },
+  "Building_6": {
+    "x": 646,
+    "y": 162,
+    "distance_to_building": 104.8,
+    "name": "Main fest Ground",
+    "building_num": 18
+  },
+  "PolygonBuilding_13": {
+    "x": 518,
+    "y": 572,
+    "distance_to_building": 0.0,
+    "name": "Rose Garden",
+    "building_num": 19
+  },
+  "Building_7": {
+    "x": 431,
+    "y": 335,
+    "distance_to_building": 0.0,
+    "name": "Bus stand",
+    "building_num": 20
+  },
+  "PolygonBuilding_14": {
+    "x": 278,
+    "y": 358,
+    "distance_to_building": 54.6,
+    "name": "Satluj",
+    "building_num": 21
+  },
+  "Building_8": {
+    "x": 278,
+    "y": 445,
+    "distance_to_building": 0.0,
+    "name": "Jhelum",
+    "building_num": 22
+  },
+  "Building_9": {
+    "x": 732,
+    "y": 261,
+    "distance_to_building": 41.8,
+    "name": "LOC",
+    "building_num": 23
+  },
+  "Building_10": {
+    "x": 715,
+    "y": 94,
+    "distance_to_building": 0.0,
+    "name": "Campus Main gate",
+    "building_num": 24
+  },
+  "Building_11": {
+    "x": 642,
+    "y": 893,
+    "distance_to_building": 31.5,
+    "name": "Volleyball Court",
+    "building_num": 25
+  },
+  "Building_12": {
+    "x": 665,
+    "y": 893,
+    "distance_to_building": 31.0,
+    "name": "Basketball Court",
+    "building_num": 26
+  },
+  "Building_13": {
+    "x": 611,
+    "y": 1005,
+    "distance_to_building": 55.6,
+    "name": "Tennis Court - 1",
+    "building_num": 27
+  },
+  "Building_14": {
+    "x": 720,
+    "y": 922,
+    "distance_to_building": 65.7,
+    "name": "Tennis Court - 2",
+    "building_num": 28
+  },
+  "Building_15": {
+    "x": 441,
+    "y": 486,
+    "distance_to_building": 0.0,
+    "name": "Utility/ SAC",
+    "building_num": 29
+  },
+  "Building_16": {
+    "x": 383,
+    "y": 481,
+    "distance_to_building": 0.0,
+    "name": "Maggie point",
+    "building_num": 30
+  },
+  "Building_17": {
+    "x": 981,
+    "y": 371,
+    "distance_to_building": 0.0,
+    "name": "Faculty Quarters - 1",
+    "building_num": 31
+  },
+  "Building_18": {
+    "x": 1045,
+    "y": 116,
+    "distance_to_building": 0.0,
+    "name": "Guest House",
+    "building_num": 32
+  },
+  "Building_19": {
+    "x": 1064,
+    "y": 248,
+    "distance_to_building": 0.0,
+    "name": "Faculty Quarters - 2",
+    "building_num": 33
+  },
+  "Building_20": {
+    "x": 397,
+    "y": 261,
+    "distance_to_building": 39.5,
+    "name": "AC unit",
+    "building_num": 34
+  }
+}
