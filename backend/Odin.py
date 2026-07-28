@@ -347,6 +347,18 @@ def _snapshot_with_simulation_status(snapshot: Optional[dict]) -> dict:
     return payload
 
 
+def _snapshot_for_client(snapshot: Optional[dict]) -> dict:
+    """Return a client-safe snapshot payload."""
+    payload = _snapshot_with_simulation_status(snapshot)
+    status = payload.get("status")
+    if status == "error":
+        payload["message"] = "Simulation encountered an internal error."
+    elif status == "provider_failure":
+        payload["message"] = "Simulation provider is unavailable."
+        payload.pop("failure", None)
+    return payload
+
+
 @app.post("/api/sim/stop")
 async def stop_sim():
     """Stop the tick driver without deleting persisted checkpoints."""
@@ -445,6 +457,12 @@ def _safe_agent_id(name: str) -> str:
     return result or "agent"
 
 
+def _strict_agent_id(agent_id: str) -> str:
+    if _safe_agent_id(agent_id) != agent_id:
+        raise ValueError("Agent id must contain only lowercase letters, digits, and underscores.")
+    return agent_id
+
+
 def _short_term_dir_for(name: str) -> Path:
     return Path(DATA_DIR) / "Short_term_db" / _safe_agent_id(name)
 
@@ -469,6 +487,18 @@ def _save_roster_successor(world, registry, engine_state: dict) -> int:
     world.tick = successor
     save_checkpoint(world, registry, successor, engine_state)
     return successor
+
+
+def _safe_static_file(base_dir: str, requested_path: str) -> Optional[str]:
+    base_path = Path(base_dir).resolve()
+    candidate = (base_path / requested_path).resolve()
+    try:
+        candidate.relative_to(base_path)
+    except ValueError:
+        return None
+    if candidate.is_file():
+        return str(candidate)
+    return None
 
 
 def _load_stopped_roster():
@@ -505,14 +535,18 @@ async def remove_agent(request: RemoveAgentInput):
     if blocked:
         return blocked
     try:
+        agent_id = _strict_agent_id(request.agent_id)
+    except ValueError:
+        return JSONResponse({"error": "Invalid agent id format."}, status_code=422)
+    try:
         engine, state = _load_stopped_roster()
-        removed = engine.registry.remove(request.agent_id)
-    except (ValueError, KeyError) as exc:
-        return JSONResponse({"error": str(exc)}, status_code=404)
+        removed = engine.registry.remove(agent_id)
+    except (ValueError, KeyError):
+        return JSONResponse({"error": "Agent not found."}, status_code=404)
 
-    engine.world.remove_agent(request.agent_id)
-    engine.relationship_matrix.remove_agent(request.agent_id)
-    archive = Path(DATA_DIR) / "retired_agents" / datetime.now().strftime("%Y%m%d_%H%M%S") / request.agent_id
+    engine.world.remove_agent(agent_id)
+    engine.relationship_matrix.remove_agent(agent_id)
+    archive = Path(DATA_DIR) / "retired_agents" / datetime.now().strftime("%Y%m%d_%H%M%S") / agent_id
     archive.mkdir(parents=True, exist_ok=True)
     persona_path = _persona_file_for(removed.persona_name)
     if persona_path:
@@ -524,11 +558,11 @@ async def remove_agent(request: RemoveAgentInput):
         from src.agents.Long_term import get_retriever
         delete = getattr(get_retriever(), "delete_agent_memory", None)
         if callable(delete):
-            delete(request.agent_id)
+            delete(agent_id)
     except Exception as exc:
-        logger.warning("[Roster] could not delete semantic memory for %s: %s", request.agent_id, exc)
+        logger.warning("[Roster] could not delete semantic memory for %s: %s", agent_id, exc)
     tick = _save_roster_successor(engine.world, engine.registry, engine.checkpoint_state())
-    return {"status": "removed", "agent_id": request.agent_id, "checkpoint_tick": tick, "archive": str(archive)}
+    return {"status": "removed", "agent_id": agent_id, "checkpoint_tick": tick, "archive": str(archive)}
 
 
 @app.post("/api/roster/replace")
@@ -537,10 +571,14 @@ async def replace_agent(request: ReplaceAgentInput):
     if blocked:
         return blocked
     try:
+        agent_id = _strict_agent_id(request.agent_id)
+    except ValueError:
+        return JSONResponse({"error": "Invalid agent id format."}, status_code=422)
+    try:
         engine, state = _load_stopped_roster()
-        agent = engine.registry.get(request.agent_id)
-    except (ValueError, KeyError) as exc:
-        return JSONResponse({"error": str(exc)}, status_code=404)
+        agent = engine.registry.get(agent_id)
+    except (ValueError, KeyError):
+        return JSONResponse({"error": "Agent not found."}, status_code=404)
     old_name = agent.persona_name
     if _persona_file_for(request.name):
         return JSONResponse({"error": f"An agent named '{request.name}' already exists."}, status_code=409)
@@ -557,7 +595,7 @@ async def replace_agent(request: ReplaceAgentInput):
         old_short.rename(_short_term_dir_for(request.name))
     engine.relationship_matrix.replace_display_name(old_name, request.name)
     tick = _save_roster_successor(engine.world, engine.registry, engine.checkpoint_state())
-    return {"status": "replaced", "agent_id": request.agent_id, "name": request.name, "checkpoint_tick": tick}
+    return {"status": "replaced", "agent_id": agent_id, "name": request.name, "checkpoint_tick": tick}
 
 
 @app.post("/api/roster/add")
@@ -582,7 +620,7 @@ async def add_agent(request: AddAgentInput):
         )
     except Exception as exc:
         logger.exception("[Roster] agent generation failed")
-        return JSONResponse({"error": f"Could not generate agent: {exc}"}, status_code=502)
+        return JSONResponse({"error": "Could not generate agent."}, status_code=502)
 
     agent_id = _safe_agent_id(generated.name)
     if agent_id in engine.registry:
@@ -614,8 +652,9 @@ async def add_agent(request: AddAgentInput):
         day_plan = plan_result.get("day_plan", [])
         if not day_plan:
             raise ValueError(plan_result.get("error") or "planner returned no executable actions")
-    except Exception as exc:
-        return JSONResponse({"error": f"Persona was generated but no executable plan could be created: {exc}"}, status_code=502)
+    except Exception:
+        logger.exception("[Roster] planner failed to produce executable plan")
+        return JSONResponse({"error": "Persona was generated but no executable plan could be created."}, status_code=502)
     from src.agents.Actions import AgentActionManager
     from src.core.agent_registry import AgentRuntimeState
     position = engine.resolver.random_interior_point(generated.hostel)
@@ -675,8 +714,8 @@ async def rewind_sim(request: RewindInput):
 
     try:
         requested_ticks = request.requested_ticks(_cfg.SIM_MINUTES_PER_TICK)
-    except ValueError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=422)
+    except ValueError:
+        return JSONResponse({"error": "Provide a positive rewind amount in ticks or hours."}, status_code=422)
 
     async with _sim_tick_lock:
         engine = _sim_engine
@@ -723,7 +762,7 @@ async def rewind_sim(request: RewindInput):
 @app.get("/api/sim/state")
 async def get_sim_state():
     """Return the latest tick snapshot (or status if not yet running)."""
-    return _snapshot_with_simulation_status(_latest_snapshot)
+    return _snapshot_for_client(_latest_snapshot)
 
 
 @app.websocket("/ws/sim")
@@ -733,7 +772,7 @@ async def sim_websocket(ws: WebSocket):
     try:
         # Send latest state immediately on connect
         if _latest_snapshot is not None:
-            await ws.send_json(_snapshot_with_simulation_status(_latest_snapshot))
+            await ws.send_json(_snapshot_for_client(_latest_snapshot))
         while True:
             await ws.receive_text()  # keep connection alive
     except WebSocketDisconnect:
@@ -913,13 +952,17 @@ mimetypes.add_type("image/png", ".png")
 async def serve_spa(full_path: str):
     dist = os.path.join(FRONTEND, "dist")
     if os.path.isdir(dist):
-        file_path = os.path.join(dist, full_path) if full_path else os.path.join(dist, "index.html")
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
+        if not full_path:
+            return FileResponse(os.path.join(dist, "index.html"))
+        safe_path = _safe_static_file(dist, full_path)
+        if safe_path:
+            return FileResponse(safe_path)
         return FileResponse(os.path.join(dist, "index.html"))
-    file_path = os.path.join(FRONTEND, full_path) if full_path else os.path.join(FRONTEND, "index.html")
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
+    if not full_path:
+        return FileResponse(os.path.join(FRONTEND, "index.html"))
+    safe_path = _safe_static_file(FRONTEND, full_path)
+    if safe_path:
+        return FileResponse(safe_path)
     return FileResponse(os.path.join(FRONTEND, "index.html"))
 
 
