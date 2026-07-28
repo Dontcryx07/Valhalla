@@ -53,7 +53,7 @@ high-level planning and dialogue.
 
 https://github.com/user-attachments/assets/1e48772a-e8a9-45d3-a462-ddfe83b1c640
 
-<img src="Screenshot 2026-07-25 002349.png" alt="Valhalla simulation UI" width="100%">
+
 
 ## Features
 
@@ -63,6 +63,8 @@ https://github.com/user-attachments/assets/1e48772a-e8a9-45d3-a462-ddfe83b1c640
 - Persistent long-term memory via Qdrant (with runtime fallback behavior).
 - Checkpoint/resume workflow for long-running simulations.
 - Roster tools to add, rename, or retire agents.
+
+  <img src="Screenshot 2026-07-25 002349.png" alt="Valhalla simulation UI" width="100%">
 
 ## Architecture / Pipeline
 
