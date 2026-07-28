@@ -3,7 +3,7 @@
 Valhalla is a multi-agent campus-life simulation set at IIT Ropar.
 AI student personas plan their day, move across a shared map, talk when they meet,
 and build memory over time.
-
+ 
 ## What is Valhalla?
 
 Valhalla is built for developers, AI hobbyists, and simulation researchers who want a practical sandbox for testing autonomous-agent behavior in a socially rich world. Its value is a full end-to-end loop (planning, movement, conversation, and memory) that you can run locally and inspect live.
