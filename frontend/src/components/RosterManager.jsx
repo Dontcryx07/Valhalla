@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { apiUrl } from "../utils/api";
 
 const panelStyle = {
   position: "fixed", right: 16, bottom: 64, width: 330, zIndex: 1100,
@@ -8,7 +10,8 @@ const panelStyle = {
 };
 const controlStyle = { width: "100%", marginTop: 7, padding: "7px 8px", borderRadius: 3, border: "1px solid rgba(212,160,74,.28)", background: "#101010", color: "#ddd", fontFamily: "inherit", fontSize: 12 };
 
-export default function RosterManager({ open, onClose, simulationRunning, onError }) {
+export default function RosterManager({ open, onClose, simulationRunning, onError, isAuthenticated }) {
+  const { token } = useAuth();
   const [roster, setRoster] = useState([]);
   const [description, setDescription] = useState("");
   const [selected, setSelected] = useState("");
@@ -18,20 +21,22 @@ export default function RosterManager({ open, onClose, simulationRunning, onErro
 
   const refresh = async () => {
     try {
-      const response = await fetch("/api/roster");
+      const response = await fetch(apiUrl("/api/roster"), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await response.json();
       setRoster(data.agents || []);
       setSelected((previous) => previous || data.agents?.[0]?.id || "");
     } catch (error) { onError(error.message); }
   };
   useEffect(() => { if (open) refresh(); }, [open]);
-  if (!open) return null;
+  if (!open || !isAuthenticated) return null;
 
   const submit = async (path, payload, success) => {
     if (simulationRunning) { onError("Stop the simulation before editing the roster."); return; }
     setBusy(true); setNotice("");
     try {
-      const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const response = await fetch(apiUrl(path), { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(payload) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Roster change failed.");
       setNotice(`${success} Checkpoint ${data.checkpoint_tick} is now the latest timeline state.`);

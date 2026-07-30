@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { wsUrl } from "../utils/api";
 
 export default function useSimState() {
   const [snapshot, setSnapshot] = useState(null);
@@ -9,8 +10,7 @@ export default function useSimState() {
   const connect = useCallback(() => {
     if (disposedRef.current) return;
     clearTimeout(reconnectTimer.current);
-    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${location.host}/ws/sim`;
+    const url = wsUrl("/ws/sim");
     const ws = new WebSocket(url);
 
     ws.onmessage = (e) => {

@@ -1,0 +1,60 @@
+# .dockerignore
+
+.agents
+.vscode
+scripts
+venv
+.env
+opencode.json
+skills-lock.json
+
+.codex/environments/environment.toml
+pytest.ini
+.venv/
+.idea/
+temp.py
+*.log
+.debug/
+
+
+/tests/
+/backend/tests/
+.pytest_cache/
+coverage.xml
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+.VSCodeCounter/
+
+# Generated simulation runtime state.  The live server recreates these on a
+# fresh run; static environments, personas, and event definitions stay tracked.
+
+/backend/data/Short_term_db/
+/backend/data/checkpoints/
+/backend/data/history/
+
+# Legacy JSON long-term-memory exports are produced only by the optional
+# migration utility. The live simulator uses Qdrant instead.
+
+/backend/data/Long_term_db/
+/backend/output/
+
+
+# Frontend dependencies and build output
+
+/frontend/node_modules/
+/frontend/dist/
+
+
+# Python bytecode and interpreter caches
+__pycache__/
+
+*.py[cod]
+
+# Local operating-system and tool residue
+
+.DS_Store
+Thumbs.db
+*.pid
+*.tmp

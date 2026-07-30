@@ -186,6 +186,9 @@ LLM_HOURLY_CEILING = _env_int("SIM_LLM_HOURLY_CEILING", 0)
 # Energy and emotion thresholds for LLM calls
 DECIDE_MIN_ENERGY = _env_float("SIM_DECIDE_MIN_ENERGY", 0.1)
 DECIDE_MIN_EMOTION = _env_float("SIM_DECIDE_MIN_EMOTION", 0.1)
+
+# Web login admin credentials (email:password pairs, semicolon-separated)
+ADMIN_CREDENTIALS = _env_str("ADMIN_CREDENTIALS", "")
 # An observation may change every tick while agents travel together.  Limit
 # each agent's advisory LLM reflex to avoid turning normal movement into an
 # unbounded API stream; their action state machines still run every tick.

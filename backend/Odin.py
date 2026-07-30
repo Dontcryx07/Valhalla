@@ -14,7 +14,7 @@ import socket
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException, Header
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
@@ -36,26 +36,56 @@ DATA_DIR = os.path.join(ROOT, "backend", "data")
 # --------------------------------------------------------------------------- #
 
 class SimBroadcaster:
-    """Manages WebSocket clients subscribed to live simulation state."""
+    """Manages WebSocket clients via per-client bounded queues.
+
+    Each connected client gets an asyncio.Queue(maxsize=5).  The simulation
+    pushes snapshots into every queue with put_nowait (dropping oldest on
+    overflow).  A lightweight drain task per client sends frames at the pace
+    that individual connection can handle — a slow client only affects itself.
+    """
 
     def __init__(self):
-        self.connections: set[WebSocket] = set()
+        self._queues: dict[WebSocket, asyncio.Queue] = {}
+        self._tasks: dict[WebSocket, asyncio.Task] = {}
 
-    async def connect(self, ws: WebSocket):
+    async def connect(self, ws: WebSocket, initial_snapshot: Optional[dict] = None):
         await ws.accept()
-        self.connections.add(ws)
+        q: asyncio.Queue = asyncio.Queue(maxsize=5)
+        self._queues[ws] = q
+        if initial_snapshot is not None:
+            q.put_nowait(initial_snapshot)
+        self._tasks[ws] = asyncio.create_task(self._drain(ws, q))
 
     def disconnect(self, ws: WebSocket):
-        self.connections.discard(ws)
+        task = self._tasks.pop(ws, None)
+        if task:
+            task.cancel()
+        self._queues.pop(ws, None)
 
     async def broadcast(self, data: dict):
-        dead = set()
-        for ws in self.connections:
+        for q in list(self._queues.values()):
             try:
-                await ws.send_json(data)
-            except Exception:
-                dead.add(ws)
-        self.connections -= dead
+                q.put_nowait(data)
+            except asyncio.QueueFull:
+                try:
+                    q.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+                q.put_nowait(data)
+
+    async def _drain(self, ws: WebSocket, q: asyncio.Queue):
+        try:
+            while True:
+                data = await q.get()
+                try:
+                    await ws.send_json(data)
+                except Exception:
+                    break
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._queues.pop(ws, None)
+            self._tasks.pop(ws, None)
 
 
 _latest_snapshot: Optional[dict] = None
@@ -150,6 +180,41 @@ async def _sim_lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Valhalla Agent Map", lifespan=_sim_lifespan)
+
+# ---------------------------------------------------------------------------
+# CORS — allow cross-origin requests from the Vercel frontend
+# ---------------------------------------------------------------------------
+
+from fastapi.middleware.cors import CORSMiddleware
+
+_cors_raw = os.environ.get("CORS_ORIGINS", "*").strip()
+CORS_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()] if _cors_raw else ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------------------------------------------------------------------
+# Auth — admin login protects simulation control routes
+# ---------------------------------------------------------------------------
+
+from src.auth.manager import auth_manager
+from src.auth.routes import router as auth_router
+
+app.include_router(auth_router)
+
+
+async def require_admin(authorization: str = Header(None)):
+    """FastAPI dependency: accept a Bearer token, return user or 401."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = auth_manager.validate_session(authorization[7:])
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return user
 
 
 def _print_agent_plans(engine):
@@ -312,7 +377,7 @@ async def _on_tick(snapshot: dict):
 # --------------------------------------------------------------------------- #
 
 @app.post("/api/sim/reset")
-async def reset_sim():
+async def reset_sim(_user: dict = Depends(require_admin)):
     """Wipe cache + checkpoints and restart the sim from 00:00."""
     global _sim_task, _latest_snapshot
 
@@ -348,7 +413,7 @@ def _snapshot_with_simulation_status(snapshot: Optional[dict]) -> dict:
 
 
 @app.post("/api/sim/stop")
-async def stop_sim():
+async def stop_sim(_user: dict = Depends(require_admin)):
     """Stop the tick driver without deleting persisted checkpoints."""
     global _latest_snapshot, _sim_engine
     if not _simulation_is_running():
@@ -362,7 +427,7 @@ async def stop_sim():
 
 
 @app.post("/api/sim/start")
-async def start_sim():
+async def start_sim(_user: dict = Depends(require_admin)):
     """Start from the newest persisted checkpoint, never stale RAM state."""
     global _sim_task
     if _simulation_is_running():
@@ -500,7 +565,7 @@ async def get_roster():
 
 
 @app.post("/api/roster/remove")
-async def remove_agent(request: RemoveAgentInput):
+async def remove_agent(request: RemoveAgentInput, _user: dict = Depends(require_admin)):
     blocked = _require_stopped()
     if blocked:
         return blocked
@@ -532,7 +597,7 @@ async def remove_agent(request: RemoveAgentInput):
 
 
 @app.post("/api/roster/replace")
-async def replace_agent(request: ReplaceAgentInput):
+async def replace_agent(request: ReplaceAgentInput, _user: dict = Depends(require_admin)):
     blocked = _require_stopped()
     if blocked:
         return blocked
@@ -561,7 +626,7 @@ async def replace_agent(request: ReplaceAgentInput):
 
 
 @app.post("/api/roster/add")
-async def add_agent(request: AddAgentInput):
+async def add_agent(request: AddAgentInput, _user: dict = Depends(require_admin)):
     """Generate an adult student persona from observer-provided notes, while stopped."""
     blocked = _require_stopped()
     if blocked:
@@ -647,7 +712,7 @@ async def add_agent(request: AddAgentInput):
 
 
 @app.post("/api/sim/fast-forward")
-async def fast_forward_sim():
+async def fast_forward_sim(_user: dict = Depends(require_admin)):
     """Increase the live tick-speed multiplier without restarting the day."""
     from src import config as _cfg
 
@@ -656,7 +721,7 @@ async def fast_forward_sim():
 
 
 @app.post("/api/sim/slow-down")
-async def slow_down_sim():
+async def slow_down_sim(_user: dict = Depends(require_admin)):
     """Halve the live tick-speed multiplier without restarting the day."""
     from src import config as _cfg
 
@@ -667,7 +732,7 @@ async def slow_down_sim():
 
 
 @app.post("/api/sim/rewind")
-async def rewind_sim(request: RewindInput):
+async def rewind_sim(request: RewindInput, _user: dict = Depends(require_admin)):
     """Restore the nearest retained checkpoint for a requested tick or hour offset."""
     global _latest_snapshot
     from src.core.checkpoint_manager import list_checkpoints, load_checkpoint
@@ -729,13 +794,12 @@ async def get_sim_state():
 @app.websocket("/ws/sim")
 async def sim_websocket(ws: WebSocket):
     """Subscribe to live tick-by-tick simulation state."""
-    await _sim_broadcaster.connect(ws)
+    await _sim_broadcaster.connect(ws, _latest_snapshot)
     try:
-        # Send latest state immediately on connect
-        if _latest_snapshot is not None:
-            await ws.send_json(_snapshot_with_simulation_status(_latest_snapshot))
         while True:
-            await ws.receive_text()  # keep connection alive
+            msg = await ws.receive_text()
+            if msg == "ping":
+                await ws.send_text("pong")
     except WebSocketDisconnect:
         _sim_broadcaster.disconnect(ws)
 
@@ -937,8 +1001,12 @@ if __name__ == "__main__":
         help="Resume the latest checkpoint without clearing runtime data",
     )
     parser.add_argument(
-        "--port", type=int, default=8000,
+        "--port", type=int, default=int(os.environ.get("PORT", "8000")),
         help="Port to listen on (default: 8000)",
+    )
+    parser.add_argument(
+        "--host", type=str, default=os.environ.get("HOST", "127.0.0.1"),
+        help="Host to bind to (default: 127.0.0.1, use 0.0.0.0 for public)",
     )
     args, _ = parser.parse_known_args()
 
@@ -946,27 +1014,24 @@ if __name__ == "__main__":
     # lifespan before binding, which used to let a doomed duplicate launch
     # clear state and spend model calls without ever serving the browser.
     try:
-        listen_socket = _reserve_listen_socket("127.0.0.1", args.port)
+        listen_socket = _reserve_listen_socket(args.host, args.port)
     except OSError as exc:
         print(
-            f"\n  Cannot start Valhalla on http://127.0.0.1:{args.port}: {exc}.\n"
+            f"\n  Cannot start Valhalla on http://{args.host}:{args.port}: {exc}.\n"
             f"  Stop the existing server or choose a free port, e.g. --port {args.port + 1}.\n",
             file=sys.stderr,
         )
         raise SystemExit(1)
 
     if args.resume_checkpoint:
-        print(f"\n  Valhalla is live => http://127.0.0.1:{args.port}   (resuming from checkpoint)\n")
+        print(f"\n  Valhalla is live => http://{args.host}:{args.port}   (resuming from checkpoint)\n")
     else:
-        print(f"\n  Valhalla is live => http://127.0.0.1:{args.port}   (fresh simulation; runtime data will be cleared)\n")
+        print(f"\n  Valhalla is live => http://{args.host}:{args.port}   (fresh simulation; runtime data will be cleared)\n")
 
-    config = uvicorn.Config(app, host="127.0.0.1", port=args.port, reload=False)
+    config = uvicorn.Config(app, host=args.host, port=args.port, reload=False)
     try:
         uvicorn.Server(config).run(sockets=[listen_socket])
     except KeyboardInterrupt:
-        # Uvicorn intentionally raises KeyboardInterrupt after a clean Ctrl+C
-        # shutdown. Treat that expected operator action as a normal exit so
-        # Windows does not print a misleading asyncio traceback.
         print("\n[Server] Valhalla stopped cleanly.")
     finally:
         listen_socket.close()

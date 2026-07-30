@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import useSimState from "./hooks/useSimState";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import SimCanvas from "./components/SimCanvas";
 import AgentWindow from "./components/AgentWindow";
 import InfoBar from "./components/InfoBar";
@@ -7,6 +8,8 @@ import ConversationFeed from "./components/ConversationFeed";
 import EventsPanel from "./components/EventsPanel";
 import DebugPanel from "./components/DebugPanel";
 import RosterManager from "./components/RosterManager";
+import LoginButton from "./components/LoginButton";
+import { apiUrl } from "./utils/api";
 import "./App.css";
 
 function compactTabPosition(index) {
@@ -21,6 +24,15 @@ function compactTabPosition(index) {
 }
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { token, isAuthenticated } = useAuth();
   const snapshot = useSimState();
   const [renderSnapshot, setRenderSnapshot] = useState(null);
   const [agentMap, setAgentMap] = useState(null);
@@ -86,13 +98,15 @@ export default function App() {
   async function sendControl(path, body) {
     try {
       setControlError(null);
-      const response = await fetch(path, {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const response = await fetch(apiUrl(path), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Simulation control failed.");
+      if (!response.ok) throw new Error(data.error || data.detail || "Simulation control failed.");
       return data;
     } catch (error) {
       setControlError(error.message);
@@ -125,7 +139,7 @@ export default function App() {
       />
       <EventsPanel events={snapshot?.events} />
       {showDebug && <DebugPanel health={snapshot?.health} />}
-      <RosterManager open={rosterOpen} onClose={() => setRosterOpen(false)} simulationRunning={simulationRunning} onError={setControlError} />
+      <RosterManager open={rosterOpen} onClose={() => setRosterOpen(false)} simulationRunning={simulationRunning} onError={setControlError} isAuthenticated={isAuthenticated} />
 
       {agentIds.map((id, index) => {
         const expanded = expandedAgentIds.has(id);
@@ -157,7 +171,9 @@ export default function App() {
           if (result && typeof result.running === "boolean") setSimulationRunning(result.running);
         }}
         onToggleRoster={() => setRosterOpen((value) => !value)}
+        isAuthenticated={isAuthenticated}
       />
+      <LoginButton />
     </div>
   );
 }
