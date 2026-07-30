@@ -1,3 +1,12 @@
+---
+title: Valhalla
+emoji: 🏛️
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+---
+
 # Valhalla
 
 Valhalla is a multi-agent campus-life simulation set at IIT Ropar.
