@@ -178,6 +178,15 @@ MEMORY_STORAGE_PRUNE_TARGET = min(MEMORY_STORAGE_PRUNE_THRESHOLD, max(0.05, _env
 # Cap on full day-plan regenerations triggered mid-day per agent (budget guard).
 MAX_REPLANS_PER_AGENT_PER_DAY = _env_int("SIM_MAX_REPLANS_PER_AGENT_PER_DAY", 3)
 
+# Deterministic backstop for agents stranded on the "Unscheduled downtime"
+# fallback schedule.  Every tick, the engine checks remaining plans; an
+# agent with upcoming downtime gets a remaining-day replan.  The cooldown
+# (in ticks) stops a repeatedly-rejected replan from hammering the planner,
+# and the horizon (in minutes) skips replans when too little of the day is
+# left to be worth one.
+DOWNTIME_REPLAN_COOLDOWN_TICKS = _env_int("SIM_DOWNTIME_REPLAN_COOLDOWN_TICKS", 60)
+DOWNTIME_REPLAN_MIN_HORIZON = _env_int("SIM_DOWNTIME_REPLAN_MIN_HORIZON", 60)
+
 # Budget governor: soft ceiling on LLM calls per real hour across the whole sim.
 # 0 = no ceiling. When exceeded, cognition degrades gracefully (skip reflex,
 # defer replans) — the sim keeps running on the 0-LLM executor path.
@@ -204,6 +213,11 @@ SIM_CREATIVITY = min(1.0, max(0.0, _env_float("SIM_CREATIVITY", 1.0)))
 # independent from creativity: an observer can ask for more varied plans
 # without making students' energy and mood unrealistically volatile.
 SIM_WELLBEING_VARIABILITY = min(1.0, max(0.0, _env_float("SIM_WELLBEING_VARIABILITY", 0.75)))
+# How fast the runtime glides an agent's energy toward the day planner's
+# declared per-action energy_target.  This is a control rate, not an energy
+# value: 0.0 disables the glide (pure delta-based energy, as before), larger
+# values converge faster (0.03 => ~84% of the gap closed per 60-min action).
+SIM_ENERGY_FOLLOW_RATE = _env_float("SIM_ENERGY_FOLLOW_RATE", 0.03)
 TEMPERATURE = 0.7 + (0.4 * SIM_CREATIVITY)  # planning and decisions: 1.1 at lively
 CONVERSATION_TEMPERATURE = 0.6 + (0.4 * SIM_CREATIVITY)  # 1.0 at lively
 SUMMARY_TEMPERATURE = 0.5
@@ -282,6 +296,7 @@ _OVERRIDE_MAP = {
     "decide_cooldown_ticks": "DECIDE_COOLDOWN_TICKS",
     "conversation_min_energy": "CONVERSATION_MIN_ENERGY",
     "conversation_min_emotion": "CONVERSATION_MIN_EMOTION",
+    "energy_follow_rate": "SIM_ENERGY_FOLLOW_RATE",
     "day_handoff_conversation_timeout_seconds": "DAY_HANDOFF_CONVERSATION_TIMEOUT_SECONDS",
 }
 
@@ -354,6 +369,7 @@ def describe_settings() -> str:
         f"  Simulation creativity        : {SIM_CREATIVITY:.2f} "
         f"(plan/decision {TEMPERATURE:.2f}, conversation {CONVERSATION_TEMPERATURE:.2f}, summary {SUMMARY_TEMPERATURE:.2f})\n"
         f"  Wellbeing variation           : {SIM_WELLBEING_VARIABILITY:.2f}\n"
+        f"  Energy follow rate            : {SIM_ENERGY_FOLLOW_RATE:.3f}/sim-min\n"
         f"  Memory backend               : {MEMORY_BACKEND}\n"
         f"  Semantic memory              : {'ON' if SEMANTIC_MEMORY_ENABLED else 'OFF'}\n"
         f"  Perception                   : {'ON' if PERCEPTION_ENABLED else 'OFF'} (radius {PERCEPTION_RADIUS_PX}px)\n"

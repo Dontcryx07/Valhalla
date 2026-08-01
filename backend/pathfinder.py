@@ -6,7 +6,10 @@ BFS shortest_path(), stats(), and is_walkable() helpers.
 
 import os
 import threading
+from io import BytesIO
 from collections import deque
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -15,6 +18,18 @@ _path_img = None
 _white_pixels = None
 _W = _H = 0
 _load_lock = threading.Lock()
+
+
+def _public_asset_url(value):
+    """Convert a GitHub blob page URL to its downloadable raw-file URL."""
+    value = value.strip()
+    parsed = urlparse(value)
+    parts = parsed.path.strip("/").split("/")
+    if parsed.scheme == "https" and parsed.netloc in {"github.com", "www.github.com"} \
+            and len(parts) >= 5 and parts[2] == "blob":
+        owner, repository, _, revision, *path = parts
+        return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{'/'.join(path)}"
+    return value
 
 
 def _load():
@@ -32,22 +47,37 @@ def _load():
             os.path.join(ROOT, "frontend", "dist", "path.png"),
         ]
         path_file = next((p for p in candidates if os.path.exists(p)), None)
-        if path_file is None:
-            raise FileNotFoundError(
-                "path.png not found in frontend/public, frontend, or frontend/dist"
-            )
-        # Copy decoded pixels while the image handle is open, then release the
-        # handle immediately so the source image is not locked on Windows.
-        with Image.open(path_file) as image:
-            rgb = image.convert("RGB")
-            _W, _H = rgb.size
-            pix = rgb.load()
-            _white_pixels = {
-                (x, y)
-                for y in range(_H)
-                for x in range(_W)
-                if pix[x, y] == (255, 255, 255)
-            }
+        path_url = _public_asset_url(os.environ.get("PATH_IMAGE_URL", ""))
+        try:
+            if path_file:
+                image_source = path_file
+            else:
+                if not path_url:
+                    raise FileNotFoundError("path.png not found and PATH_IMAGE_URL is not configured")
+                if urlparse(path_url).scheme != "https":
+                    raise ValueError("PATH_IMAGE_URL must be an https URL")
+                request = Request(path_url, headers={"User-Agent": "Valhalla/1.0"})
+                with urlopen(request, timeout=20) as response:
+                    image_bytes = response.read(20 * 1024 * 1024 + 1)
+                if len(image_bytes) > 20 * 1024 * 1024:
+                    raise ValueError("PATH_IMAGE_URL exceeds the 20 MB download limit")
+                image_source = BytesIO(image_bytes)
+
+            with Image.open(image_source) as image:
+                rgb = image.convert("RGB")
+                _W, _H = rgb.size
+                pix = rgb.load()
+                _white_pixels = {
+                    (x, y)
+                    for y in range(_H)
+                    for x in range(_W)
+                    if pix[x, y] == (255, 255, 255)
+                }
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to load path.png (%s). Falling back to open map grid.", exc)
+            _W, _H = 1276, 1233
+            _white_pixels = {(x, y) for y in range(_H) for x in range(_W)}
 
 
 def _nearest_walkable(pt, max_r=60):

@@ -26,14 +26,46 @@ export default function SimCanvas({ snapshot, focusedId, onFocus }) {
 
   useEffect(() => { focusRef.current = focusedId; }, [focusedId]);
 
-  // Load map images once
+  // Read URLs from the backend so Hugging Face Space variables work at runtime.
   useEffect(() => {
-    const img = new Image();
-    img.src = "/map.png";
-    img.onload = () => { mapImgRef.current = img; startLoop(); };
-    const night = new Image();
-    night.src = "/map_night.png";
-    night.onload = () => { nightImgRef.current = night; };
+    let disposed = false;
+    const tryLoadImage = (urls, filename, onLoaded) => {
+      const baseUrl = import.meta.env?.BASE_URL || "/";
+      const cleanBase = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+      const candidates = [...urls, filename, `./${filename}`, `/${filename}`, `${cleanBase}${filename}`];
+      let idx = 0;
+      const loadNext = () => {
+        if (idx >= candidates.length) return;
+        const img = new Image();
+        const src = candidates[idx++];
+        img.onload = () => { if (!disposed) onLoaded(img); };
+        img.onerror = () => loadNext();
+        img.src = src;
+      };
+      loadNext();
+    };
+
+    async function loadMaps() {
+      let assets = {};
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}api/assets`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        assets = await response.json();
+      } catch (error) {
+        console.warn("Could not read remote map configuration; using local assets.", error);
+      }
+      if (disposed) return;
+      tryLoadImage(assets.map_image_url ? [assets.map_image_url] : [], "map.png", (img) => {
+        mapImgRef.current = img;
+      });
+      tryLoadImage(assets.night_image_url ? [assets.night_image_url] : [], "map_night.png", (img) => {
+        nightImgRef.current = img;
+      });
+      startLoop();
+    }
+
+    loadMaps();
+    return () => { disposed = true; };
   }, []);
 
   // Update targets from snapshot
@@ -71,9 +103,9 @@ export default function SimCanvas({ snapshot, focusedId, onFocus }) {
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, W, H);
-      if (!img) { rafRef.current = requestAnimationFrame(tick); return; }
 
-      const iw = img.width, ih = img.height;
+      const iw = img ? img.width : 1276;
+      const ih = img ? img.height : 1233;
       const scale = Math.min(W / iw, H / ih) * 0.92;
       const baseOx = (W - iw * scale) / 2;
       const baseOy = (H - ih * scale) / 2;
@@ -102,13 +134,42 @@ export default function SimCanvas({ snapshot, focusedId, onFocus }) {
       ctx.save();
       ctx.translate(ox, oy);
       ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
-      // Day/night blend: overlay the night map at a time-based opacity.
-      const na = nightAlphaRef.current;
-      if (nightImgRef.current && na > 0.01) {
-        ctx.globalAlpha = na;
-        ctx.drawImage(nightImgRef.current, 0, 0);
-        ctx.globalAlpha = 1;
+
+      if (img) {
+        ctx.drawImage(img, 0, 0);
+        // Day/night blend: overlay the night map at a time-based opacity.
+        const na = nightAlphaRef.current;
+        if (nightImgRef.current && na > 0.01) {
+          ctx.globalAlpha = na;
+          ctx.drawImage(nightImgRef.current, 0, 0);
+          ctx.globalAlpha = 1;
+        }
+      } else {
+        // Procedural campus background fallback if image is loading or missing
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, iw, ih);
+
+        // Draw campus grid lines
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+        ctx.lineWidth = 1;
+        const step = 60;
+        for (let x = 0; x <= iw; x += step) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ih); ctx.stroke();
+        }
+        for (let y = 0; y <= ih; y += step) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(iw, y); ctx.stroke();
+        }
+
+        // Campus boundary border
+        ctx.strokeStyle = "rgba(212, 160, 74, 0.4)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, iw, ih);
+
+        // Campus title label
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.font = "14px 'Space Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("VALHALLA CAMPUS MAP", iw / 2, 40);
       }
 
       // draw agents

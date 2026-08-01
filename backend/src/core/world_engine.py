@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import random
 import sys
 import time as _time
@@ -126,6 +127,10 @@ class WorldEngine:
         # Decisions are advisory; a slow provider response must not freeze the
         # simulation clock or WebSocket snapshots at an action boundary.
         self._decision_tasks: Dict[str, asyncio.Task] = {}
+        # Advisory throttle: last tick an "unscheduled downtime" recovery
+        # replan was attempted per agent.  Not checkpointed — on restore a
+        # fresh attempt is harmless.
+        self._downtime_replan_tick: Dict[str, int] = {}
 
     @staticmethod
     def _conversation_key(first_id: str, second_id: str) -> str:
@@ -349,69 +354,41 @@ class WorldEngine:
                 baseline -= 0.04
         return max(0.56, min(0.86, baseline))
 
-    def _action_wellbeing_deltas(self, state: AgentRuntimeState, action: Any) -> tuple[float, float]:
-        """Compute a deterministic total wellbeing effect for one action.
+    def _action_wellbeing_deltas(self, state: AgentRuntimeState, action: Any, duration: int) -> tuple[float, float]:
+        """Return the total wellbeing effect for one action.
 
-        LLM-supplied deltas are useful hints, but are normally very small.  A
-        shared local activity model therefore gives classes, travel, rest, and
-        social time their ordinary human cost or benefit.  The small stable
-        variation is keyed by agent/action, rather than sampled each tick, so
-        replaying a checkpoint remains reproducible.
+        When the day planner declares an energy_target for the action, the
+        runtime glides the agent's energy from its current level toward that
+        declared cumulative target (the LLM owns every value; this is only a
+        smooth, deterministic path to it).  The exponential progress factor
+        means short actions barely move energy while long ones converge, and
+        because it depends only on stored state and the plan it stays
+        checkpoint-reproducible.
+
+        Without a declared target the legacy delta path applies: the planner's
+        energy_change drives the level, with the small deterministic jitter
+        keyed by agent/action so replays remain reproducible.
         """
         description = (getattr(action, "description", "") or "").lower()
-        action_type = str(getattr(action, "action_type", "")).lower()
-        # The planner can add personality-specific flavour, but it must not
-        # turn an otherwise restorative meal or quiet break into a day-long
-        # energy drain.  The local physical activity model is authoritative.
-        planner_energy = max(-0.08, min(0.08, float(getattr(action, "energy_change", 0.0))))
-        planner_emotion = max(-0.12, min(0.12, float(getattr(action, "emotion_change", 0.0))))
-        energy, emotion = 0.0, 0.0
+        emotion = float(getattr(action, "emotion_change", 0.0) or 0.0)
 
-        if action_type.endswith("move") or any(word in description for word in ("walk", "travel", "commute", "go to")):
-            energy, emotion = -0.075, -0.008
-        elif "sleep" in description:
-            energy, emotion = 0.50, 0.025
-        elif any(word in description for word in ("nap", "rest", "recharge", "lie down")):
-            energy, emotion = 0.20, 0.020
-        elif any(word in description for word in (
-            "meme", "memes", "scroll", "social media", "youtube", "video",
-            "reading for pleasure", "quiet reading", "reading quietly", "bench", "downtime",
-            "free time", "relax", "relaxing", "wind-down", "wind down",
-        )):
-            energy, emotion = 0.090, 0.025
-        elif any(word in description for word in ("class", "lecture", "lab", "tutorial", "study", "assignment", "coding", "project", "exam")):
-            energy, emotion = -0.070, -0.025
-        elif any(word in description for word in ("gym", "sport", "run", "football", "basketball", "badminton", "workout", "cardio", "weightlift", "training")):
-            energy, emotion = -0.180, 0.075
-        elif any(word in description for word in ("breakfast", "lunch", "dinner", "meal", "food", "tea", "chai", "eat", "eating")):
-            energy, emotion = 0.130, 0.025
-        elif any(word in description for word in ("friends", "club", "music", "open mic", "game", "movie", "social", "hangout")):
-            energy, emotion = 0.015, 0.075
-        elif any(word in description for word in ("laundry", "clean", "errand", "admin", "queue", "chore")):
-            energy, emotion = -0.080, -0.025
-        elif any(word in description for word in ("stand", "standing", "wait", "waiting")):
-            energy, emotion = -0.040, -0.005
-        else:
-            # Neutral, seated or low-intensity tasks should not silently push
-            # every agent toward exhaustion merely because their wording was
-            # not anticipated above.
-            energy, emotion = -0.005, 0.0
+        target = getattr(action, "energy_target", None)
+        if target is not None:
+            target = max(0.0, min(1.0, float(target)))
+            remaining = target - state.energy_level
+            progress = 1.0 - math.exp(-_cfg.SIM_ENERGY_FOLLOW_RATE * max(1, duration))
+            energy = remaining * progress
+            return energy, emotion
 
-        # Introverted students generally enjoy a good conversation but spend
-        # more energy on it; this keeps personality visible without judging it.
-        traits = " ".join(str(state.persona.get(key, "")) for key in ("innate", "lifestyle", "learned")).lower()
-        if any(word in description for word in ("friends", "club", "social", "hangout")) and any(
-            marker in traits for marker in ("introverted", "quiet", "reserved")
-        ):
-            energy -= 0.03
+        energy = float(getattr(action, "energy_change", 0.0) or 0.0)
 
         variation = _cfg.SIM_WELLBEING_VARIABILITY
         token = f"{state.agent_id}|{getattr(action, 'start_time', '')}|{getattr(action, 'end_time', '')}|{description}"
         digest = hashlib.blake2s(token.encode("utf-8"), digest_size=4).digest()
         jitter = (int.from_bytes(digest, "big") / 0xFFFFFFFF) * 2.0 - 1.0
-        energy += planner_energy + jitter * 0.035 * variation
-        emotion += planner_emotion + jitter * 0.045 * variation
-        return max(-0.28, min(0.30, energy)), max(-0.18, min(0.16, emotion))
+        energy += jitter * 0.035 * variation
+        emotion += jitter * 0.045 * variation
+        return energy, emotion
 
     def _memory_context(self, persona_name, persona, before_date=None, query_hint=""):
         """Build (relevant_memories, rolling_summary) for a day-planner call.
@@ -532,6 +509,8 @@ class WorldEngine:
                             "persona_name": name,
                             "mode": "full_day",
                             "current_location_id": hostel,
+                            "energy_level": self._energy_baseline(persona),
+                            "emotion_state": self._emotion_baseline(persona),
                             "upcoming_events": self.event_manager.snapshot(self.sim_start_date, self.sim_start_hhmm).get("upcoming", []),
                         },
                     ),
@@ -698,6 +677,26 @@ class WorldEngine:
         if replan_agents:
             await asyncio.gather(
                 *[self._phase_replan(s, current_tick, hhmm) for s in replan_agents],
+                return_exceptions=True,
+            )
+
+        # ══════ PHASE 5b: Unscheduled downtime recovery (parallel, deterministic) ══════
+        # A force-accepted fallback plan strands the agent on "Unscheduled
+        # downtime" for the rest of the day.  The LLM decide path may never
+        # fire for such an agent, so detect it here and replan the remaining
+        # whole day explicitly.
+        downtime_agents = [
+            s for s in agent_states if self._has_unscheduled_downtime(s, current_tick)
+        ]
+        if downtime_agents:
+            for s in downtime_agents:
+                self._downtime_replan_tick[s.agent_id] = current_tick
+                logger.info(
+                    "[WorldEngine] agent '%s' stuck on unscheduled downtime — replanning remaining day",
+                    s.persona_name,
+                )
+            await asyncio.gather(
+                *[self._phase_replan(s, current_tick, hhmm) for s in downtime_agents],
                 return_exceptions=True,
             )
 
@@ -887,6 +886,8 @@ class WorldEngine:
                         "persona_name": state.persona_name,
                         "mode": "remaining",
                         "current_location_id": state.position.location_id,
+                        "energy_level": state.energy_level,
+                        "emotion_state": state.emotion_state,
                         "upcoming_events": self.event_manager.snapshot(self.sim_start_date, hhmm).get("upcoming", []),
                     },
                 ),
@@ -912,6 +913,38 @@ class WorldEngine:
             logger.error(
                 "[WorldEngine] replan failed for '%s': %s", state.persona_name, e,
             )
+
+    def _has_unscheduled_downtime(self, state: AgentRuntimeState, tick: int) -> bool:
+        """Detect agents stranded on the deterministic fallback schedule.
+
+        The LLM decide path is gated (novelty, energy/emotion, cooldown,
+        budget), so a force-accepted fallback day can leave an agent stuck on
+        "Unscheduled downtime" for hours with no replan ever firing.  This
+        backstop scans the remaining plan every tick and flags it."""
+        if state.paused:
+            return False
+        if state.day_archived:
+            return False
+        if state.manager is None:
+            return False
+        if state.replan_count >= _cfg.MAX_REPLANS_PER_AGENT_PER_DAY:
+            return False
+        if (
+            tick - self._downtime_replan_tick.get(state.agent_id, -10**9)
+            < _cfg.DOWNTIME_REPLAN_COOLDOWN_TICKS
+        ):
+            return False
+        now_minutes = tick % (24 * 60)
+        if now_minutes >= 24 * 60 - _cfg.DOWNTIME_REPLAN_MIN_HORIZON:
+            # Too little of the day remains to justify a replan.
+            return False
+        for action in state.day_plan:
+            end = self._hhmm_to_minutes(str(action.get("end", "")))
+            if end > now_minutes and "unscheduled downtime" in str(
+                action.get("action", "")
+            ).lower():
+                return True
+        return False
 
     async def _run_agent_act(
         self, state: AgentRuntimeState, tick: int, hhmm: str
@@ -1032,15 +1065,11 @@ class WorldEngine:
             end_min = self._hhmm_to_minutes(action.end_time)
             duration = max(1, end_min - start_min)
             tick_step = _cfg.SIM_MINUTES_PER_TICK
-            action_energy_change, action_emotion_change = self._action_wellbeing_deltas(state, action)
+            action_energy_change, action_emotion_change = self._action_wellbeing_deltas(state, action, duration)
             energy_tick = (action_energy_change / duration) * tick_step
             emotion_tick = (action_emotion_change / duration) * tick_step
-            state.energy_level = max(0.08, min(0.97, state.energy_level + energy_tick))
-            baseline = state.emotion_baseline
-            # Mood has a weak pull towards personality baseline, but day
-            # events are allowed to remain visible for several actions.
-            recovery = (baseline - state.emotion_state) * min(0.015, 0.0005 * tick_step)
-            state.emotion_state = max(0.10, min(0.90, state.emotion_state + emotion_tick + recovery))
+            state.energy_level = max(0.0, min(1.0, state.energy_level + energy_tick))
+            state.emotion_state = max(0.0, min(1.0, state.emotion_state + emotion_tick))
         except Exception:
             pass
 
@@ -1483,22 +1512,14 @@ class WorldEngine:
         self.relationship_matrix.update(b.agent_id, a.agent_id, conv_result.relationship_delta)
         self.relationship_matrix.save()
         # Conversations affect the people having them, not only their stored
-        # relationship score.  A warm chat is a modest lift; an awkward one is
-        # draining.  The effect is applied once per completed conversation.
-        relationship_delta = max(-0.20, min(0.20, conv_result.relationship_delta))
-        sentiment = (getattr(conv_result, "sentiment", "neutral") or "neutral").lower()
-        for state in (a, b):
-            social_cost = 0.045 if any(marker in " ".join(
-                str(state.persona.get(key, "")) for key in ("innate", "lifestyle", "learned")
-            ).lower() for marker in ("introverted", "quiet", "reserved")) else 0.025
-            state.energy_level = max(0.08, min(0.97, state.energy_level - social_cost))
-            if sentiment in ("positive", "warm", "friendly"):
-                mood_delta = 0.035 + max(0.0, relationship_delta) * 0.25
-            elif sentiment in ("negative", "tense", "awkward"):
-                mood_delta = -0.035 + min(0.0, relationship_delta) * 0.25
-            else:
-                mood_delta = relationship_delta * 0.08
-            state.emotion_state = max(0.10, min(0.90, state.emotion_state + mood_delta))
+        # relationship score.  The LLM decides each participant's net energy
+        # and mood change for the chat; only a 0..1 safety clamp is applied.
+        for state, energy_delta, emotion_delta in (
+            (a, conv_result.energy_delta_a, conv_result.emotion_delta_a),
+            (b, conv_result.energy_delta_b, conv_result.emotion_delta_b),
+        ):
+            state.energy_level = max(0.0, min(1.0, state.energy_level + float(energy_delta or 0.0)))
+            state.emotion_state = max(0.0, min(1.0, state.emotion_state + float(emotion_delta or 0.0)))
         logger.info(
             "[WorldEngine] conversation '%s' <-> '%s' active until tick %d",
             a.persona_name, b.persona_name, self.world.tick + conv_result.duration_minutes,
@@ -1526,6 +1547,8 @@ class WorldEngine:
                     "persona_name": state.persona_name,
                     "mode": "remaining",
                     "current_location_id": state.position.location_id,
+                    "energy_level": state.energy_level,
+                    "emotion_state": state.emotion_state,
                 },
             )
             return plan_result.get("day_plan", [])
@@ -1780,7 +1803,10 @@ class WorldEngine:
                 f"The previous day ended while the agent was {action_text} at {location}. "
                 f"Energy is {state.energy_level:.2f}/1.0 and emotion is "
                 f"{state.emotion_state:.2f}/1.0. Continue naturally from this "
-                "physical and emotional state; do not abruptly relocate them."
+                "physical and emotional state; do not abruptly relocate them. "
+                "When assigning energy_change/emotion_change for the new day, "
+                "keep the cumulative energy and mood totals between 0.0 and "
+                "1.0 at all times."
             )
 
         async def _plan_next_day(state: AgentRuntimeState) -> tuple[AgentRuntimeState, list]:
@@ -1803,6 +1829,8 @@ class WorldEngine:
                         "mode": "next_day",
                         "current_location_id": state.position.location_id,
                         "handoff_context": _handoff_context(state),
+                        "energy_level": state.energy_level,
+                        "emotion_state": state.emotion_state,
                         "upcoming_events": self.event_manager.snapshot(next_date, "00:00").get("upcoming", []),
                     },
                 )
@@ -1831,6 +1859,7 @@ class WorldEngine:
         self._recent_convs.clear()
         self._in_range.clear()
         self._last_decision_tick.clear()
+        self._downtime_replan_tick.clear()
         self._last_obs.clear()
         self._tick_observations.clear()
         self._applied_event_effects.clear()

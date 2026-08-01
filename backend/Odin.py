@@ -14,6 +14,7 @@ import socket
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException, Header
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
@@ -29,6 +30,18 @@ from pathfinder import shortest_path, stats, ROOT
 
 FRONTEND = os.path.join(ROOT, "frontend")
 DATA_DIR = os.path.join(ROOT, "backend", "data")
+
+
+def _public_asset_url(value: str) -> str:
+    """Return a browser-loadable URL, correcting GitHub's HTML blob links."""
+    value = value.strip()
+    parsed = urlparse(value)
+    parts = parsed.path.strip("/").split("/")
+    if parsed.scheme == "https" and parsed.netloc in {"github.com", "www.github.com"} \
+            and len(parts) >= 5 and parts[2] == "blob":
+        owner, repository, _, revision, *path = parts
+        return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{'/'.join(path)}"
+    return value
 
 
 # --------------------------------------------------------------------------- #
@@ -675,6 +688,8 @@ async def add_agent(request: AddAgentInput, _user: dict = Depends(require_admin)
             "current_time": f"{current_date} {current_hhmm}", "places": None,
             "persona_name": generated.name, "mode": "remaining" if engine.world.tick else "full_day",
             "current_location_id": generated.hostel, "upcoming_events": [],
+            "energy_level": engine._energy_baseline(persona),
+            "emotion_state": engine._emotion_baseline(persona),
         }))
         day_plan = plan_result.get("day_plan", [])
         if not day_plan:
@@ -688,6 +703,7 @@ async def add_agent(request: AddAgentInput, _user: dict = Depends(require_admin)
     engine.registry.register(AgentRuntimeState(
         agent_id=agent_id, persona=persona, persona_name=generated.name,
         manager=manager, position=position, day_plan=day_plan,
+        energy_level=engine._energy_baseline(persona),
         emotion_state=engine._emotion_baseline(persona), emotion_baseline=engine._emotion_baseline(persona),
     ))
     engine.world.register_agent(agent_id, position)
@@ -962,6 +978,20 @@ def get_entrypoints():
         return json.load(f)
 
 
+@app.get("/api/assets")
+def get_asset_urls():
+    """Return public map URLs configured on the running Space.
+
+    Hugging Face Space variables are runtime environment variables, while the
+    Vite bundle is built earlier. The browser reads this endpoint so changing
+    a Space variable does not require committing image files to the Space.
+    """
+    return {
+        "map_image_url": _public_asset_url(os.environ.get("MAP_IMAGE_URL", "")),
+        "night_image_url": _public_asset_url(os.environ.get("MAP_NIGHT_IMAGE_URL", "")),
+    }
+
+
 # Serve React production build (dist/) if it exists, else fallback to frontend/
 import mimetypes
 # On Windows, the registry often maps .js to text/plain, which makes browsers
@@ -973,17 +1003,32 @@ mimetypes.add_type("text/css", ".css")
 mimetypes.add_type("image/svg+xml", ".svg")
 mimetypes.add_type("image/png", ".png")
 
-@app.get("/{full_path:path}")
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
 async def serve_spa(full_path: str):
     dist = os.path.join(FRONTEND, "dist")
-    if os.path.isdir(dist):
-        file_path = os.path.join(dist, full_path) if full_path else os.path.join(dist, "index.html")
+    public = os.path.join(FRONTEND, "public")
+    
+    # 1. Try dist directory first
+    if os.path.isdir(dist) and full_path:
+        file_path = os.path.join(dist, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
+            
+    # 2. Try frontend/public directory (source static assets)
+    if os.path.isdir(public) and full_path:
+        pub_path = os.path.join(public, full_path)
+        if os.path.isfile(pub_path):
+            return FileResponse(pub_path)
+            
+    # 3. Try frontend root directory
+    if full_path:
+        fe_path = os.path.join(FRONTEND, full_path)
+        if os.path.isfile(fe_path):
+            return FileResponse(fe_path)
+
+    # 4. Fallback to index.html for SPA client-side routing
+    if os.path.isdir(dist):
         return FileResponse(os.path.join(dist, "index.html"))
-    file_path = os.path.join(FRONTEND, full_path) if full_path else os.path.join(FRONTEND, "index.html")
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
     return FileResponse(os.path.join(FRONTEND, "index.html"))
 
 

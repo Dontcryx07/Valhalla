@@ -1,12 +1,13 @@
 ---
+license: mit
 title: Valhalla
-emoji: 🏛️
-colorFrom: indigo
-colorTo: purple
 sdk: docker
 app_port: 7860
+emoji: 🚀
+colorFrom: red
+colorTo: blue
+short_description: Valhalla, a multi agent simulation
 ---
-
 # Valhalla
 
 Valhalla is a multi-agent campus-life simulation set at IIT Ropar.
@@ -177,6 +178,14 @@ Set values in `.env` (copy from `.env.local` first).
 | `SIM_GEMINI_MODEL` | `gemini-3.1-flash-lite` | Gemini model used by the simulation |
 | `SIM_CREATIVITY` | `1.0` | Creativity dial for plans/dialogue |
 | `SIM_WELLBEING_VARIABILITY` | `0.75` | Non-LLM variability in wellbeing updates |
+| `MAP_IMAGE_URL` | `""` | Public HTTPS URL for the daytime map displayed in the browser |
+| `MAP_NIGHT_IMAGE_URL` | `""` | Public HTTPS URL for the night-map overlay displayed in the browser |
+| `PATH_IMAGE_URL` | `""` | Public HTTPS URL for the walkable-path PNG used by the backend |
+
+For a Hugging Face Space that keeps images in GitHub, add these as **Variables**
+(not Secrets) in **Settings → Variables and secrets**. Use GitHub raw-content
+URLs, for example `https://raw.githubusercontent.com/OWNER/REPO/main/assets/map.png`.
+Set all three URLs; `PATH_IMAGE_URL` is required for backend route calculation.
 
 ## Project Structure
 

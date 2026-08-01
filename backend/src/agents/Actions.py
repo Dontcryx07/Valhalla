@@ -82,6 +82,7 @@ class ActionState(BaseModel):
     path_index: int = 0       # current position along path
     energy_change: float = 0.0      # total change over entire action
     emotion_change: float = 0.0     # total change over entire action
+    energy_target: Optional[float] = None  # declared cumulative energy at action end (0-1); None = delta-based
     is_final_plan_action: bool = False
     event_id: Optional[str] = None  # data-driven world event, when applicable
 
@@ -356,6 +357,7 @@ class AgentActionManager:
             position=position,
             energy_change=plan_action.get("energy_change", 0.0),
             emotion_change=plan_action.get("emotion_change", 0.0),
+            energy_target=plan_action.get("energy_target"),
             is_final_plan_action=bool(self.day_plan and plan_action is self.day_plan[-1]),
             event_id=plan_action.get("world_event_id"),
         )

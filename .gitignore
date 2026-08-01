@@ -38,6 +38,7 @@ playwright-report/
 
 # Frontend dependencies and build output
 /frontend/node_modules/
+/frontend/dist/
 
 
 # Python bytecode and interpreter caches
@@ -49,3 +50,5 @@ __pycache__/
 Thumbs.db
 *.pid
 *.tmp
+*.mp4
+*.png

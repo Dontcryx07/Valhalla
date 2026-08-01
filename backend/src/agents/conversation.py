@@ -104,6 +104,13 @@ class ConversationResult(BaseModel):
     duration_minutes: int = Field(ge=6, le=20)
     sentiment: Literal["positive", "neutral", "negative"]
     relationship_delta: float = Field(ge=-0.15, le=0.15)
+    # LLM-decided net wellbeing effect of the chat for each participant.
+    # Energy and mood each run from 0.0 to 1.0; the resulting value after the
+    # chat must stay inside that range (never below 0% or above 100%).
+    energy_delta_a: float = 0.0
+    emotion_delta_a: float = 0.0
+    energy_delta_b: float = 0.0
+    emotion_delta_b: float = 0.0
     # Folded-in replan decision: avoids a separate 4-call day-plan regeneration
     # per agent after every conversation. True only when the conversation
     # genuinely changes an agent's immediate intentions.
@@ -558,6 +565,9 @@ Return a JSON object with:
 - "duration_minutes": integer from 6 to 20 that matches the amount of dialogue
 - "sentiment": "positive" | "neutral" | "negative"
 - "relationship_delta": float between -0.15 and 0.15 (how this conversation changes their relationship)
+- "energy_delta_a" / "energy_delta_b": each agent's net ENERGY change from this chat (positive = recharged, negative = drained)
+- "emotion_delta_a" / "emotion_delta_b": each agent's net MOOD change from this chat (positive = lifted, negative = dampened)
+- ENERGY AND MOOD each run from 0.0 to 1.0 (0% to 100%). Add each delta to the agent's current value shown above; the resulting value must stay between 0.0 and 1.0 — never above 100% or below 0%
 - "should_replan": boolean — true ONLY if this conversation genuinely changes what one of them intends to do next (e.g. they agree to meet, go somewhere together, or drop a task). Default false; most casual chats do NOT require replanning.
 - "plan_change": short string describing the change if should_replan is true, else null"""
 
